@@ -1,0 +1,16 @@
+{
+  "name": "underdogs-coaching-log",
+  "version": "1.0.0",
+  "description": "Underdogs Coaching Log - Session tracking for startup coaches",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.0",
+    "cors": "^2.8.5",
+    "node-cron": "^3.0.0",
+    "dotenv": "^16.0.0"
+  }
+}

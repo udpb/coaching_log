@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# Vercel
+.vercel/
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Local data + backups (app-generated)
+data/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+
+# Supabase CLI cache
+supabase/.temp/
+
+# Temp scratch files used during local testing
+_*.json
+_*.txt
