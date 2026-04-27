@@ -2,7 +2,8 @@
 
 Startup coach's 1:1 session tracker — built around the idea that coaches should spend their time on **coaching**, not on re-typing what was just discussed. Paste an STT transcript, let Gemini 3.1 Pro extract the structured fields, review, save.
 
-Live: [underdogs-coaching-log.vercel.app](https://underdogs-coaching-log.vercel.app)
+Live: [coaching-log-lemon.vercel.app](https://coaching-log-lemon.vercel.app)
+Auto-deployed from `main` via Vercel ↔ GitHub integration (`udpb/coaching_log` → `udpb-5673's projects/coaching-log`).
 
 ---
 

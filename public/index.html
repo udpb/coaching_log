@@ -8445,7 +8445,7 @@ async function quickAddPM(email) {
       renderUsersBody(document.getElementById('usersContent'));
     } else {
       // Not signed up — we can't invite without service_role, so guide the admin.
-      const signupUrl = 'https://underdogs-coaching-log.vercel.app/';
+      const signupUrl = 'https://coaching-log-lemon.vercel.app/';
       try {
         if (navigator.clipboard && navigator.clipboard.writeText) {
           await navigator.clipboard.writeText(signupUrl);
