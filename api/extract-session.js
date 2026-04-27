@@ -1,30 +1,31 @@
 // Vercel Serverless Function — STT transcript → structured coaching log
 // POST /api/extract-session
 //
+// Backend: Google Gemini 3.1 Pro (generativelanguage.googleapis.com)
+// Auth:    GEMINI_API_KEY env var (server-side only)
+//
 // Body:
 //   { transcript: string,
 //     context?: { date, coach, team_name, founder_name, session_num, session_type, prev?: {...} },
 //     stream?: boolean }
 //
-// Response (new Phase-1 shape):
+// Response (Phase-1 shape, unchanged):
 //   {
-//     narrative_summary: "8-15 sentence rich prose summary of the session",
-//     fields: {
-//       stage:        { value: "M", evidence: "coach: ...\nfounder: ..." },
-//       real_issue:   { value: "...", evidence: "..." },
-//       last_done:    { value: "partial", evidence: "..." },
-//       ...
-//       metrics:      { value: [{name, value}, ...], evidence: "..." }
-//     },
-//     low_confidence: ["field_a", ...],
+//     narrative_summary: "...",
+//     fields: { stage: { value, evidence, confidence }, ..., metrics: {...} },
+//     low_confidence: [...],
 //     raw: "...",
 //     usage: {...}
 //   }
 //
-// Streaming (when `stream: true`):
+// Streaming response (when `stream: true`):
 //   data: { type: "delta", text, accumulated } ...
 //   event: done
 //   data: { narrative_summary, fields, low_confidence, raw, usage }
+
+const GEMINI_KEY   = '';   // resolved at request time from env
+const MODEL        = process.env.GEMINI_CHAT_MODEL || 'gemini-3.1-pro';
+const API_BASE     = 'https://generativelanguage.googleapis.com/v1beta';
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -32,11 +33,10 @@ module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST')    return res.status(405).json({ error: 'Method not allowed' });
 
-  let apiKey = process.env.ANTHROPIC_API_KEY || '';
-  apiKey = apiKey.trim().replace(/^"|"$/g, '').replace(/^'|'$/g, '').trim();
-  if (!apiKey) return res.status(500).json({ error: 'ANTHROPIC_API_KEY not configured on server' });
+  let apiKey = (process.env.GEMINI_API_KEY || '').trim().replace(/^"|"$/g, '').replace(/^'|'$/g, '').trim();
+  if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY not configured on server' });
 
   try {
     const { transcript, context, stream: wantStream } = req.body || {};
@@ -54,57 +54,64 @@ module.exports = async function handler(req, res) {
     const systemPrompt = buildSystemPrompt();
     const userPrompt = buildUserPrompt(transcript, ctx, prev, isFirst);
 
-    // Prompt caching on the (identical across calls) system prompt.
-    // Activates automatically once the system prompt crosses the Sonnet
-    // minimum (~1024 tokens). Current prompt is long enough once the
-    // few-shot example is embedded (below).
+    // Gemini request body:
+    //  - `system_instruction`: single message-like object holding the system prompt
+    //  - `contents`: multi-turn array; for one-shot we send a single user turn
+    //  - `generationConfig.responseMimeType: 'application/json'` forces clean JSON
+    //    out of the model (no markdown fences in happy path)
+    //  - `streamGenerateContent?alt=sse` for SSE streaming (handled below)
     const body = {
-      model: 'claude-sonnet-4-5-20250929',
-      max_tokens: 5120,  // long STT transcripts can push output past 3k tokens; 5k gives headroom
-      system: [
-        { type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }
-      ],
-      messages: [{ role: 'user', content: userPrompt }],
-      stream: !!wantStream
+      system_instruction: { parts: [{ text: systemPrompt }] },
+      contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+      generationConfig: {
+        temperature: 0.4,
+        maxOutputTokens: 5120,
+        responseMimeType: 'application/json'
+      },
+      // Block none — we trust the input is a coaching transcript, not adversarial.
+      // Adjust if false-positive safety blocks become an issue.
+      safetySettings: [
+        { category: 'HARM_CATEGORY_HARASSMENT',         threshold: 'BLOCK_NONE' },
+        { category: 'HARM_CATEGORY_HATE_SPEECH',        threshold: 'BLOCK_NONE' },
+        { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',  threshold: 'BLOCK_NONE' },
+        { category: 'HARM_CATEGORY_DANGEROUS_CONTENT',  threshold: 'BLOCK_NONE' }
+      ]
     };
 
     if (wantStream) {
       return handleStream(res, body, apiKey, prev);
     }
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    // Non-stream
+    const url = `${API_BASE}/models/${encodeURIComponent(MODEL)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+    const response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
-
     if (!response.ok) {
       const errText = await response.text();
       return res.status(response.status).json({ error: errText });
     }
-
     const data = await response.json();
-    const raw = (data.content && data.content[0] && data.content[0].text) || '';
-
+    const raw = extractGeminiText(data);
+    if (!raw) {
+      return res.status(500).json({ error: 'Model returned no text', detail: data });
+    }
     const parsed = parseJsonFromText(raw);
     if (!parsed) {
       return res.status(500).json({ error: 'Model did not return valid JSON', raw });
     }
-
     const normalized = normalizeModelOutput(parsed, prev);
-    return res.status(200).json(Object.assign({}, normalized, { raw, usage: data.usage || null }));
+    return res.status(200).json(Object.assign({}, normalized, { raw, usage: data.usageMetadata || null }));
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
 };
 
 // -----------------------------------------------------------------------
-// Streaming proxy: forward text deltas to the client as SSE, then emit
-// a final 'done' event with the parsed and normalized payload.
+// Streaming proxy: forward Gemini SSE deltas to the client as our own SSE,
+// then emit a final 'done' event with the parsed payload.
 // -----------------------------------------------------------------------
 async function handleStream(res, body, apiKey, prev) {
   res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
@@ -118,22 +125,18 @@ async function handleStream(res, body, apiKey, prev) {
     res.write(`data: ${JSON.stringify(data)}\n\n`);
   };
 
+  const url = `${API_BASE}/models/${encodeURIComponent(MODEL)}:streamGenerateContent?alt=sse&key=${encodeURIComponent(apiKey)}`;
   let upstream;
   try {
-    upstream = await fetch('https://api.anthropic.com/v1/messages', {
+    upstream = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
   } catch (err) {
     writeEvent('error', { error: 'upstream fetch failed: ' + err.message });
     return res.end();
   }
-
   if (!upstream.ok || !upstream.body) {
     const errTxt = await upstream.text().catch(() => '');
     writeEvent('error', { error: errTxt || `upstream status ${upstream.status}` });
@@ -146,6 +149,9 @@ async function handleStream(res, body, apiKey, prev) {
   const decoder = new TextDecoder();
   let buf = '';
 
+  // Gemini SSE format: each event is `data: {<JSON>}\n\n` where the JSON
+  // contains a `candidates[0].content.parts[*].text` chunk and (on the last
+  // event) `usageMetadata` + `finishReason`.
   while (true) {
     const { value, done } = await reader.read();
     if (done) break;
@@ -162,15 +168,12 @@ async function handleStream(res, body, apiKey, prev) {
       let payload;
       try { payload = JSON.parse(dataLine); } catch { continue; }
 
-      if (payload.type === 'content_block_delta' &&
-          payload.delta && payload.delta.type === 'text_delta') {
-        fullText += payload.delta.text;
-        writeEvent(null, { type: 'delta', text: payload.delta.text, accumulated: fullText });
-      } else if (payload.type === 'message_delta' && payload.usage) {
-        usage = Object.assign(usage || {}, payload.usage);
-      } else if (payload.type === 'message_start' && payload.message && payload.message.usage) {
-        usage = Object.assign(usage || {}, payload.message.usage);
+      const text = extractGeminiText(payload);
+      if (text) {
+        fullText += text;
+        writeEvent(null, { type: 'delta', text, accumulated: fullText });
       }
+      if (payload.usageMetadata) usage = payload.usageMetadata;
     }
   }
 
@@ -182,13 +185,17 @@ async function handleStream(res, body, apiKey, prev) {
   return res.end();
 }
 
+// Pull the text payload out of a Gemini response (or stream chunk).
+// Tolerates: missing candidates, empty parts, multiple parts.
+function extractGeminiText(data) {
+  if (!data || !Array.isArray(data.candidates) || data.candidates.length === 0) return '';
+  const c = data.candidates[0];
+  if (!c.content || !Array.isArray(c.content.parts)) return '';
+  return c.content.parts.map(p => (typeof p.text === 'string' ? p.text : '')).join('');
+}
+
 // -----------------------------------------------------------------------
-// Normalization: model output → canonical { narrative_summary, fields, low_confidence }.
-// Each field in `fields` is always the object form { value, evidence }.
-// Accepts multiple model output shapes because real Sonnet responses drift:
-//   - nested: { narrative_summary, fields: { stage: {value, evidence}, ... }, low_confidence }
-//   - flat object fields: { narrative_summary, stage: {value, evidence}, ... }
-//   - legacy scalar fields: { stage: "M", ... }     (values are bare)
+// Output normalization → canonical { narrative_summary, fields, low_confidence }
 // -----------------------------------------------------------------------
 const STRUCTURED_FIELD_KEYS = [
   'stage', 'stage_detail', 'main_topic',
@@ -208,7 +215,6 @@ function toFieldEntry(v) {
       confidence: typeof v.confidence === 'number' ? v.confidence : null
     };
   }
-  // Legacy / flat scalar
   return { value: v === undefined ? '' : v, evidence: '', confidence: null };
 }
 
@@ -216,8 +222,6 @@ function normalizeModelOutput(parsed, prev) {
   const narrative = typeof parsed.narrative_summary === 'string' ? parsed.narrative_summary : '';
   const lowConf = Array.isArray(parsed.low_confidence) ? parsed.low_confidence : [];
 
-  // Source of the field map: parsed.fields if present, otherwise the top-level
-  // object with narrative_summary/low_confidence stripped out.
   let srcFields;
   if (parsed.fields && typeof parsed.fields === 'object') {
     srcFields = parsed.fields;
@@ -231,7 +235,7 @@ function normalizeModelOutput(parsed, prev) {
     if (k in srcFields) fields[k] = toFieldEntry(srcFields[k]);
   }
 
-  // Server post-process: inject prev.next_action into last_commitment if empty.
+  // Carry over prev.next_action into last_commitment if model omitted it
   if (prev && prev.next_action) {
     const lc = fields.last_commitment;
     if (!lc || !String(lc.value || '').trim()) {
@@ -239,8 +243,7 @@ function normalizeModelOutput(parsed, prev) {
     }
   }
 
-  // Derive last_done_rate (0-1) from numerator/denominator so the dashboard
-  // doesn't have to re-parse last_number.
+  // Auto-derive last_done_rate from numerator/denominator
   const num = Number(fields.last_done_numerator && fields.last_done_numerator.value);
   const den = Number(fields.last_done_denominator && fields.last_done_denominator.value);
   if (Number.isFinite(num) && Number.isFinite(den) && den > 0) {
@@ -252,7 +255,7 @@ function normalizeModelOutput(parsed, prev) {
     };
   }
 
-  // Normalize any date field to ISO YYYY-MM-DD (latest within a range).
+  // Normalize date fields to single ISO YYYY-MM-DD
   for (const key of ['next_deadline', 'next_checkin_date']) {
     const entry = fields[key];
     if (entry && entry.value !== undefined && entry.value !== null) {
@@ -327,13 +330,12 @@ function buildSystemPrompt() {
     '  - metrics: array of { "name": snake_case, "value": "..." } for numeric business metrics mentioned (customers, revenue, conversions). value is the object\'s `value` field (the outer metrics.value is this array).',
     '',
     'IMPORTANT:',
-    '  1. Output ONLY a single fenced JSON code block. No prose before or after.',
+    '  1. Output a single valid JSON object — nothing else. No prose before/after, no markdown fences. The response MIME is set to application/json.',
     '  2. Do NOT invent content. If not in the transcript, use "" / 0 / [] / false with confidence ≤ 0.3.',
     '  3. Preserve the dominant language of the transcript in free-text fields.',
     '  4. Emit keys in the schema order so partial streams are usable early (narrative_summary FIRST, then fields in schema order, then low_confidence).',
     '',
     'EXAMPLE (Korean session → Korean output):',
-    '```json',
     '{',
     '  "narrative_summary": "이번 3회차 세션에서 창업자는 지난번 약속했던 잠재고객 10명 인터뷰 중 7명을 완료했고 3명은 일정 문제로 미뤄졌다고 보고했다. 인터뷰 결과 중 2명이 파일럿을 원한다는 긍정적 반응이 있었다. 더 중요한 것은, 원래 가설했던 타겟팅 문제보다 데이터 정합성 문제가 고객들에게 더 시급하다는 점을 발견했고 이를 바탕으로 MVP 방향을 전환하기로 결정했다. 코치는 다음주까지 파일럿 2곳 중 최소 1곳과 계약서에 사인받는 것을 commitment로 확정했고 증빙은 계약서 PDF로 합의했다. 창업자는 인터뷰 결과에 기반한 피벗 결정에 자신감을 보였으며 에너지 수준은 양호했다. 코치는 피벗 방향이 실제 계약 전환으로 이어지는지를 다음 세션 전까지 지켜볼 예정이며 중간에 메시지로 한 번 확인하기로 했다.",',
     '  "fields": {',
@@ -361,8 +363,7 @@ function buildSystemPrompt() {
     '    "metrics": { "value": [{ "name": "인터뷰_완료", "value": "7" }, { "name": "파일럿_의향_고객", "value": "2" }], "evidence": "창업자: 7명까지 했고, 2명이 파일럿 써보겠다고 하셨어요.", "confidence": 0.95 }',
     '  },',
     '  "low_confidence": ["ai_used", "session_note", "energy"]',
-    '}',
-    '```'
+    '}'
   ].join('\n');
 }
 
@@ -392,68 +393,58 @@ function buildUserPrompt(transcript, ctx, prev, isFirst) {
     '## Transcript',
     transcript.trim(),
     '',
-    'Produce the JSON per the schema in your system prompt. Narrative first, then structured fields, then low_confidence. Return ONLY the JSON code block.'
+    'Produce the JSON per the schema in your system prompt. Narrative first, then structured fields, then low_confidence. Output a single JSON object only.'
   ];
 
   return header.concat(tail).join('\n');
 }
 
+// -----------------------------------------------------------------------
+// JSON parsing (tolerates fenced code blocks even though Gemini's JSON mode
+// shouldn't emit them — defensive).  Falls through to a brace-slice repair.
+// -----------------------------------------------------------------------
 function parseJsonFromText(text) {
   if (!text) return null;
   const fence = text.match(/```(?:json)?\s*([\s\S]*?)```/);
   let candidate = (fence ? fence[1] : text).trim();
 
-  // Fast path — complete well-formed JSON
   try { return JSON.parse(candidate); } catch (_) { /* keep trying */ }
 
-  // Slice between first { and last }
   const start = candidate.indexOf('{');
   const end = candidate.lastIndexOf('}');
   if (start >= 0 && end > start) {
     try { return JSON.parse(candidate.slice(start, end + 1)); } catch (_) { /* fall through */ }
   }
 
-  // Recovery path — output was truncated (e.g. hit max_tokens mid-metrics).
-  // Close any dangling strings, arrays, and objects by tracking depth through
-  // the text, then parse the repaired candidate.
   return repairAndParse(candidate);
 }
 
 function repairAndParse(text) {
   const src = text;
   let inStr = false, escape = false;
-  const stack = []; // entries: '{' | '[' | '"'
   let lastCompleteValueEnd = -1;
   for (let i = 0; i < src.length; i++) {
     const c = src[i];
     if (escape) { escape = false; continue; }
     if (inStr) {
       if (c === '\\') { escape = true; continue; }
-      if (c === '"') { inStr = false; stack.pop(); lastCompleteValueEnd = i; }
+      if (c === '"') { inStr = false; lastCompleteValueEnd = i; }
       continue;
     }
-    if (c === '"') { inStr = true; stack.push('"'); continue; }
-    if (c === '{') { stack.push('{'); continue; }
-    if (c === '[') { stack.push('['); continue; }
-    if (c === '}') { if (stack[stack.length-1] === '{') stack.pop(); lastCompleteValueEnd = i; continue; }
-    if (c === ']') { if (stack[stack.length-1] === '[') stack.pop(); lastCompleteValueEnd = i; continue; }
-    if (c === ',' || c === ' ' || c === '\n' || c === '\r' || c === '\t') continue;
-    // numbers / true / false / null end implicitly
+    if (c === '"') { inStr = true; continue; }
+    if (c === '{' || c === '[' || c === ',' || c === ' ' || c === '\n' || c === '\r' || c === '\t') continue;
+    if (c === '}' || c === ']') { lastCompleteValueEnd = i; continue; }
     if (!'0123456789tfn-'.includes(c)) continue;
-    // number/literal start — advance until a delimiter
     while (i + 1 < src.length && !',}]\n\r\t '.includes(src[i+1])) i++;
     lastCompleteValueEnd = i;
   }
 
-  // Trim to the last known-complete value, then close stacks
   let repaired = src;
   if (lastCompleteValueEnd >= 0 && lastCompleteValueEnd < src.length - 1) {
     repaired = src.slice(0, lastCompleteValueEnd + 1);
   }
-  // Remove trailing comma / colon / dangling key
   repaired = repaired.replace(/,\s*$/, '').replace(/:\s*$/, '').replace(/"[^"]*$/, '');
 
-  // Close in reverse stack order, but we need to re-scan since we trimmed
   const scan = (s) => {
     const st = []; let ins = false, esc = false;
     for (let i = 0; i < s.length; i++) {
@@ -478,6 +469,5 @@ function repairAndParse(text) {
     else if (top === '[') repaired += ']';
     else if (top === '"') repaired += '"';
   }
-  try { return JSON.parse(repaired); }
-  catch (_) { return null; }
+  try { return JSON.parse(repaired); } catch (_) { return null; }
 }

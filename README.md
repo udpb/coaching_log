@@ -1,6 +1,6 @@
 # underdogs. Coaching Log
 
-Startup coach's 1:1 session tracker — built around the idea that coaches should spend their time on **coaching**, not on re-typing what was just discussed. Paste an STT transcript, let Claude extract the structured fields, review, save.
+Startup coach's 1:1 session tracker — built around the idea that coaches should spend their time on **coaching**, not on re-typing what was just discussed. Paste an STT transcript, let Gemini 3.1 Pro extract the structured fields, review, save.
 
 Live: [underdogs-coaching-log.vercel.app](https://underdogs-coaching-log.vercel.app)
 
@@ -9,7 +9,7 @@ Live: [underdogs-coaching-log.vercel.app](https://underdogs-coaching-log.vercel.
 ## Stack
 
 - **Frontend** — single-file vanilla HTML/CSS/JS (`public/index.html`)
-- **API** — Vercel serverless function (`api/extract-session.js`) → Anthropic Claude Sonnet 4.5
+- **API** — Vercel serverless function (`api/extract-session.js`) → Google Gemini 3.1 Pro (STT extraction) + `api/match-coaches.js` → Gemini Embeddings (semantic coach search)
 - **DB + Auth** — Supabase (Postgres + Row Level Security + Auth)
 - **Fonts** — Pretendard (KR body) + Poppins (brand italic logo)
 - **Reports** — browser print → PDF / [docx](https://github.com/dolanmiu/docx) v8 (lazy-loaded)
@@ -20,7 +20,7 @@ No build step. No framework.
 
 ## Features
 
-- 🎙️ **STT → structured log** — paste transcript, Claude writes a rich narrative summary AND fills 18 structured fields with per-field evidence quotes from the transcript
+- 🎙️ **STT → structured log** — paste transcript, Gemini writes a rich narrative summary AND fills 18 structured fields with per-field evidence quotes from the transcript
 - 📊 **Team timeline dashboard** — session strip, metrics trend chart (SVG), commitment-follow-through bars, repeat-blocker warning, real-issue evolution
 - 📄 **Reports** — individual or bundle, PDF or Word, with optional Evidence / STT appendices
 - ✏️ **Edit saved sessions** — full form hydration + UPDATE (created_at preserved)
@@ -33,8 +33,10 @@ No build step. No framework.
 
 ```
 api/
-  extract-session.js        Serverless function — Claude proxy, SSE streaming,
-                            prompt caching, JSON repair on truncated output
+  extract-session.js        Serverless function — Gemini 3.1 Pro proxy,
+                            SSE streaming, JSON-mode output, repair on truncation
+  match-coaches.js          Serverless function — Gemini embeddings + Supabase
+                            pgvector RPC for PM-facing coach recommendation
 public/
   index.html                The whole app (HTML + inline CSS + inline JS)
 supabase/
@@ -62,10 +64,11 @@ vercel.json                 Static + /api routing
    - Redirect URLs: add `https://<your-deployment>.vercel.app/**`
 4. **Authentication → SMTP** (for production) — plug in a real SMTP provider such as [Resend](https://resend.com) to lift the default rate limit
 
-### 2. Anthropic API key
+### 2. Gemini API key
 
-- Get a key at [console.anthropic.com](https://console.anthropic.com)
-- In Vercel: Project → Settings → Environment Variables → add `ANTHROPIC_API_KEY` (Production)
+- Get a key (free tier available) at [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
+- In Vercel: Project → Settings → Environment Variables → add `GEMINI_API_KEY` (Production)
+- Also add `SUPABASE_SERVICE_ROLE` if you want `/api/match-coaches` to bypass RLS server-side
 
 ### 3. Client-side Supabase credentials
 
@@ -103,11 +106,11 @@ Fields with `confidence < 0.7` get highlighted in the UI so the coach knows what
 
 ### Streaming
 
-The serverless function forwards Anthropic's SSE stream to the client. Client parses the partial JSON on the fly (regex fallback when the buffer is still mid-token) so fields populate progressively rather than all-at-once after 10s.
+The serverless function forwards Gemini's SSE stream to the client. Client parses the partial JSON on the fly (regex fallback when the buffer is still mid-token) so fields populate progressively rather than all-at-once after 10s.
 
-### Prompt caching
+### JSON-mode output
 
-System prompt is marked `cache_control: ephemeral` — first call creates cache, subsequent calls in the 5-min window read it. Observed savings: input tokens 1928 → 0 on cache hit.
+`generationConfig.responseMimeType = "application/json"` forces Gemini to return raw JSON without markdown fences, so the client doesn't have to strip them. The repair-on-truncation logic remains as a defensive fallback.
 
 ### Truncation recovery
 
@@ -128,7 +131,7 @@ There is a `server.js` in the repo for local CSV-based dev, but the production d
 ```bash
 npm install
 vercel link           # first time only
-vercel env pull       # pulls ANTHROPIC_API_KEY into .env.local
+vercel env pull       # pulls GEMINI_API_KEY (etc.) into .env.local
 vercel dev
 ```
 

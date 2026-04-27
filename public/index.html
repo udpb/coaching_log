@@ -82,8 +82,21 @@ body {
   color: var(--orange);
   letter-spacing: -0.5px;
   cursor: pointer;
+  display: inline-flex;
+  flex-direction: column;
+  line-height: 1;
 }
-.logo span { color: var(--dark); font-style: normal; }
+.logo span {
+  display: block;
+  color: rgba(255,255,255,0.7);
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 600;
+  margin-left: 0;
+  margin-top: 3px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
 .header-right {
   display: flex;
   align-items: center;
@@ -593,6 +606,570 @@ body {
   color: #E5A300;
   font-size: 12px;
 }
+/* ============================================================
+   Phase 4-B — Project hub
+   ============================================================ */
+
+/* Picker screen */
+.proj-picker-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 8px 4px 18px;
+  flex-wrap: wrap;
+}
+.proj-picker-head h2 {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--dark);
+  margin: 0;
+}
+.proj-picker-head p {
+  font-size: 12px;
+  color: var(--gray500);
+  margin: 4px 0 0;
+}
+.proj-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+.proj-card {
+  position: relative;
+  background: var(--white);
+  border: 1px solid var(--gray200);
+  padding: 18px 20px;
+  cursor: pointer;
+  transition: border-color var(--transition), transform var(--transition);
+}
+.proj-card:hover {
+  border-color: var(--orange);
+  transform: translateY(-1px);
+}
+.proj-card-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--dark);
+  margin-bottom: 4px;
+}
+.proj-card-desc {
+  font-size: 12px;
+  color: var(--gray500);
+  margin-bottom: 10px;
+  min-height: 32px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.proj-card-meta {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: var(--gray400);
+}
+.proj-card-status {
+  display: inline-block;
+  padding: 2px 7px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: var(--green-bg);
+  color: var(--green);
+}
+.proj-card-status.closed  { background: var(--gray200); color: var(--gray500); }
+.proj-card-status.archived { background: var(--gray200); color: var(--gray500); }
+.proj-card.virtual {
+  background: repeating-linear-gradient(-45deg, #FAFAF8 0 10px, #F3F3F0 10px 20px);
+  border-style: dashed;
+}
+.proj-card-admin-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: var(--white);
+  border: 1px solid var(--gray300);
+  font-size: 11px;
+  padding: 3px 8px;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--gray500);
+  transition: all var(--transition);
+}
+.proj-card-admin-btn:hover {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+.proj-card-new {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 2px dashed var(--gray300);
+  color: var(--gray500);
+  cursor: pointer;
+  min-height: 140px;
+  transition: all var(--transition);
+}
+.proj-card-new:hover { border-color: var(--orange); color: var(--orange); }
+.proj-card-new .plus { font-size: 28px; line-height: 1; margin-bottom: 6px; }
+
+/* Context banner — shown on form/list/dashboard when project is active */
+.proj-context-banner {
+  background: var(--white);
+  border-left: 3px solid var(--orange);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.proj-context-banner .proj-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--gray500);
+}
+.proj-context-banner .proj-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--dark);
+}
+.proj-context-banner button {
+  margin-left: auto;
+  font-size: 11px;
+  padding: 4px 10px;
+  background: none;
+  border: 1px solid var(--gray300);
+  color: var(--gray500);
+  cursor: pointer;
+  font-family: inherit;
+}
+.proj-context-banner button:hover { border-color: var(--orange); color: var(--orange); }
+
+/* Empty state: no projects */
+.proj-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--gray400);
+}
+.proj-empty-icon { font-size: 44px; margin-bottom: 14px; }
+
+/* Project create/edit modal — reuses rpt-modal structure */
+.proj-modal-body label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gray500);
+  margin: 14px 0 6px;
+}
+.proj-modal-body input[type="text"],
+.proj-modal-body input[type="date"],
+.proj-modal-body textarea,
+.proj-modal-body select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--gray300);
+  font-family: inherit;
+  font-size: 13px;
+  box-sizing: border-box;
+}
+.proj-modal-body textarea { min-height: 60px; resize: vertical; }
+.proj-modal-body .row2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+/* Member list (admin member management) */
+.proj-member-list {
+  border: 1px solid var(--gray200);
+  margin-top: 8px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+.proj-member-row {
+  display: grid;
+  grid-template-columns: 1fr 110px 30px;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--gray100);
+  font-size: 12px;
+}
+.proj-member-row:last-child { border-bottom: 0; }
+.proj-member-row .m-email { color: var(--dark); font-weight: 500; }
+.proj-member-row .m-name { color: var(--gray500); font-size: 11px; }
+.proj-member-row select {
+  padding: 4px 6px;
+  font-size: 11px;
+  border: 1px solid var(--gray300);
+  font-family: inherit;
+}
+.proj-member-row button {
+  background: none;
+  border: 1px solid var(--gray300);
+  font-size: 12px;
+  padding: 2px 6px;
+  cursor: pointer;
+  color: var(--red);
+  font-family: inherit;
+}
+.proj-member-add {
+  display: grid;
+  grid-template-columns: 1fr 110px auto;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 8px;
+  background: var(--gray100);
+}
+.proj-member-add input,
+.proj-member-add select {
+  padding: 6px 10px;
+  font-size: 12px;
+  border: 1px solid var(--gray300);
+  font-family: inherit;
+}
+.proj-member-add button {
+  padding: 6px 14px;
+  font-size: 12px;
+  background: var(--orange);
+  color: #fff;
+  border: none;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ============================================================
+   Phase 4-D — Coach Directory (admin)
+   ============================================================ */
+.cd-wrap { padding: 0 4px 40px; }
+.cd-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 8px 4px 12px;
+  flex-wrap: wrap;
+}
+.cd-head h2 { font-size: 22px; font-weight: 700; color: var(--dark); margin: 0; }
+.cd-head .sub { font-size: 12px; color: var(--gray500); margin: 4px 0 0; }
+
+/* Filter toolbar */
+.cd-toolbar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 12px;
+  background: var(--white);
+  border: 1px solid var(--gray200);
+  margin-bottom: 14px;
+  align-items: center;
+}
+.cd-toolbar input[type="text"],
+.cd-toolbar select {
+  padding: 6px 10px;
+  font-size: 12px;
+  border: 1px solid var(--gray300);
+  font-family: inherit;
+  background: var(--white);
+}
+.cd-toolbar input[type="text"] { min-width: 180px; }
+.cd-toolbar .cd-count {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--gray500);
+  letter-spacing: 0.05em;
+}
+
+/* Coach grid */
+.cd-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px;
+}
+.cd-card {
+  position: relative;
+  background: var(--white);
+  border: 1px solid var(--gray200);
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: border-color var(--transition), transform var(--transition);
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: 10px;
+  align-items: start;
+}
+.cd-card:hover {
+  border-color: var(--orange);
+  transform: translateY(-1px);
+}
+.cd-avatar {
+  width: 48px;
+  height: 48px;
+  background: var(--gray100);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--gray500);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.cd-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.cd-card-main .cd-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--dark);
+  margin-bottom: 1px;
+  line-height: 1.3;
+}
+.cd-card-main .cd-org {
+  font-size: 11px;
+  color: var(--gray500);
+  margin-bottom: 6px;
+}
+.cd-tags {
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+.cd-tag {
+  font-size: 9.5px;
+  font-weight: 600;
+  padding: 1px 6px;
+  background: var(--gray100);
+  color: var(--gray500);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.cd-tag.tier       { background: var(--orange-bg); color: var(--orange); }
+.cd-tag.linked     { background: var(--green-bg); color: var(--green); }
+.cd-tag.status-inactive,
+.cd-tag.status-archived { background: var(--gray200); color: var(--gray500); }
+.cd-tag.status-draft   { background: var(--yellow-bg); color: var(--yellow); }
+.cd-tag.avail-limited  { background: var(--yellow-bg); color: var(--yellow); }
+.cd-tag.avail-unavailable { background: var(--red-bg); color: var(--red); }
+
+.cd-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--gray400);
+}
+.cd-empty-icon { font-size: 44px; margin-bottom: 14px; }
+
+/* Coach edit modal — reuses rpt-modal base, wider */
+.cd-modal { max-width: 780px; }
+.cd-modal-body label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gray500);
+  margin: 14px 0 4px;
+}
+.cd-modal-body input[type="text"],
+.cd-modal-body input[type="email"],
+.cd-modal-body input[type="tel"],
+.cd-modal-body input[type="number"],
+.cd-modal-body input[type="file"],
+.cd-modal-body textarea,
+.cd-modal-body select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--gray300);
+  font-family: inherit;
+  font-size: 12.5px;
+  box-sizing: border-box;
+}
+.cd-modal-body textarea { min-height: 60px; resize: vertical; }
+.cd-modal-body .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.cd-modal-body .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+/* Photo upload block */
+.cd-photo-block {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px;
+  border: 1px dashed var(--gray300);
+}
+.cd-photo-preview {
+  width: 72px; height: 72px;
+  background: var(--gray100);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; font-weight: 700; color: var(--gray500);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.cd-photo-preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cd-photo-actions { display: flex; flex-direction: column; gap: 4px; font-size: 11px; }
+.cd-photo-actions input[type="text"] { font-size: 11px; padding: 4px 8px; }
+
+/* Array chips input (tags, regions, etc) */
+.cd-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px 8px;
+  border: 1px solid var(--gray300);
+  min-height: 38px;
+  background: var(--white);
+  align-items: center;
+}
+.cd-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  background: var(--orange-bg);
+  color: var(--orange);
+  font-size: 11px;
+  font-weight: 600;
+  gap: 4px;
+}
+.cd-chip .x {
+  cursor: pointer;
+  font-weight: 700;
+  opacity: 0.6;
+}
+.cd-chip .x:hover { opacity: 1; }
+.cd-chips input {
+  border: none !important;
+  outline: none !important;
+  flex: 1;
+  min-width: 120px;
+  font-size: 12px !important;
+  padding: 2px !important;
+}
+
+/* History panel in the modal */
+.cd-history {
+  margin-top: 8px;
+  max-height: 140px;
+  overflow-y: auto;
+  background: var(--gray100);
+  font-size: 11px;
+  color: var(--gray500);
+}
+.cd-history-row {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--gray200);
+}
+.cd-history-row:last-child { border-bottom: 0; }
+.cd-history-row strong { color: var(--dark2); }
+
+/* ---- User Management (admin) ---- */
+.um-wrap { padding: 0 4px 40px; }
+.um-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 8px 4px 12px;
+  flex-wrap: wrap;
+}
+.um-head h2 { font-size: 22px; font-weight: 700; color: var(--dark); margin: 0; }
+.um-head .sub { font-size: 12px; color: var(--gray500); margin: 4px 0 0; max-width: 720px; line-height: 1.5; }
+
+.um-quick {
+  background: #FFFBF2;
+  border: 1px solid #F0DDAA;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+.um-quick h3 {
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0 0 8px;
+  color: var(--dark);
+  letter-spacing: 0.02em;
+}
+.um-quick-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.um-quick-row input[type="email"] {
+  flex: 1;
+  min-width: 220px;
+  padding: 6px 10px;
+  font-size: 13px;
+  border: 1px solid var(--gray300);
+  background: var(--white);
+  font-family: inherit;
+}
+.um-quick-note {
+  font-size: 11px;
+  color: var(--gray500);
+  margin-top: 8px;
+  line-height: 1.55;
+}
+
+.um-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--white);
+  border: 1px solid var(--gray200);
+  font-size: 13px;
+}
+.um-table th {
+  background: var(--gray100);
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--gray500);
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--gray200);
+}
+.um-table td {
+  font-size: 13px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--gray100);
+  vertical-align: middle;
+  color: var(--dark);
+}
+.um-table tr:last-child td { border-bottom: 0; }
+.um-table select {
+  padding: 4px 8px;
+  font-size: 12px;
+  border: 1px solid var(--gray300);
+  background: var(--white);
+  font-family: inherit;
+}
+.um-table select:disabled {
+  background: var(--gray100);
+  color: var(--gray500);
+  cursor: not-allowed;
+}
+.um-row-self { background: var(--orange-bg); }
+.um-empty {
+  text-align: center;
+  padding: 32px 12px;
+  color: var(--gray500);
+  font-size: 13px;
+}
+
 /* ---- Edit-mode banner on the form view ---- */
 .edit-banner {
   position: sticky;
@@ -1205,6 +1782,7 @@ body {
   border: 1px solid var(--gray200);
   background: var(--white);
   transition: var(--transition);
+  white-space: nowrap;
 }
 .filter-btn:hover { border-color: var(--gray400); }
 .filter-btn.active { border-color: var(--orange); background: var(--orange-bg); color: var(--orange); }
@@ -1413,6 +1991,14 @@ body {
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ---- Responsive ---- */
+/* Header is most stressed between ~600px and ~960px: 5 nav tabs + lang switcher
+   + CSV + role badge + name + logout all fight for the 880px container.
+   Tighten paddings before falling back to the wrap-to-row-2 layout at <=600px. */
+@media (max-width: 960px) {
+  .nav-tab { padding: 6px 8px; }
+  .header .container { gap: 8px; }
+  .header-right { gap: 6px; }
+}
 @media (max-width: 600px) {
   .header .container { flex-wrap: wrap; }
   .nav-tabs { order: 3; width: 100%; justify-content: center; }
@@ -1421,6 +2007,7 @@ body {
   .detail-grid { grid-template-columns: 1fr; }
   .team-grid { grid-template-columns: 1fr; }
   .metric-grid { grid-template-columns: 1fr 1fr; }
+  .cd-modal-body .row2, .cd-modal-body .row3 { grid-template-columns: 1fr; }
   .stage-selector { flex-wrap: wrap; }
   .view-title { font-size: 18px; }
   .records-table td, .records-table th { padding: 8px 10px; font-size: 12px; }
@@ -1440,9 +2027,9 @@ body {
 .auth-btn { width:100%; padding:12px; background:var(--orange); color:#fff; border:none; font-family:inherit; font-size:14px; font-weight:600; margin-top:4px; cursor:pointer; }
 .auth-btn:hover { background:var(--orange-light); }
 .auth-error { color:#cc3333; font-size:12px; margin-top:8px; min-height:16px; }
-.auth-user { display:flex; align-items:center; gap:8px; }
-.auth-user span { color:rgba(255,255,255,.7); font-size:11px; }
-.auth-user button { background:none; border:1px solid rgba(255,255,255,.2); color:rgba(255,255,255,.5); padding:3px 8px; font-size:10px; font-family:inherit; cursor:pointer; }
+.auth-user { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+.auth-user span { color:rgba(255,255,255,.7); font-size:11px; white-space:nowrap; }
+.auth-user button { background:none; border:1px solid rgba(255,255,255,.2); color:rgba(255,255,255,.5); padding:3px 8px; font-size:10px; font-family:inherit; cursor:pointer; white-space:nowrap; }
 .auth-user button:hover { border-color:rgba(255,255,255,.4); color:rgba(255,255,255,.8); }
 .auth-role-badge {
   display: inline-block;
@@ -1455,11 +2042,18 @@ body {
   background: rgba(255,255,255,0.1);
   color: rgba(255,255,255,0.7);
   border: 1px solid rgba(255,255,255,0.15);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .auth-role-badge.admin {
   background: var(--action-orange);
   color: #fff;
   border-color: var(--action-orange);
+}
+.auth-role-badge.pm {
+  background: var(--green);
+  color: #fff;
+  border-color: var(--green);
 }
 .auth-lang-btn { padding:4px 10px; border:1px solid #ddd; background:none; font-family:inherit; font-size:11px; font-weight:600; color:#999; cursor:pointer; }
 .auth-lang-btn:hover { border-color:var(--orange); color:var(--orange); }
@@ -2016,6 +2610,8 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
       <button class="nav-tab" data-view="form" data-i18n="nav_record">Record</button>
       <button class="nav-tab" data-view="list" data-i18n="nav_list">List</button>
       <button class="nav-tab" data-view="dashboard" data-i18n="nav_dashboard">대시보드</button>
+      <button class="nav-tab" data-view="coaches" id="navCoaches" style="display:none;" data-i18n="nav_coaches">코치 디렉토리</button>
+      <button class="nav-tab" data-view="users" id="navUsers" style="display:none;" data-i18n="nav_users">사용자 관리</button>
     </nav>
     <div class="header-right">
       <div class="lang-switch">
@@ -2050,6 +2646,9 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
 <!-- View 2: Recording Form -->
 <div class="view" id="viewForm">
   <div class="container">
+    <!-- Project context banner (rendered by JS in prepareForm/editRecord) -->
+    <div id="formProjectBanner"></div>
+
     <!-- STT Draft Panel -->
     <div class="stt-panel" id="sttPanel">
       <div class="stt-header" onclick="toggleSttPanel()">
@@ -2324,6 +2923,24 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
   </div>
 </div>
 
+<!-- View 6: Coach Directory (admin) -->
+<div class="view" id="viewCoaches">
+  <div class="container">
+    <div id="coachesContent">
+      <!-- Rendered by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- View 7: User Management (admin-only) -->
+<div class="view" id="viewUsers">
+  <div class="container">
+    <div id="usersContent">
+      <!-- Rendered by JS -->
+    </div>
+  </div>
+</div>
+
 <!-- View 5: Detail View -->
 <div class="view" id="viewDetail">
   <div class="container">
@@ -2333,6 +2950,283 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
     </button>
     <div id="detailContent">
       <!-- Rendered by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- Project create/edit/manage modal (admin) -->
+<div class="rpt-modal-overlay" id="projModal">
+  <div class="rpt-modal">
+    <h2 id="projModalTitle">새 프로젝트</h2>
+    <div class="sub" id="projModalSub">프로젝트 정보를 입력하세요.</div>
+    <div class="proj-modal-body">
+      <label>이름 <span style="color:var(--red);">*</span></label>
+      <input type="text" id="projName" placeholder="예: Underdogs Spring 2026">
+      <label>설명</label>
+      <textarea id="projDesc" placeholder="간단 설명 (선택)"></textarea>
+      <label>기간 (선택)</label>
+      <div class="row2">
+        <input type="date" id="projStart">
+        <input type="date" id="projEnd">
+      </div>
+      <label>상태</label>
+      <select id="projStatus">
+        <option value="active">active (진행 중)</option>
+        <option value="closed">closed (종료)</option>
+        <option value="archived">archived (보관)</option>
+      </select>
+      <div id="projMemberSection" style="display:none;">
+        <label style="margin-top:20px;">코치 배정</label>
+        <div class="proj-member-list" id="projMemberList"></div>
+        <div class="proj-member-add">
+          <div style="position:relative;">
+            <input type="text" id="projMemberEmail" placeholder="이름·이메일로 코치 검색" autocomplete="off"
+                   oninput="onMemberSearchInput(this.value)" onfocus="onMemberSearchInput(this.value)">
+            <div id="projMemberSuggestions" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--gray300);z-index:10;max-height:220px;overflow-y:auto;"></div>
+          </div>
+          <select id="projMemberRole">
+            <option value="coach">coach</option>
+            <option value="lead_coach">lead_coach</option>
+            <option value="observer">observer</option>
+          </select>
+          <button onclick="addProjectMember()">배정</button>
+        </div>
+      </div>
+      <div class="auth-error" id="projModalError" style="margin-top:10px;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger" id="projDeleteBtn" onclick="deleteCurrentProject()" style="display:none;">프로젝트 삭제</button>
+      <div style="display:flex;gap:8px;margin-left:auto;">
+        <button class="btn btn-ghost" onclick="closeProjectModal()">취소</button>
+        <button class="btn btn-primary" id="projSaveBtn" onclick="saveProjectModal()">저장</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Session project-move modal (admin/pm) -->
+<div class="rpt-modal-overlay" id="moveProjectModal">
+  <div class="rpt-modal" style="max-width:480px;">
+    <h2>📁 프로젝트 이동</h2>
+    <div class="sub" id="moveProjectSub">이 세션을 다른 프로젝트로 이동합니다.</div>
+    <div class="proj-modal-body">
+      <label>대상 프로젝트</label>
+      <select id="moveProjectSelect"></select>
+      <div class="auth-error" id="moveProjectError" style="margin-top:10px;"></div>
+    </div>
+    <div class="modal-footer">
+      <div style="display:flex;gap:8px;margin-left:auto;">
+        <button class="btn btn-ghost" onclick="closeMoveProjectModal()">취소</button>
+        <button class="btn btn-primary" id="moveProjectSaveBtn" onclick="saveMoveProjectModal()">이동</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CSV import preview modal -->
+<div class="rpt-modal-overlay" id="csvImportModal">
+  <div class="rpt-modal" style="max-width:720px;">
+    <h2>📥 CSV 가져오기 미리보기</h2>
+    <div class="sub" id="csvImportSub">파일을 분석 중…</div>
+    <div class="cd-modal-body">
+      <div id="csvImportSummary" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;"></div>
+      <div id="csvImportIssues" style="font-size:12px;color:var(--red);margin-bottom:10px;"></div>
+      <label style="margin-top:0;">매칭 기준</label>
+      <select id="csvImportKey">
+        <option value="external_id">external_id (권장 — JSON id와 동일)</option>
+        <option value="email">email</option>
+      </select>
+      <label>중복 행 처리</label>
+      <select id="csvImportConflict">
+        <option value="update">업데이트 (기존 값 덮어쓰기)</option>
+        <option value="skip">건너뛰기 (새 행만 추가)</option>
+      </select>
+      <label>샘플 (앞 5행)</label>
+      <div style="overflow-x:auto;border:1px solid var(--gray200);">
+        <table id="csvImportPreview" style="width:100%;font-size:11px;border-collapse:collapse;">
+          <thead></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="auth-error" id="csvImportError" style="margin-top:10px;"></div>
+    </div>
+    <div class="modal-footer">
+      <div style="margin-right:auto;font-size:11px;color:var(--gray500);">
+        ⚠ 저장 전에 <strong>매칭 기준</strong>이 맞는지 확인하세요.
+      </div>
+      <button class="btn btn-ghost" onclick="closeCsvImportModal()">취소</button>
+      <button class="btn btn-primary" id="csvImportCommitBtn" onclick="commitCsvImport()">적용</button>
+    </div>
+  </div>
+</div>
+
+<!-- Coach directory edit modal (admin) -->
+<div class="rpt-modal-overlay" id="coachModal">
+  <div class="rpt-modal cd-modal">
+    <h2 id="coachModalTitle">코치 편집</h2>
+    <div class="sub" id="coachModalSub"></div>
+    <div class="cd-modal-body">
+
+      <!-- Photo -->
+      <div class="cd-photo-block">
+        <div class="cd-photo-preview" id="coachPhotoPreview">?</div>
+        <div class="cd-photo-actions" style="flex:1;">
+          <label style="margin:0;">사진</label>
+          <input type="text" id="coachPhotoUrl" placeholder="photo URL 붙여넣기 (외부 CDN 또는 비워두기)">
+          <label style="margin:4px 0 0;">또는 파일 업로드 (Supabase Storage)</label>
+          <input type="file" id="coachPhotoFile" accept="image/*">
+          <span id="coachPhotoStatus" style="font-size:10.5px;color:var(--gray500);"></span>
+        </div>
+      </div>
+
+      <!-- Identity -->
+      <div class="row2">
+        <div>
+          <label>이름 <span style="color:var(--red);">*</span></label>
+          <input type="text" id="coachName" placeholder="홍길동">
+        </div>
+        <div>
+          <label>이메일</label>
+          <input type="email" id="coachEmail" placeholder="coach@example.com">
+        </div>
+      </div>
+      <div class="row3">
+        <div><label>전화</label><input type="tel" id="coachPhone"></div>
+        <div><label>성별</label>
+          <select id="coachGender">
+            <option value="">—</option>
+            <option value="남">남</option>
+            <option value="여">여</option>
+            <option value="기타">기타</option>
+          </select>
+        </div>
+        <div><label>언어</label><input type="text" id="coachLanguage"></div>
+      </div>
+
+      <!-- Location -->
+      <div class="row2">
+        <div><label>주 활동 지역</label><input type="text" id="coachLocation" placeholder="경기도"></div>
+        <div><label>국가</label><input type="text" id="coachCountry" placeholder="KR"></div>
+      </div>
+      <label>지역 태그 (regions) — Enter로 추가</label>
+      <div class="cd-chips" data-field="regions">
+        <input type="text" placeholder="예: 서울특별시 → Enter">
+      </div>
+
+      <!-- Organization -->
+      <div class="row2">
+        <div><label>소속 조직</label><input type="text" id="coachOrganization"></div>
+        <div><label>직함</label><input type="text" id="coachPosition"></div>
+      </div>
+
+      <!-- Specialization -->
+      <label>산업 (industries)</label>
+      <div class="cd-chips" data-field="industries">
+        <input type="text" placeholder="예: 콘텐츠/예술 → Enter">
+      </div>
+      <label>전문 영역 (expertise)</label>
+      <div class="cd-chips" data-field="expertise">
+        <input type="text" placeholder="예: 비즈니스 모델 → Enter">
+      </div>
+      <label>역할 (roles)</label>
+      <div class="cd-chips" data-field="roles">
+        <input type="text" placeholder="예: 코칭 → Enter">
+      </div>
+      <label>태그 (tags) — 운영 자유 레이블</label>
+      <div class="cd-chips" data-field="tags">
+        <input type="text" placeholder="예: #여성창업가전문 → Enter">
+      </div>
+
+      <!-- Segmentation for PM matching -->
+      <div class="row3">
+        <div>
+          <label>Tier</label>
+          <select id="coachTier">
+            <option value="">—</option><option>S</option><option>A</option><option>B</option><option>C</option>
+          </select>
+        </div>
+        <div><label>Category</label><input type="text" id="coachCategory"></div>
+        <div><label>Business Type</label><input type="text" id="coachBusinessType"></div>
+      </div>
+
+      <!-- Availability -->
+      <div class="row3">
+        <div>
+          <label>상태</label>
+          <select id="coachStatus">
+            <option value="active">active (활동 중)</option>
+            <option value="draft">draft (준비 중)</option>
+            <option value="inactive">inactive (일시 중단)</option>
+            <option value="archived">archived (보관)</option>
+          </select>
+        </div>
+        <div>
+          <label>가용성</label>
+          <select id="coachAvailability">
+            <option value="available">available (배정 가능)</option>
+            <option value="limited">limited (제한적)</option>
+            <option value="unavailable">unavailable (불가)</option>
+          </select>
+        </div>
+        <div>
+          <label>최대 동시 프로젝트</label>
+          <input type="number" id="coachMaxConcurrent" min="0" max="50">
+        </div>
+      </div>
+
+      <!-- Experience -->
+      <div class="row2">
+        <div><label>경력 연수 (숫자)</label><input type="number" id="coachCareerYears" step="0.5"></div>
+        <div><label>경력 연수 원문</label><input type="text" id="coachCareerYearsRaw"></div>
+      </div>
+      <div class="row2">
+        <div>
+          <label>해외 활동</label>
+          <select id="coachOverseas">
+            <option value="false">아니오</option>
+            <option value="true">예</option>
+          </select>
+        </div>
+        <div><label>해외 활동 상세</label><input type="text" id="coachOverseasDetail"></div>
+      </div>
+
+      <!-- Profile body (future embedding sources) -->
+      <label>소개 (intro)</label>
+      <textarea id="coachIntro"></textarea>
+      <label>경력 이력</label>
+      <textarea id="coachCareerHistory"></textarea>
+      <label>학력</label>
+      <textarea id="coachEducation"></textarea>
+      <label>언더독스 활동 이력</label>
+      <textarea id="coachUnderdogsHistory"></textarea>
+      <label>현재 업무</label>
+      <textarea id="coachCurrentWork"></textarea>
+      <label>툴·스킬</label>
+      <textarea id="coachToolsSkills"></textarea>
+
+      <!-- Account link -->
+      <label>연결된 로그인 계정 이메일 (있는 경우)</label>
+      <input type="text" id="coachLinkedEmail" placeholder="이 코치가 쓰는 앱 로그인 이메일. 비워두면 미연결." disabled style="background:var(--gray100);">
+      <span id="coachLinkedHint" style="font-size:11px;color:var(--gray500);">이메일과 매칭되는 profile이 가입하면 자동으로 연결됩니다.</span>
+
+      <!-- Notes (ops) -->
+      <label>운영 메모 (내부)</label>
+      <textarea id="coachNotes" placeholder="관리자만 봅니다"></textarea>
+
+      <!-- History -->
+      <div id="coachHistoryWrap" style="display:none;">
+        <label>최근 변경 이력</label>
+        <div class="cd-history" id="coachHistory"></div>
+      </div>
+
+      <div class="auth-error" id="coachModalError" style="margin-top:10px;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger" id="coachDeleteBtn" onclick="deleteCoach()" style="display:none;">삭제</button>
+      <div style="display:flex;gap:8px;margin-left:auto;">
+        <button class="btn btn-ghost" onclick="closeCoachModal()">취소</button>
+        <button class="btn btn-primary" id="coachSaveBtn" onclick="saveCoach()">저장</button>
+      </div>
     </div>
   </div>
 </div>
@@ -2396,10 +3290,12 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
 // ============================================================
 const i18n = {
   ko: {
-    nav_teams: '팀 선택',
+    nav_teams: '프로젝트',
     nav_record: '기록',
     nav_list: '목록',
     nav_dashboard: '대시보드',
+    nav_coaches: '코치 디렉토리',
+    nav_users: '사용자 관리',
     teams_title: '어떤 팀의 세션인가요?',
     teams_subtitle: '기존 팀을 선택하거나 새 팀을 만드세요',
     new_team: '+ 새 팀',
@@ -2511,10 +3407,12 @@ const i18n = {
     authSignupSuccess: '가입 완료! 이메일 확인 후 로그인해주세요.',
   },
   en: {
-    nav_teams: 'Teams',
+    nav_teams: 'Projects',
     nav_record: 'Record',
     nav_list: 'List',
     nav_dashboard: 'Dashboard',
+    nav_coaches: 'Coach Directory',
+    nav_users: 'Users',
     teams_title: 'Which team is this session for?',
     teams_subtitle: 'Select an existing team or create a new one',
     new_team: '+ New Team',
@@ -2621,10 +3519,12 @@ const i18n = {
     authSignupSuccess: 'Signed up! Please check your email to confirm.',
   },
   ja: {
-    nav_teams: 'チーム',
+    nav_teams: 'プロジェクト',
     nav_record: '記録',
     nav_list: '一覧',
     nav_dashboard: 'ダッシュボード',
+    nav_coaches: 'コーチ一覧',
+    nav_users: 'ユーザー管理',
     teams_title: 'どのチームのセッションですか？',
     teams_subtitle: '既存のチームを選択するか新しいチームを作成',
     new_team: '+ 新しいチーム',
@@ -2748,6 +3648,22 @@ let currentUser = null;
 // Admin can see every coach's sessions; coach sees only their own rows.
 // UI components that branch on privilege should read this at render time.
 let currentUserRole = 'coach';
+
+// Phase 4-D integration: the coaches_directory row linked to the current user
+// (populated when a coach whose email matches a directory row logs in).
+// Used to pre-fill the session form's "coach" field automatically.
+let myCoachDirectoryRow = null;
+
+// Phase 4-B: project context
+//   myProjects      — every project visible to the logged-in user (RLS-filtered).
+//                     Admin sees all; coach sees rows they're a member of.
+//   currentProject  — which project the user has drilled into, or null when
+//                     they're on the picker screen. A synthetic "__orphan__"
+//                     pseudo-project surfaces legacy sessions with no
+//                     project_id so they remain visible/editable.
+let myProjects = [];
+let currentProject = null;
+const ORPHAN_PROJECT = { id: '__orphan__', __virtual: true, name: '프로젝트 미지정', description: '프로젝트가 지정되지 않은 기존 세션들' };
 
 // Form state for selectors
 let selectedStage = '';
@@ -2965,7 +3881,12 @@ async function checkAuth() {
     } else if (event === 'SIGNED_OUT') {
       currentUser = null;
       currentUserRole = 'coach';
+      myCoachDirectoryRow = null;
+      myProjects = [];
+      currentProject = null;
       logs = [];
+      allProfiles = [];
+      localStorage.removeItem('ud-current-project-id');
       renderRoleBadge();
       showAuthScreen();
     } else if (event === 'TOKEN_REFRESHED' && session) {
@@ -3055,8 +3976,12 @@ async function handleLogout() {
   }
   currentUser = null;
   currentUserRole = 'coach';
+  myCoachDirectoryRow = null;
+  myProjects = [];
+  currentProject = null;
   logs = [];
   localStorage.removeItem('ud-coaching-logs');
+  localStorage.removeItem('ud-current-project-id');
   renderRoleBadge();
   showAuthScreen();
 }
@@ -3073,10 +3998,11 @@ function showApp() {
   // Clear any stale localStorage from other users
   logs = [];
 
-  // Load the user's application role first, then their logs. Role is used by
-  // later UI branching (admin panel, "viewing as admin" indicators, etc.).
+  // Load the user's role, their directory row (if any), visible projects, then logs.
   loadCurrentUserRole()
-    .then(() => loadLogs())
+    .then(() => loadMyCoachDirectoryRow())
+    .then(() => loadProjects())
+    .then(() => { restoreCurrentProject(); return loadLogs(); })
     .then(() => { renderTeams(); applyI18n(); })
     .catch(e => {
       console.error('Load logs failed:', e);
@@ -3085,10 +4011,78 @@ function showApp() {
     });
 }
 
-async function loadCurrentUserRole() {
-  currentUserRole = 'coach';          // optimistic default; refined below
-  renderRoleBadge();                  // paint conservative badge immediately
+// Look up the coaches_directory row linked to the current auth user, so we
+// can auto-fill session form fields. Linkage happens via:
+//   (1) the autolink trigger on profiles (matches email)
+//   (2) admin manually setting linked_user_id
+async function loadMyCoachDirectoryRow() {
+  myCoachDirectoryRow = null;
   if (!supabaseAvailable || !currentUser) return;
+  try {
+    const { data, error } = await supabaseClient
+      .from('coaches_directory')
+      .select('id, name, email, phone, tier, organization, position')
+      .eq('linked_user_id', currentUser.id)
+      .maybeSingle();
+    if (!error && data) myCoachDirectoryRow = data;
+  } catch (e) { /* table may not exist yet on older envs — ignore */ }
+}
+
+// Fetch every project the current user is allowed to see (RLS enforces: admin
+// all, coach only ones they're a member of).
+async function loadProjects() {
+  myProjects = [];
+  if (!supabaseAvailable) return;
+  try {
+    const { data, error } = await supabaseClient
+      .from('projects')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (!error && data) myProjects = data;
+  } catch (e) {
+    console.warn('loadProjects failed — schema may not be migrated yet:', e.message || e);
+  }
+}
+
+// Selected project persists across reloads so coach returns to their context.
+function saveCurrentProject() {
+  try {
+    if (!currentProject) localStorage.removeItem('ud-current-project-id');
+    else localStorage.setItem('ud-current-project-id', currentProject.__virtual ? '__orphan__' : currentProject.id);
+  } catch (_) {}
+}
+function restoreCurrentProject() {
+  try {
+    const id = localStorage.getItem('ud-current-project-id');
+    if (!id) { currentProject = null; return; }
+    if (id === '__orphan__') { currentProject = ORPHAN_PROJECT; return; }
+    const found = myProjects.find(p => p.id === id);
+    currentProject = found || null;
+    if (!found) localStorage.removeItem('ud-current-project-id');
+  } catch (_) { currentProject = null; }
+}
+function setCurrentProject(p) {
+  currentProject = p || null;
+  saveCurrentProject();
+}
+
+async function loadCurrentUserRole() {
+  // 첫 페인트에서 잘못된 'coach' 배지가 깜빡이지 않도록, 역할 조회가 끝날 때까지
+  // 배지는 숨긴 상태로 둔다. 조회 실패 시에만 보수적으로 'coach'로 폴백한다.
+  currentUserRole = null;
+  const badgeEl = document.getElementById('authUserRole');
+  if (badgeEl) badgeEl.style.display = 'none';
+  // admin/pm 전용 탭도 역할 확정 전에는 노출하지 않는다.
+  const navCoachesEl = document.getElementById('navCoaches');
+  if (navCoachesEl) navCoachesEl.style.display = 'none';
+  const navUsersEl = document.getElementById('navUsers');
+  if (navUsersEl) navUsersEl.style.display = 'none';
+
+  if (!supabaseAvailable || !currentUser) {
+    currentUserRole = 'coach';
+    renderRoleBadge();
+    return;
+  }
   try {
     const { data, error } = await supabaseClient
       .from('profiles')
@@ -3097,20 +4091,33 @@ async function loadCurrentUserRole() {
       .single();
     if (!error && data && data.role) {
       currentUserRole = data.role;
-      renderRoleBadge();
+    } else {
+      currentUserRole = 'coach';
+      if (error) console.warn('Profile role lookup returned error; defaulting to coach.', error);
     }
   } catch (e) {
+    currentUserRole = 'coach';
     console.warn('Profile role lookup failed; defaulting to coach.', e);
   }
+  renderRoleBadge();
 }
 
 function renderRoleBadge() {
   const el = document.getElementById('authUserRole');
   if (!el) return;
   if (!currentUser) { el.style.display = 'none'; return; }
-  el.textContent = currentUserRole === 'admin' ? 'ADMIN' : 'COACH';
-  el.className = 'auth-role-badge' + (currentUserRole === 'admin' ? ' admin' : '');
+  const labelMap = { admin: 'ADMIN', pm: 'PM', coach: 'COACH' };
+  const modMap   = { admin: ' admin', pm: ' pm', coach: '' };
+  el.textContent = labelMap[currentUserRole] || 'COACH';
+  el.className = 'auth-role-badge' + (modMap[currentUserRole] || '');
   el.style.display = 'inline-block';
+  // Coach directory tab: admin + pm see it (only admin can edit; gate is in modal handlers)
+  const navCoaches = document.getElementById('navCoaches');
+  if (navCoaches) navCoaches.style.display =
+    (currentUserRole === 'admin' || currentUserRole === 'pm') ? '' : 'none';
+  // User management tab: admin ONLY (PMs cannot manage users)
+  const navUsers = document.getElementById('navUsers');
+  if (navUsers) navUsers.style.display = (currentUserRole === 'admin') ? '' : 'none';
 }
 
 function showAuthScreen() {
@@ -3336,12 +4343,14 @@ function editRecord(id) {
 
   updateEditBanner(record);
   updateSubmitButtonLabel();
+  renderFormProjectBanner();
   switchView('form');
 }
 
 function cancelEdit() {
   const returnId = editingRecordId;
   editingRecordId = null;
+  _formProjectOverride = undefined;
   updateEditBanner(null);
   updateSubmitButtonLabel();
   if (returnId !== null) {
@@ -3404,6 +4413,24 @@ async function submitRecord() {
   if (!dbRecord.next_checkin_date) dbRecord.next_checkin_date = null;
   if (!dbRecord.next_checkin_channel) dbRecord.next_checkin_channel = null;
 
+  // Phase 4-B: tag the session with its project. New sessions inherit from
+  // the current project context. Edits keep whatever the row already had
+  // unless the user is editing from within a real project (in which case
+  // currentProject supersedes — useful to move orphan records into a project).
+  if (currentProject && !currentProject.__virtual) {
+    dbRecord.project_id = currentProject.id;
+  } else if (!editingRecordId) {
+    // No real project active on a new-session save. That shouldn't happen once
+    // the flow forces project selection, but guard against it anyway.
+    dbRecord.project_id = null;
+  }
+
+  // Phase 5-A: when editing, the form-banner move dropdown can override the
+  // default assignment above. `null` is a valid override (= 미지정).
+  if (editingRecordId && _formProjectOverride !== undefined) {
+    dbRecord.project_id = _formProjectOverride;
+  }
+
   // Persist the raw STT transcript when the coach opted in (default on in STT panel)
   const saveRawCb = document.getElementById('sttSaveRaw');
   if (saveRawCb && saveRawCb.checked && lastTranscriptRaw && lastTranscriptRaw.length > 0) {
@@ -3457,12 +4484,13 @@ async function submitRecord() {
 
       // Graceful fallback: if the DB hasn't had the newer columns migrated yet,
       // drop them and retry so the save still succeeds.
-      const missingColRe = /transcript_raw|ai_extracted|narrative_summary|extraction_evidence|next_checkin_date|next_checkin_channel|last_done_numerator|last_done_denominator|last_done_rate|column|schema cache/i;
+      const missingColRe = /transcript_raw|ai_extracted|narrative_summary|extraction_evidence|next_checkin_date|next_checkin_channel|last_done_numerator|last_done_denominator|last_done_rate|project_id|column|schema cache/i;
       if (error && missingColRe.test(error.message || '')) {
         const retryRecord = { ...dbRecord };
         ['transcript_raw','ai_extracted','narrative_summary','extraction_evidence',
          'next_checkin_date','next_checkin_channel',
-         'last_done_numerator','last_done_denominator','last_done_rate']
+         'last_done_numerator','last_done_denominator','last_done_rate',
+         'project_id']
           .forEach(k => delete retryRecord[k]);
         ({ data, error } = await runRequest(retryRecord));
         if (!error) console.warn('Saved without Phase 1+1.5 columns — please apply the latest Supabase migrations.');
@@ -3490,6 +4518,7 @@ async function submitRecord() {
         showToast(isEditing ? '수정되었습니다' : t('saved_success'));
         const savedId = flat.id;
         editingRecordId = null;
+        _formProjectOverride = undefined;
         updateEditBanner(null);
         updateSubmitButtonLabel();
         if (isEditing && savedId !== undefined) {
@@ -3533,6 +4562,7 @@ async function submitRecord() {
   showToast(isEditing ? '수정되었습니다 (오프라인)' : t('offline_saved'));
   const savedId = flat.id;
   editingRecordId = null;
+  _formProjectOverride = undefined;
   updateEditBanner(null);
   updateSubmitButtonLabel();
   if (isEditing) showDetail(savedId);
@@ -3592,6 +4622,14 @@ function downloadCsv() {
 // Navigation
 // ============================================================
 function switchView(name) {
+  // Phase 4-B gate: new-session recording only makes sense inside a real
+  // project. Bounce to the project picker if no project is selected (or only
+  // the virtual orphan project is selected, since you can't ADD to that).
+  if (name === 'form' && (!currentProject || currentProject.__virtual)) {
+    showToast('먼저 프로젝트를 선택하세요.');
+    name = 'teams';
+  }
+
   currentView = name;
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById('view' + name.charAt(0).toUpperCase() + name.slice(1)).classList.add('active');
@@ -3601,6 +4639,8 @@ function switchView(name) {
   if (name === 'teams') renderTeams();
   if (name === 'list') renderList();
   if (name === 'dashboard') renderDashboard();
+  if (name === 'coaches') renderCoachDirectory();
+  if (name === 'users') renderUsersView();
   window.scrollTo(0, 0);
 }
 
@@ -3609,20 +4649,401 @@ function goHome() {
 }
 
 // ============================================================
-// View 1: Teams
+// Admin: project CRUD + member assignment (Phase 4-B modal)
 // ============================================================
+
+// { mode: 'create' | 'edit', id: uuid | null }
+let _projModalState = { mode: 'create', id: null };
+
+function openProjectCreateModal() {
+  if (currentUserRole !== 'admin' && currentUserRole !== 'pm') { showToast('프로젝트 생성 권한이 없습니다.'); return; }
+  _projModalState = { mode: 'create', id: null };
+  document.getElementById('projModalTitle').textContent = '새 프로젝트';
+  document.getElementById('projModalSub').textContent = '프로젝트 정보를 입력하세요. 생성 후 코치를 배정할 수 있습니다.';
+  document.getElementById('projName').value = '';
+  document.getElementById('projDesc').value = '';
+  document.getElementById('projStart').value = '';
+  document.getElementById('projEnd').value = '';
+  document.getElementById('projStatus').value = 'active';
+  document.getElementById('projMemberSection').style.display = 'none';
+  document.getElementById('projDeleteBtn').style.display = 'none';
+  document.getElementById('projModalError').textContent = '';
+  document.getElementById('projModal').classList.add('active');
+  setTimeout(() => document.getElementById('projName').focus(), 0);
+}
+
+function openProjectManageModal(id) {
+  if (currentUserRole !== 'admin' && currentUserRole !== 'pm') { showToast('프로젝트 관리 권한이 없습니다.'); return; }
+  const p = myProjects.find(x => x.id === id);
+  if (!p) return;
+  _projModalState = { mode: 'edit', id: p.id };
+  document.getElementById('projModalTitle').textContent = '프로젝트 관리';
+  document.getElementById('projModalSub').textContent = p.name;
+  document.getElementById('projName').value = p.name || '';
+  document.getElementById('projDesc').value = p.description || '';
+  document.getElementById('projStart').value = p.start_date || '';
+  document.getElementById('projEnd').value = p.end_date || '';
+  document.getElementById('projStatus').value = p.status || 'active';
+  document.getElementById('projMemberSection').style.display = '';
+  document.getElementById('projDeleteBtn').style.display = '';
+  document.getElementById('projModalError').textContent = '';
+  document.getElementById('projModal').classList.add('active');
+  loadAndRenderProjectMembers(p.id);
+}
+
+function closeProjectModal() {
+  document.getElementById('projModal').classList.remove('active');
+}
+
+async function saveProjectModal() {
+  const name = document.getElementById('projName').value.trim();
+  if (!name) {
+    document.getElementById('projModalError').textContent = '이름은 필수입니다.';
+    return;
+  }
+  const payload = {
+    name,
+    description: document.getElementById('projDesc').value.trim() || null,
+    start_date: document.getElementById('projStart').value || null,
+    end_date: document.getElementById('projEnd').value || null,
+    status: document.getElementById('projStatus').value || 'active'
+  };
+  const btn = document.getElementById('projSaveBtn');
+  btn.disabled = true;
+  try {
+    let data, error;
+    if (_projModalState.mode === 'create') {
+      payload.created_by = currentUser ? currentUser.id : null;
+      ({ data, error } = await supabaseClient.from('projects').insert([payload]).select());
+    } else {
+      ({ data, error } = await supabaseClient.from('projects')
+        .update(payload).eq('id', _projModalState.id).select());
+    }
+    if (error) throw error;
+    showToast(_projModalState.mode === 'create' ? '프로젝트가 생성되었습니다.' : '저장되었습니다.');
+    await loadProjects();
+    // If we just edited the active project, refresh its in-memory ref
+    if (currentProject && !currentProject.__virtual && data && data[0] && data[0].id === currentProject.id) {
+      currentProject = data[0];
+    }
+    if (_projModalState.mode === 'create') {
+      // Keep modal open so admin can assign members right away
+      _projModalState = { mode: 'edit', id: data[0].id };
+      document.getElementById('projModalTitle').textContent = '프로젝트 관리';
+      document.getElementById('projModalSub').textContent = data[0].name;
+      document.getElementById('projMemberSection').style.display = '';
+      document.getElementById('projDeleteBtn').style.display = '';
+      loadAndRenderProjectMembers(data[0].id);
+    } else {
+      closeProjectModal();
+    }
+    renderTeams();
+  } catch (e) {
+    console.error('project save failed', e);
+    document.getElementById('projModalError').textContent = '저장 실패: ' + (e.message || e);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ------------------------------------------------------------
+// Phase 5-A: Move a single session to another project (or 미지정)
+// ------------------------------------------------------------
+let _moveProjectRecordId = null;
+
+function openMoveProjectModal(recordId) {
+  if (currentUserRole !== 'admin' && currentUserRole !== 'pm') {
+    showToast('이동 권한이 없습니다.');
+    return;
+  }
+  const record = logs.find(r => String(r.id) === String(recordId));
+  if (!record) { showToast('레코드를 찾을 수 없습니다.'); return; }
+
+  _moveProjectRecordId = record.id;
+  const sub = document.getElementById('moveProjectSub');
+  const currentName = record.project_id
+    ? ((myProjects.find(p => p.id === record.project_id) || {}).name || '(알 수 없음)')
+    : '미지정';
+  if (sub) sub.textContent = `현재: ${currentName} · 이동할 프로젝트를 선택하세요.`;
+
+  const sel = document.getElementById('moveProjectSelect');
+  // Build options: every project except the current one + a "미지정" option.
+  const opts = [`<option value="__null__">프로젝트 미지정으로 이동</option>`];
+  for (const p of myProjects) {
+    if (p.id === record.project_id) continue;
+    opts.push(`<option value="${escAttr(p.id)}">${escHtml(p.name)}</option>`);
+  }
+  sel.innerHTML = opts.join('');
+
+  document.getElementById('moveProjectError').textContent = '';
+  document.getElementById('moveProjectModal').classList.add('active');
+}
+
+function closeMoveProjectModal() {
+  document.getElementById('moveProjectModal').classList.remove('active');
+  _moveProjectRecordId = null;
+}
+
+async function saveMoveProjectModal() {
+  if (!_moveProjectRecordId) return;
+  const sel = document.getElementById('moveProjectSelect');
+  const raw = sel ? sel.value : '';
+  const newProjectId = (raw === '__null__') ? null : raw;
+  const errEl = document.getElementById('moveProjectError');
+  const btn = document.getElementById('moveProjectSaveBtn');
+  btn.disabled = true;
+  try {
+    const { error } = await supabaseClient
+      .from('coaching_logs')
+      .update({ project_id: newProjectId })
+      .eq('id', _moveProjectRecordId);
+    if (error) throw error;
+    // Patch local cache so the UI reflects the change immediately
+    const idx = logs.findIndex(r => String(r.id) === String(_moveProjectRecordId));
+    if (idx >= 0) {
+      logs[idx] = { ...logs[idx], project_id: newProjectId };
+      localStorage.setItem('ud-coaching-logs', JSON.stringify(logs));
+    }
+    showToast('프로젝트로 이동되었습니다.');
+    const movedId = _moveProjectRecordId;
+    closeMoveProjectModal();
+    showDetail(movedId);
+  } catch (e) {
+    errEl.textContent = '이동 실패: ' + (e.message || e);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function deleteCurrentProject() {
+  if (_projModalState.mode !== 'edit' || !_projModalState.id) return;
+  const p = myProjects.find(x => x.id === _projModalState.id);
+  if (!confirm(`"${p ? p.name : ''}" 프로젝트를 삭제하시겠어요?\n소속 세션은 남지만 project_id가 비워집니다.`)) return;
+  try {
+    const { error } = await supabaseClient.from('projects').delete().eq('id', _projModalState.id);
+    if (error) throw error;
+    showToast('프로젝트가 삭제되었습니다.');
+    if (currentProject && !currentProject.__virtual && currentProject.id === _projModalState.id) {
+      setCurrentProject(null);
+    }
+    await loadProjects();
+    closeProjectModal();
+    renderTeams();
+  } catch (e) {
+    document.getElementById('projModalError').textContent = '삭제 실패: ' + (e.message || e);
+  }
+}
+
+let _projCurrentMembers = [];
+
+async function loadAndRenderProjectMembers(projectId) {
+  const host = document.getElementById('projMemberList');
+  host.innerHTML = '<div style="padding:10px;color:var(--gray400);font-size:12px;">불러오는 중…</div>';
+  try {
+    // Fetch members of this project, joining profile info
+    const { data: members, error: memErr } = await supabaseClient
+      .from('project_members')
+      .select('id, user_id, role, added_at')
+      .eq('project_id', projectId);
+    if (memErr) throw memErr;
+    // Fetch profile emails for the listed users
+    const userIds = (members || []).map(m => m.user_id);
+    let profilesById = {};
+    if (userIds.length > 0) {
+      const { data: profiles, error: pErr } = await supabaseClient
+        .from('profiles')
+        .select('id, email, display_name, role')
+        .in('id', userIds);
+      if (!pErr && profiles) profiles.forEach(p => { profilesById[p.id] = p; });
+    }
+    _projCurrentMembers = (members || []).map(m => ({
+      ...m,
+      email: profilesById[m.user_id] ? profilesById[m.user_id].email : '(unknown)',
+      display_name: profilesById[m.user_id] ? profilesById[m.user_id].display_name : ''
+    }));
+    renderProjectMembers();
+  } catch (e) {
+    host.innerHTML = `<div style="padding:10px;color:var(--red);font-size:12px;">멤버 로드 실패: ${escHtml(e.message || String(e))}</div>`;
+  }
+}
+
+function renderProjectMembers() {
+  const host = document.getElementById('projMemberList');
+  if (_projCurrentMembers.length === 0) {
+    host.innerHTML = '<div style="padding:10px;color:var(--gray400);font-size:12px;">배정된 코치가 아직 없습니다.</div>';
+    return;
+  }
+  host.innerHTML = _projCurrentMembers.map(m => `
+    <div class="proj-member-row">
+      <div>
+        <div class="m-email">${escHtml(m.email)}</div>
+        ${m.display_name ? `<div class="m-name">${escHtml(m.display_name)}</div>` : ''}
+      </div>
+      <select onchange="updateProjectMemberRole('${escAttr(m.id)}', this.value)">
+        <option value="coach"${m.role === 'coach' ? ' selected' : ''}>coach</option>
+        <option value="lead_coach"${m.role === 'lead_coach' ? ' selected' : ''}>lead_coach</option>
+        <option value="observer"${m.role === 'observer' ? ' selected' : ''}>observer</option>
+      </select>
+      <button title="해제" onclick="removeProjectMember('${escAttr(m.id)}')">×</button>
+    </div>
+  `).join('');
+}
+
+// Live search over coaches_directory for the member-assignment input.
+// Falls back gracefully to plain email entry if the user ignores the dropdown.
+let _memberSearchSelectedEmail = null;   // populated when user picks a suggestion
+
+function onMemberSearchInput(v) {
+  const q = (v || '').trim().toLowerCase();
+  _memberSearchSelectedEmail = null;
+  const host = document.getElementById('projMemberSuggestions');
+  if (!host) return;
+  if (q.length < 1) { host.style.display = 'none'; host.innerHTML = ''; return; }
+  // Lazy-load directory the first time
+  const go = (dir) => {
+    const matches = dir.filter(c => {
+      const hay = ((c.name || '') + ' ' + (c.email || '') + ' ' + (c.organization || '')).toLowerCase();
+      return hay.includes(q);
+    }).slice(0, 8);
+    if (matches.length === 0) {
+      host.innerHTML = `<div style="padding:8px 10px;font-size:11px;color:var(--gray400);">일치하는 코치 없음 — 이메일 그대로 입력 후 배정 누르면 profiles에서도 찾습니다.</div>`;
+    } else {
+      host.innerHTML = matches.map(c => `
+        <div style="padding:6px 10px;cursor:pointer;border-bottom:1px solid var(--gray100);font-size:12px;display:flex;gap:8px;align-items:center;"
+             onmousedown="event.preventDefault();pickMemberSuggestion('${escAttr(c.email || '')}','${escAttr(c.name || '')}')">
+          <div style="width:24px;height:24px;background:var(--gray100);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--gray500);overflow:hidden;">${c.photo_url ? `<img src="${escAttr(c.photo_url)}" style="width:100%;height:100%;object-fit:cover;">` : escHtml(coachInitials(c.name))}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:600;">${escHtml(c.name || '')}${!c.linked_user_id ? ' <span style="color:var(--red);font-size:10px;">(앱 가입 전)</span>' : ''}</div>
+            <div style="color:var(--gray500);font-size:11px;">${escHtml(c.email || '(이메일 없음)')}${c.organization ? ' · ' + escHtml(c.organization) : ''}</div>
+          </div>
+        </div>`).join('');
+    }
+    host.style.display = 'block';
+  };
+  if (coachDirectory.length > 0) { go(coachDirectory); return; }
+  loadCoachDirectory().then(() => go(coachDirectory));
+}
+
+function pickMemberSuggestion(email, name) {
+  document.getElementById('projMemberEmail').value = email || name;
+  _memberSearchSelectedEmail = (email || '').toLowerCase();
+  const host = document.getElementById('projMemberSuggestions');
+  if (host) { host.style.display = 'none'; host.innerHTML = ''; }
+}
+
+// Close suggestion dropdown on outside click
+document.addEventListener('click', (e) => {
+  if (e.target && e.target.id === 'projMemberEmail') return;
+  const host = document.getElementById('projMemberSuggestions');
+  if (host && !host.contains(e.target)) { host.style.display = 'none'; }
+});
+
+async function addProjectMember() {
+  if (_projModalState.mode !== 'edit' || !_projModalState.id) return;
+  const typed = (document.getElementById('projMemberEmail').value || '').trim().toLowerCase();
+  const email = _memberSearchSelectedEmail || typed;
+  const role = document.getElementById('projMemberRole').value;
+  const errEl = document.getElementById('projModalError');
+  errEl.textContent = '';
+  if (!email) { errEl.textContent = '코치를 검색하거나 이메일을 입력하세요.'; return; }
+  try {
+    // Look up the user by email in profiles (needs the coach to have signed up)
+    const { data: profiles, error: pErr } = await supabaseClient
+      .from('profiles').select('id, email').eq('email', email).limit(1);
+    if (pErr) throw pErr;
+    if (!profiles || profiles.length === 0) {
+      errEl.textContent = '이 이메일로 아직 앱에 가입하지 않았습니다. 코치에게 가입 안내를 보낸 뒤 재시도해주세요.';
+      return;
+    }
+    const userId = profiles[0].id;
+    const payload = {
+      project_id: _projModalState.id,
+      user_id: userId,
+      role,
+      added_by: currentUser ? currentUser.id : null
+    };
+    const { error } = await supabaseClient.from('project_members').insert([payload]);
+    if (error) {
+      if (/duplicate|unique/i.test(error.message)) errEl.textContent = '이미 배정된 코치입니다.';
+      else throw error;
+      return;
+    }
+    document.getElementById('projMemberEmail').value = '';
+    _memberSearchSelectedEmail = null;
+    await loadAndRenderProjectMembers(_projModalState.id);
+    showToast('배정되었습니다.');
+  } catch (e) {
+    errEl.textContent = '배정 실패: ' + (e.message || e);
+  }
+}
+
+async function updateProjectMemberRole(memberRowId, newRole) {
+  try {
+    const { error } = await supabaseClient.from('project_members')
+      .update({ role: newRole }).eq('id', memberRowId);
+    if (error) throw error;
+    await loadAndRenderProjectMembers(_projModalState.id);
+  } catch (e) {
+    showToast('역할 변경 실패: ' + (e.message || e));
+  }
+}
+
+async function removeProjectMember(memberRowId) {
+  if (!confirm('이 코치의 배정을 해제하시겠어요?')) return;
+  try {
+    const { error } = await supabaseClient.from('project_members')
+      .delete().eq('id', memberRowId);
+    if (error) throw error;
+    await loadAndRenderProjectMembers(_projModalState.id);
+    showToast('해제되었습니다.');
+  } catch (e) {
+    showToast('해제 실패: ' + (e.message || e));
+  }
+}
+
+// ============================================================
+// View 1: Projects → Teams
+// ============================================================
+
+// Logs that belong to whichever project the user is currently in.
+// - Virtual orphan: logs whose project_id is null/empty
+// - Real project : logs whose project_id matches the selected project
+// - No project selected (shouldn't happen in normal flow): all logs
+function filterLogsByCurrentProject(sourceLogs) {
+  const src = sourceLogs || logs;
+  if (!currentProject) return src;
+  if (currentProject.__virtual) return src.filter(r => !r.project_id);
+  return src.filter(r => r.project_id === currentProject.id);
+}
+
 function renderTeams() {
   const grid = document.getElementById('teamGrid');
-  const teams = getTeamSummaries();
+  if (!grid) return;
 
-  let html = '';
+  // If no project is active, show the project picker instead of teams.
+  if (!currentProject) {
+    renderProjectPicker(grid);
+    return;
+  }
+
+  const scoped = filterLogsByCurrentProject();
+  const teams = getTeamSummaries(scoped);
+
+  const headerHtml = `
+    <div class="proj-context-banner" style="grid-column:1 / -1;">
+      <span class="proj-label">PROJECT</span>
+      <span class="proj-name">${escHtml(currentProject.name)}</span>
+      ${currentProject.status && !currentProject.__virtual ? `<span class="proj-card-status ${escAttr(currentProject.status)}">${escHtml(currentProject.status)}</span>` : ''}
+      <button onclick="exitProject()">프로젝트 변경</button>
+    </div>`;
+
+  let teamsHtml = '';
   for (const tm of teams) {
     const stageLabel = tm.stage ? tm.stage : '-';
-    // Admin-only: show which coach(es) own this team's sessions
     const coachTag = (currentUserRole === 'admin' && tm.coaches)
       ? `<span style="color:var(--action-orange);font-weight:600;">🧑‍💼 ${escHtml(tm.coaches)}</span>`
       : '';
-    html += `
+    teamsHtml += `
       <div class="card team-card" onclick="selectTeam('${escHtml(tm.team_name)}')">
         <div class="team-card-name">${escHtml(tm.team_name)}</div>
         <div class="team-card-info">
@@ -3633,17 +5054,129 @@ function renderTeams() {
         </div>
       </div>`;
   }
-  html += `
-    <div class="card new-team-card" onclick="selectNewTeam()">
-      <div class="plus-icon">+</div>
-      <span>${t('new_team')}</span>
+  // Virtual orphan project is historical-only — don't let users create new
+  // sessions in it (they'd still have no project_id which defeats the purpose).
+  if (!currentProject.__virtual) {
+    teamsHtml += `
+      <div class="card new-team-card" onclick="selectNewTeam()">
+        <div class="plus-icon">+</div>
+        <span>${t('new_team')}</span>
+      </div>`;
+  }
+
+  if (teams.length === 0 && currentProject.__virtual) {
+    teamsHtml = `<div class="proj-empty" style="grid-column:1 / -1;">
+      <div class="proj-empty-icon">📭</div>
+      <p>이 프로젝트에 속한 기록이 없습니다.</p>
     </div>`;
+  } else if (teams.length === 0) {
+    teamsHtml = (teamsHtml || '') + (teamsHtml.includes('new-team-card') ? '' : '');
+    // Add a friendly hint when project exists but has no teams yet
+    teamsHtml = `<div style="grid-column:1 / -1;color:var(--gray500);font-size:13px;padding:8px 4px;">
+      아직 이 프로젝트에 세션이 없습니다. <strong>${t('new_team')}</strong> 를 눌러 첫 팀/세션을 기록하세요.
+    </div>` + teamsHtml;
+  }
+
+  grid.innerHTML = headerHtml + teamsHtml;
+}
+
+// Render the project picker (formerly the top-level team picker).
+function renderProjectPicker(grid) {
+  // Admin and PM can both create/manage projects (DB RLS enforces ownership for PM)
+  const isAdmin = currentUserRole === 'admin' || currentUserRole === 'pm';
+
+  // Detect orphan logs the current user can see
+  const hasOrphans = logs.some(r => !r.project_id);
+
+  let html = `
+    <div class="proj-picker-head" style="grid-column:1 / -1;">
+      <div>
+        <h2>프로젝트</h2>
+        <p>프로젝트를 선택하면 해당 프로젝트의 팀·세션을 보고 새 코칭일지를 추가할 수 있습니다.</p>
+      </div>
+      ${isAdmin ? `<button class="btn btn-primary" onclick="openProjectCreateModal()">+ 새 프로젝트</button>` : ''}
+    </div>`;
+
+  html += '<div class="proj-picker-grid" style="grid-column:1 / -1;">';
+
+  if (myProjects.length === 0 && !hasOrphans) {
+    html += `
+      <div class="proj-empty" style="grid-column:1 / -1;">
+        <div class="proj-empty-icon">🗂️</div>
+        <p>${isAdmin ? '아직 프로젝트가 없습니다.' : '배정된 프로젝트가 없습니다. 관리자에게 문의하세요.'}</p>
+        ${isAdmin ? `<button class="btn btn-primary" style="margin-top:12px;" onclick="openProjectCreateModal()">+ 첫 프로젝트 만들기</button>` : ''}
+      </div>`;
+  }
+
+  for (const p of myProjects) {
+    const period = (p.start_date || '-') + ' ~ ' + (p.end_date || '-');
+    const sessionCount = logs.filter(r => r.project_id === p.id).length;
+    const teamCount = new Set(logs.filter(r => r.project_id === p.id).map(r => r.team_name).filter(Boolean)).size;
+    html += `
+      <div class="proj-card" onclick="enterProject('${escAttr(p.id)}')">
+        ${isAdmin ? `<button class="proj-card-admin-btn" onclick="event.stopPropagation(); openProjectManageModal('${escAttr(p.id)}')">⚙ 관리</button>` : ''}
+        <div class="proj-card-name">${escHtml(p.name)}</div>
+        <div class="proj-card-desc">${escHtml(p.description || '설명 없음')}</div>
+        <div class="proj-card-meta">
+          <span class="proj-card-status ${escAttr(p.status || 'active')}">${escHtml(p.status || 'active')}</span>
+          <span>${escHtml(period)}</span>
+          <span>${teamCount}팀 · ${sessionCount}세션</span>
+        </div>
+      </div>`;
+  }
+
+  // Orphan pseudo-project (legacy records without project_id)
+  if (hasOrphans) {
+    const orphanCount = logs.filter(r => !r.project_id).length;
+    const orphanTeamCount = new Set(logs.filter(r => !r.project_id).map(r => r.team_name).filter(Boolean)).size;
+    html += `
+      <div class="proj-card virtual" onclick="enterOrphanProject()">
+        <div class="proj-card-name">📦 프로젝트 미지정</div>
+        <div class="proj-card-desc">프로젝트 도입 이전의 기존 세션. 편집해 프로젝트에 할당하세요.</div>
+        <div class="proj-card-meta">
+          <span>${orphanTeamCount}팀 · ${orphanCount}세션</span>
+        </div>
+      </div>`;
+  }
+
+  if (isAdmin && myProjects.length > 0) {
+    html += `
+      <div class="proj-card proj-card-new" onclick="openProjectCreateModal()">
+        <div class="plus">+</div>
+        <span>새 프로젝트</span>
+      </div>`;
+  }
+
+  html += '</div>';
   grid.innerHTML = html;
 }
 
-function getTeamSummaries() {
+function enterProject(id) {
+  const p = myProjects.find(x => x.id === id);
+  if (!p) return;
+  setCurrentProject(p);
+  renderTeams();
+  window.scrollTo(0, 0);
+}
+
+function enterOrphanProject() {
+  setCurrentProject(ORPHAN_PROJECT);
+  renderTeams();
+  window.scrollTo(0, 0);
+}
+
+function exitProject() {
+  setCurrentProject(null);
+  // Reset any downstream context that assumed a selected team
+  dashboardTeam = null;
+  renderTeams();
+  window.scrollTo(0, 0);
+}
+
+function getTeamSummaries(sourceLogs) {
+  const src = sourceLogs || logs;
   const teams = {};
-  for (const r of logs) {
+  for (const r of src) {
     const name = r.team_name || 'Unknown';
     if (!teams[name]) {
       teams[name] = {
@@ -3663,7 +5196,6 @@ function getTeamSummaries() {
       teams[name].last_session_num = r.session_num || teams[name].last_session_num;
     }
   }
-  // Finalize: turn coach sets into comma-joined strings for easy rendering
   return Object.values(teams).map(tm => ({
     ...tm,
     coaches: Array.from(tm.coaches).filter(Boolean).join(', ')
@@ -3695,9 +5227,91 @@ function selectNewTeam() {
 // ============================================================
 // View 2: Form Preparation
 // ============================================================
+
+// Pending project reassignment for the session being edited. `undefined` means
+// "no override — use the default logic in submitRecord()". A real UUID or
+// `null` (= 미지정) means the user picked something from the move dropdown.
+let _formProjectOverride = undefined;
+
+// Render the project-context banner inside the form view. Called by
+// prepareForm() (new) and editRecord() (edit) so the banner reflects
+// current state. When editing, also renders a "move to another project"
+// dropdown that drives _formProjectOverride.
+function renderFormProjectBanner() {
+  const host = document.getElementById('formProjectBanner');
+  if (!host) return;
+
+  // Defensive: no project context (switchView guard should prevent this for
+  // new sessions, but editing an orphan record is legitimate).
+  if (!currentProject) {
+    host.innerHTML = `
+      <div class="proj-context-banner" style="margin:0 0 16px;">
+        <span class="proj-label">PROJECT</span>
+        <span class="proj-name" style="color:var(--gray500);">선택된 프로젝트 없음</span>
+        <button onclick="switchView('teams')">프로젝트 선택</button>
+      </div>`;
+    return;
+  }
+
+  const isOrphan = !!currentProject.__virtual;
+  const isEditing = editingRecordId !== null;
+  const canMove = currentUserRole === 'admin' || currentUserRole === 'pm';
+
+  let inner = '';
+  if (isOrphan) {
+    // Orphan banner: just an explanatory note.
+    inner = `
+      <span class="proj-label">PROJECT</span>
+      <span class="proj-name" style="color:var(--gray500);">프로젝트 미지정</span>
+      <span style="font-size:12px;color:var(--gray500);flex:1;min-width:200px;">
+        이 세션은 프로젝트 미지정 상태입니다. 저장 후 편집에서 프로젝트를 지정할 수 있습니다.
+      </span>`;
+  } else {
+    inner = `
+      <span class="proj-label">PROJECT</span>
+      <span class="proj-name">${escHtml(currentProject.name)}</span>
+      ${currentProject.status ? `<span class="proj-card-status ${escAttr(currentProject.status)}">${escHtml(currentProject.status)}</span>` : ''}`;
+  }
+
+  // Edit-mode move dropdown (admin/pm only). The currently-selected option is
+  // the record's existing project_id (or 미지정).
+  let moveHtml = '';
+  if (isEditing && canMove) {
+    const record = logs.find(r => String(r.id) === String(editingRecordId));
+    const currentPid = _formProjectOverride !== undefined
+      ? _formProjectOverride
+      : (record ? (record.project_id || null) : null);
+    const opts = myProjects.map(p =>
+      `<option value="${escAttr(p.id)}"${p.id === currentPid ? ' selected' : ''}>${escHtml(p.name)}</option>`
+    ).join('');
+    moveHtml = `
+      <div style="flex-basis:100%;display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12px;">
+        <label style="color:var(--gray500);font-weight:600;letter-spacing:0.05em;">이 세션을 다른 프로젝트로 이동:</label>
+        <select id="formProjectMoveSelect" onchange="onFormProjectMoveChange(this.value)"
+                style="padding:4px 8px;border:1px solid var(--gray300);background:var(--white);font-family:inherit;font-size:12px;flex:1;max-width:280px;">
+          <option value="__null__"${currentPid === null ? ' selected' : ''}>프로젝트 미지정</option>
+          ${opts}
+        </select>
+      </div>`;
+  }
+
+  host.innerHTML = `
+    <div class="proj-context-banner" style="margin:0 0 16px;">
+      ${inner}
+      ${moveHtml}
+    </div>`;
+}
+
+// Called from the move dropdown onchange — store the pending change.
+// The actual DB write happens inside submitRecord().
+function onFormProjectMoveChange(val) {
+  _formProjectOverride = (val === '__null__') ? null : val;
+}
+
 function prepareForm(isNew) {
   // Entering a fresh form — drop any lingering edit-mode state.
   editingRecordId = null;
+  _formProjectOverride = undefined;
   updateEditBanner(null);
   updateSubmitButtonLabel();
 
@@ -3747,12 +5361,14 @@ function prepareForm(isNew) {
   const sttBox = document.getElementById('sttTranscript');
   if (sttBox) sttBox.value = '';
 
-  // Auto-fill coach name from authenticated user
+  // Auto-fill coach name. Priority:
+  //   1. coaches_directory row linked to this user (authoritative)
+  //   2. auth user_metadata.display_name (fallback from signup form)
   if (currentUser) {
-    const authCoachName = (currentUser.user_metadata && currentUser.user_metadata.display_name) || '';
-    if (authCoachName) {
-      document.getElementById('fCoach').value = authCoachName;
-    }
+    const directoryName = myCoachDirectoryRow && myCoachDirectoryRow.name;
+    const metaName = (currentUser.user_metadata && currentUser.user_metadata.display_name) || '';
+    const coachName = directoryName || metaName;
+    if (coachName) document.getElementById('fCoach').value = coachName;
   }
 
   if (isNew) {
@@ -3815,6 +5431,7 @@ function prepareForm(isNew) {
 
   renderFormSelectors();
   renderMetricGrid();
+  renderFormProjectBanner();
 }
 
 // Compute delta/percent change for a single metric value vs a previous one.
@@ -4114,7 +5731,7 @@ async function runSttExtract() {
   }
   lastTranscriptRaw = transcript;
   btn.disabled = true;
-  setSttStatus('Claude로 분석 중…', null);
+  setSttStatus('AI 분석 중…', null);
   showSttProgress(true, 0);
   clearSttLowConfidence();
 
@@ -4626,8 +6243,20 @@ function renderList() {
   const filterBar = document.getElementById('filterBar');
   const content = document.getElementById('recordsContent');
 
+  // Scope to the currently selected project
+  const scoped = filterLogsByCurrentProject();
+
+  // Project context banner above the filter bar
+  const ctxBannerHtml = currentProject
+    ? `<div class="proj-context-banner" style="margin:0 0 12px;">
+        <span class="proj-label">PROJECT</span>
+        <span class="proj-name">${escHtml(currentProject.name)}</span>
+        <button onclick="exitProject(); switchView('teams');">프로젝트 변경</button>
+       </div>`
+    : '';
+
   // Build filter tabs + report-maker button on the right
-  const teamNames = [...new Set(logs.map(r => r.team_name).filter(Boolean))];
+  const teamNames = [...new Set(scoped.map(r => r.team_name).filter(Boolean))];
   let filterHtml = `<div style="display:flex;gap:4px;flex:1;flex-wrap:wrap;">
     <button class="filter-btn${listFilter === null ? ' active' : ''}" onclick="setFilter(null)">${t('all_teams')}</button>`;
   for (const tn of teamNames) {
@@ -4640,8 +6269,21 @@ function renderList() {
   filterBar.style.alignItems = 'center';
   filterBar.innerHTML = filterHtml;
 
+  // Put the banner directly above the filter bar
+  const recordsContentHost = document.getElementById('recordsContent');
+  if (recordsContentHost && recordsContentHost.parentElement) {
+    // inject banner at the top of the list view's container, just once per render
+    const existingBanner = recordsContentHost.parentElement.querySelector('.proj-context-banner');
+    if (existingBanner) existingBanner.remove();
+    if (ctxBannerHtml) {
+      const wrap = document.createElement('div');
+      wrap.innerHTML = ctxBannerHtml;
+      filterBar.parentElement.insertBefore(wrap.firstElementChild, filterBar);
+    }
+  }
+
   // Filter logs
-  let filtered = listFilter ? logs.filter(r => r.team_name === listFilter) : [...logs];
+  let filtered = listFilter ? scoped.filter(r => r.team_name === listFilter) : [...scoped];
   // Sort by date desc
   filtered.sort((a, b) => (b.date || '').localeCompare(a.date || '') || (parseInt(b.session_num)||0) - (parseInt(a.session_num)||0));
 
@@ -4719,16 +6361,28 @@ let dashboardTeam = null; // last-selected team in the dashboard view
 function renderDashboard() {
   const host = document.getElementById('dashboardContent');
   if (!host) return;
-  const teams = getTeamSummaries();
 
-  // Auto-select the only team when there's just one
+  // If no project is active, gently redirect the user to pick one first.
+  if (!currentProject) {
+    host.innerHTML = `
+      <div class="dash-empty">
+        <div class="dash-empty-icon">🗂️</div>
+        <p>대시보드를 보려면 먼저 프로젝트를 선택하세요.</p>
+        <button class="btn btn-primary" style="margin-top:12px;" onclick="switchView('teams')">프로젝트 선택으로 이동</button>
+      </div>`;
+    return;
+  }
+
+  const scoped = filterLogsByCurrentProject();
+  const teams = getTeamSummaries(scoped);
+
   if (!dashboardTeam && teams.length === 1) dashboardTeam = teams[0].team_name;
 
   if (!dashboardTeam) {
     renderDashPicker(host, teams);
     return;
   }
-  const teamLogs = logs
+  const teamLogs = scoped
     .filter(r => r.team_name === dashboardTeam)
     .sort((a, b) => {
       const na = parseInt(a.session_num) || 0;
@@ -4750,12 +6404,19 @@ function selectDashboardTeam(name) {
 }
 
 function renderDashPicker(host, teams) {
+  const ctxBanner = currentProject
+    ? `<div class="proj-context-banner">
+         <span class="proj-label">PROJECT</span>
+         <span class="proj-name">${escHtml(currentProject.name)}</span>
+         <button onclick="exitProject(); switchView('teams');">프로젝트 변경</button>
+       </div>` : '';
   if (teams.length === 0) {
     host.innerHTML = `
       <div class="dash-wrap">
+        ${ctxBanner}
         <div class="dash-empty">
           <div class="dash-empty-icon">🗂️</div>
-          <p>아직 기록된 팀이 없습니다.</p>
+          <p>아직 이 프로젝트에 기록된 팀이 없습니다.</p>
           <p style="font-size:13px;color:var(--gray500);margin-top:8px;">세션을 먼저 기록해 주세요.</p>
         </div>
       </div>`;
@@ -4763,6 +6424,7 @@ function renderDashPicker(host, teams) {
   }
   let html = `
     <div class="dash-wrap">
+      ${ctxBanner}
       <div class="dash-picker-title">팀을 선택하세요</div>
       <div class="dash-picker-sub">해당 팀의 코칭 흐름·메트릭 트렌드·이행률·반복 blocker를 한 화면에서 봅니다.</div>
       <div class="dash-picker-grid">`;
@@ -5331,9 +6993,11 @@ function onRptScopeChange() {
 function renderRptSessionList() {
   const host = document.getElementById('rptSessionList');
   if (!host) return;
+  // Scope to current project first, then to team if specified
+  const base = filterLogsByCurrentProject();
   const candidates = _rptModalTeam
-    ? logs.filter(r => r.team_name === _rptModalTeam)
-    : logs.slice();
+    ? base.filter(r => r.team_name === _rptModalTeam)
+    : base.slice();
   candidates.sort((a, b) => (b.date || '').localeCompare(a.date || '') || (parseInt(b.session_num) || 0) - (parseInt(a.session_num) || 0));
   if (candidates.length === 0) {
     host.innerHTML = '<div style="color:var(--gray400);padding:12px;font-size:12px;">선택 가능한 세션이 없습니다.</div>';
@@ -5354,9 +7018,10 @@ function renderRptSessionList() {
 
 function _resolveRptRecords() {
   const scope = (document.querySelector('input[name="rptScope"]:checked') || {}).value;
+  const base = filterLogsByCurrentProject();
   let candidates = _rptModalTeam
-    ? logs.filter(r => r.team_name === _rptModalTeam)
-    : logs.slice();
+    ? base.filter(r => r.team_name === _rptModalTeam)
+    : base.slice();
 
   if (scope === 'range') {
     const from = document.getElementById('rptFrom').value;
@@ -5782,6 +7447,1026 @@ function buildDocxBundle(docx, sorted, teamName, opts) {
 }
 
 // ============================================================
+// View 6: Coach Directory (admin-only)
+// ============================================================
+let coachDirectory = [];           // all rows currently loaded
+let coachDirFilter = {
+  q: '', tier: '', status: 'active', availability: '',
+  expertise: '', region: ''
+};
+
+async function loadCoachDirectory() {
+  coachDirectory = [];
+  if (!supabaseAvailable) return;
+  try {
+    // Fetch all in one go (800 rows is trivial for Supabase)
+    const { data, error } = await supabaseClient
+      .from('coaches_directory')
+      .select('id, external_id, name, email, phone, organization, position, location, regions, industries, expertise, roles, tags, tier, status, availability_status, max_concurrent_projects, photo_url, photo_filename, linked_user_id, career_years, updated_at')
+      .order('name', { ascending: true });
+    if (error) throw error;
+    coachDirectory = data || [];
+  } catch (e) {
+    console.warn('coach directory load failed', e.message || e);
+  }
+}
+
+function coachInitials(name) {
+  if (!name) return '?';
+  const trimmed = String(name).trim();
+  // Korean name: take first character. Latin: take initials.
+  if (/[\uAC00-\uD7AF]/.test(trimmed)) return trimmed.charAt(0);
+  const parts = trimmed.split(/\s+/).filter(Boolean);
+  return parts.map(p => p.charAt(0).toUpperCase()).slice(0, 2).join('');
+}
+
+async function renderCoachDirectory() {
+  const host = document.getElementById('coachesContent');
+  if (!host) return;
+  if (currentUserRole !== 'admin' && currentUserRole !== 'pm') {
+    host.innerHTML = `<div class="cd-empty"><div class="cd-empty-icon">🔒</div><p>관리자 전용 페이지입니다.</p></div>`;
+    return;
+  }
+
+  // First visit: load
+  if (coachDirectory.length === 0) {
+    host.innerHTML = `<div class="cd-empty"><div class="cd-empty-icon">⏳</div><p>로딩 중…</p></div>`;
+    await loadCoachDirectory();
+  }
+  renderCoachDirBody(host);
+}
+
+// Shared filter logic: returns the visible-coaches array per current coachDirFilter.
+function _coachDirFiltered() {
+  const f = coachDirFilter;
+  const q = f.q.trim().toLowerCase();
+  return coachDirectory.filter(c => {
+    if (f.status && c.status !== f.status) return false;
+    if (f.availability && c.availability_status !== f.availability) return false;
+    if (f.tier && c.tier !== f.tier) return false;
+    if (f.expertise && !(c.expertise || []).includes(f.expertise)) return false;
+    if (f.region && !(c.regions || []).includes(f.region)) return false;
+    if (q) {
+      const hay = (c.name + ' ' + (c.email || '') + ' ' + (c.organization || '') + ' ' + (c.position || '')).toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+// Build the inner HTML of `.cd-grid` for a given filtered list.
+function _coachDirGridHtml(filtered) {
+  if (filtered.length === 0) {
+    return `<div class="cd-empty"><div class="cd-empty-icon">🔍</div><p>일치하는 코치가 없습니다.</p></div>`;
+  }
+  // Cap render to 300 cards for perf — user can filter further if needed
+  const capped = filtered.slice(0, 300);
+  let html = '';
+  for (const c of capped) {
+    const photoBlock = c.photo_url
+      ? `<img src="${escAttr(c.photo_url)}" alt="${escAttr(c.name)}" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'${escAttr(coachInitials(c.name))}'}))">`
+      : escHtml(coachInitials(c.name));
+    let tagsHtml = '';
+    if (c.tier) tagsHtml += `<span class="cd-tag tier">tier ${escHtml(c.tier)}</span>`;
+    if (c.linked_user_id) tagsHtml += `<span class="cd-tag linked">🔗 로그인 연결됨</span>`;
+    if (c.status && c.status !== 'active') tagsHtml += `<span class="cd-tag status-${escAttr(c.status)}">${escHtml(c.status)}</span>`;
+    if (c.availability_status && c.availability_status !== 'available') tagsHtml += `<span class="cd-tag avail-${escAttr(c.availability_status)}">${escHtml(c.availability_status)}</span>`;
+    const primaryExp = (c.expertise || [])[0];
+    if (primaryExp) tagsHtml += `<span class="cd-tag">${escHtml(primaryExp)}</span>`;
+    html += `
+        <div class="cd-card" onclick="openCoachEditModal('${escAttr(c.id)}')">
+          <div class="cd-avatar">${photoBlock}</div>
+          <div class="cd-card-main">
+            <div class="cd-name">${escHtml(c.name || '-')}</div>
+            <div class="cd-org">${escHtml(c.organization || '')}${c.position ? ' · ' + escHtml(c.position) : ''}</div>
+            <div class="cd-tags">${tagsHtml}</div>
+          </div>
+        </div>`;
+  }
+  if (filtered.length > capped.length) {
+    html += `<div style="grid-column:1/-1;text-align:center;color:var(--gray400);font-size:12px;padding:12px;">…${filtered.length - capped.length}명 더 있음. 필터를 좁혀주세요.</div>`;
+  }
+  return html;
+}
+
+function renderCoachDirBody(host) {
+  // Unique filter options derived from data
+  const tierValues = Array.from(new Set(coachDirectory.map(c => c.tier).filter(Boolean))).sort();
+  const expertiseFreq = {};
+  const regionFreq = {};
+  for (const c of coachDirectory) {
+    (c.expertise || []).forEach(e => { expertiseFreq[e] = (expertiseFreq[e] || 0) + 1; });
+    (c.regions || []).forEach(r => { regionFreq[r] = (regionFreq[r] || 0) + 1; });
+  }
+  const topExpertise = Object.entries(expertiseFreq).sort((a,b) => b[1] - a[1]).slice(0, 40).map(x => x[0]);
+  const topRegions   = Object.entries(regionFreq).sort((a,b) => b[1] - a[1]).slice(0, 20).map(x => x[0]);
+
+  // Apply filters
+  const f = coachDirFilter;
+  const filtered = _coachDirFiltered();
+
+  const tierOptions  = tierValues.map(v => `<option value="${escAttr(v)}"${f.tier === v ? ' selected' : ''}>${escHtml(v)}</option>`).join('');
+  const exOptions    = topExpertise.map(v => `<option value="${escAttr(v)}"${f.expertise === v ? ' selected' : ''}>${escHtml(v)}</option>`).join('');
+  const regionOpts   = topRegions.map(v => `<option value="${escAttr(v)}"${f.region === v ? ' selected' : ''}>${escHtml(v)}</option>`).join('');
+
+  let html = `
+    <div class="cd-wrap">
+      <div class="cd-head">
+        <div>
+          <h2>코치 디렉토리</h2>
+          <div class="sub">언더독스 코치풀 ${coachDirectory.length}명. 클릭하면 상세 정보 편집, 로그인 계정 자동 연결.</div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-ghost" onclick="exportCoachesCSV()">📤 CSV 내보내기</button>
+          ${currentUserRole === 'admin' ? `
+          <button class="btn btn-ghost" onclick="document.getElementById('csvImportFile').click()">📥 CSV 가져오기</button>
+          <input type="file" id="csvImportFile" accept=".csv,text/csv" style="display:none;" onchange="onCoachCSVFilePicked(event)">
+          <button class="btn btn-primary" onclick="openCoachCreateModal()">+ 새 코치</button>
+          ` : ''}
+        </div>
+      </div>
+
+      <div class="cd-toolbar">
+        <input type="text" placeholder="이름·이메일·조직 검색" value="${escAttr(f.q)}"
+               oninput="updateCoachFilter('q', this.value)">
+        <select onchange="updateCoachFilter('status', this.value)">
+          <option value="">status: 전체</option>
+          <option value="active"${f.status === 'active' ? ' selected' : ''}>active</option>
+          <option value="draft"${f.status === 'draft' ? ' selected' : ''}>draft</option>
+          <option value="inactive"${f.status === 'inactive' ? ' selected' : ''}>inactive</option>
+          <option value="archived"${f.status === 'archived' ? ' selected' : ''}>archived</option>
+        </select>
+        <select onchange="updateCoachFilter('availability', this.value)">
+          <option value="">availability: 전체</option>
+          <option value="available"${f.availability === 'available' ? ' selected' : ''}>available</option>
+          <option value="limited"${f.availability === 'limited' ? ' selected' : ''}>limited</option>
+          <option value="unavailable"${f.availability === 'unavailable' ? ' selected' : ''}>unavailable</option>
+        </select>
+        <select onchange="updateCoachFilter('tier', this.value)">
+          <option value="">tier: 전체</option>
+          ${tierOptions}
+        </select>
+        <select onchange="updateCoachFilter('expertise', this.value)">
+          <option value="">expertise: 전체</option>
+          ${exOptions}
+        </select>
+        <select onchange="updateCoachFilter('region', this.value)">
+          <option value="">region: 전체</option>
+          ${regionOpts}
+        </select>
+        <span class="cd-count">${filtered.length} / ${coachDirectory.length}명</span>
+      </div>
+
+      <div class="cd-grid">`;
+
+  html += _coachDirGridHtml(filtered);
+
+  html += `</div></div>`;
+  host.innerHTML = html;
+}
+
+// Re-render only the .cd-grid + count badge — preserves the search input's
+// focus/caret so the user can keep typing in the toolbar's free-text box.
+function renderCoachDirGridOnly() {
+  const grid = document.querySelector('.cd-grid');
+  if (!grid) {
+    renderCoachDirBody(document.getElementById('coachesContent'));
+    return;
+  }
+  const filtered = _coachDirFiltered();
+  grid.innerHTML = _coachDirGridHtml(filtered);
+  const countEl = document.querySelector('.cd-count');
+  if (countEl) countEl.textContent = `${filtered.length} / ${coachDirectory.length}명`;
+}
+
+function updateCoachFilter(key, value) {
+  coachDirFilter[key] = value;
+  if (key === 'q') {
+    // Free-text search: skip the toolbar redraw so the input keeps focus.
+    renderCoachDirGridOnly();
+  } else {
+    renderCoachDirBody(document.getElementById('coachesContent'));
+  }
+}
+
+// (AI semantic search UI removed — proper home is the coach-finder app.
+//  The underlying RPC `search_coaches_by_embedding` and embedding column
+//  remain on Supabase as shared infrastructure for both apps.)
+
+// ─── Coach edit modal ────────────────────────────────────────
+let _coachModalId = null;   // null = create mode, uuid = edit mode
+let _coachChipState = { regions: [], industries: [], expertise: [], roles: [], tags: [] };
+
+function openCoachCreateModal() {
+  if (currentUserRole !== 'admin') { showToast('관리자만 코치를 등록할 수 있습니다.'); return; }
+  _coachModalId = null;
+  document.getElementById('coachModalTitle').textContent = '새 코치 등록';
+  document.getElementById('coachModalSub').textContent = '언더독스 코치풀에 추가합니다.';
+  fillCoachModal({});   // empty
+  document.getElementById('coachDeleteBtn').style.display = 'none';
+  document.getElementById('coachHistoryWrap').style.display = 'none';
+  document.getElementById('coachModal').classList.add('active');
+  setTimeout(() => document.getElementById('coachName').focus(), 0);
+}
+
+async function openCoachEditModal(id) {
+  if (currentUserRole !== 'admin') { showToast('관리자만 편집 가능'); return; }
+  const c = coachDirectory.find(x => x.id === id);
+  if (!c) { showToast('코치를 찾지 못했습니다.'); return; }
+  _coachModalId = c.id;
+  document.getElementById('coachModalTitle').textContent = '코치 편집';
+  document.getElementById('coachModalSub').textContent = (c.name || '') + (c.email ? ' · ' + c.email : '');
+  // Hydrate full row (the list query had a reduced field set; fetch the rest)
+  try {
+    const { data, error } = await supabaseClient
+      .from('coaches_directory').select('*').eq('id', id).single();
+    if (error) throw error;
+    fillCoachModal(data);
+  } catch (e) {
+    // Fallback to list data
+    fillCoachModal(c);
+  }
+  document.getElementById('coachDeleteBtn').style.display = '';
+  document.getElementById('coachHistoryWrap').style.display = '';
+  loadCoachHistory(id);
+  document.getElementById('coachModal').classList.add('active');
+}
+
+function closeCoachModal() {
+  document.getElementById('coachModal').classList.remove('active');
+  document.getElementById('coachModalError').textContent = '';
+}
+
+function fillCoachModal(c) {
+  const v = (k, def = '') => c[k] == null ? def : c[k];
+  document.getElementById('coachName').value           = v('name');
+  document.getElementById('coachEmail').value          = v('email');
+  document.getElementById('coachPhone').value          = v('phone');
+  document.getElementById('coachGender').value         = v('gender');
+  document.getElementById('coachLanguage').value       = v('language');
+  document.getElementById('coachLocation').value       = v('location');
+  document.getElementById('coachCountry').value        = v('country');
+  document.getElementById('coachOrganization').value   = v('organization');
+  document.getElementById('coachPosition').value       = v('position');
+  document.getElementById('coachTier').value           = v('tier');
+  document.getElementById('coachCategory').value       = v('category');
+  document.getElementById('coachBusinessType').value   = v('business_type');
+  document.getElementById('coachStatus').value         = v('status', 'active');
+  document.getElementById('coachAvailability').value   = v('availability_status', 'available');
+  document.getElementById('coachMaxConcurrent').value  = v('max_concurrent_projects') === null ? '' : v('max_concurrent_projects');
+  document.getElementById('coachCareerYears').value    = v('career_years') === null ? '' : v('career_years');
+  document.getElementById('coachCareerYearsRaw').value = v('career_years_raw');
+  document.getElementById('coachOverseas').value       = v('overseas') ? 'true' : 'false';
+  document.getElementById('coachOverseasDetail').value = v('overseas_detail');
+  document.getElementById('coachIntro').value          = v('intro');
+  document.getElementById('coachCareerHistory').value  = v('career_history');
+  document.getElementById('coachEducation').value      = v('education');
+  document.getElementById('coachUnderdogsHistory').value = v('underdogs_history');
+  document.getElementById('coachCurrentWork').value    = v('current_work');
+  document.getElementById('coachToolsSkills').value    = v('tools_skills');
+  document.getElementById('coachNotes').value          = v('notes');
+  document.getElementById('coachPhotoUrl').value       = v('photo_url');
+  document.getElementById('coachPhotoStatus').textContent = '';
+
+  // Chips arrays
+  _coachChipState = {
+    regions:     Array.isArray(c.regions)     ? [...c.regions]     : [],
+    industries:  Array.isArray(c.industries)  ? [...c.industries]  : [],
+    expertise:   Array.isArray(c.expertise)   ? [...c.expertise]   : [],
+    roles:       Array.isArray(c.roles)       ? [...c.roles]       : [],
+    tags:        Array.isArray(c.tags)        ? [...c.tags]        : []
+  };
+  for (const k of Object.keys(_coachChipState)) renderCoachChips(k);
+
+  renderCoachPhotoPreview(c.photo_url, c.name);
+
+  // Linked user — read-only display (auto-linked by trigger when profile email matches)
+  if (c.linked_user_id) {
+    document.getElementById('coachLinkedEmail').value = '✓ 연결됨 (user id: ' + String(c.linked_user_id).slice(0, 8) + '...)';
+  } else {
+    document.getElementById('coachLinkedEmail').value = '';
+  }
+}
+
+function renderCoachChips(field) {
+  const box = document.querySelector(`.cd-chips[data-field="${field}"]`);
+  if (!box) return;
+  const input = box.querySelector('input');
+  const chips = _coachChipState[field] || [];
+  // Remove existing chips (keep only the input)
+  Array.from(box.children).forEach(ch => { if (ch !== input) ch.remove(); });
+  for (const val of chips) {
+    const span = document.createElement('span');
+    span.className = 'cd-chip';
+    span.innerHTML = `${escHtml(val)}<span class="x" data-val="${escAttr(val)}">×</span>`;
+    span.querySelector('.x').addEventListener('click', (e) => {
+      const v = e.target.dataset.val;
+      _coachChipState[field] = _coachChipState[field].filter(x => x !== v);
+      renderCoachChips(field);
+    });
+    box.insertBefore(span, input);
+  }
+  // Attach enter handler once
+  if (!input.dataset.bound) {
+    input.dataset.bound = '1';
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ',') {
+        e.preventDefault();
+        const val = input.value.trim();
+        if (val && !_coachChipState[field].includes(val)) {
+          _coachChipState[field].push(val);
+          renderCoachChips(field);
+        }
+        input.value = '';
+      } else if (e.key === 'Backspace' && !input.value && _coachChipState[field].length > 0) {
+        _coachChipState[field].pop();
+        renderCoachChips(field);
+      }
+    });
+  }
+}
+
+function renderCoachPhotoPreview(url, name) {
+  const box = document.getElementById('coachPhotoPreview');
+  if (!box) return;
+  if (url) {
+    box.innerHTML = `<img src="${escAttr(url)}" alt="${escAttr(name || '')}" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'${escAttr(coachInitials(name))}'}))">`;
+  } else {
+    box.textContent = coachInitials(name);
+  }
+}
+
+// Photo URL typed manually → re-render preview live
+document.addEventListener('input', (e) => {
+  if (e.target && e.target.id === 'coachPhotoUrl') {
+    renderCoachPhotoPreview(e.target.value.trim(), document.getElementById('coachName').value);
+  }
+});
+
+// File upload → Supabase Storage → fill photo_url
+document.addEventListener('change', async (e) => {
+  if (!(e.target && e.target.id === 'coachPhotoFile')) return;
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  const status = document.getElementById('coachPhotoStatus');
+  status.textContent = '업로드 중…';
+  try {
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+    const safeName = (document.getElementById('coachName').value || 'coach').replace(/[^a-zA-Z0-9가-힣_-]/g, '_').slice(0, 40);
+    const path = `${Date.now()}_${safeName}.${ext}`;
+    const { data, error } = await supabaseClient.storage.from('coach-photos').upload(path, file, {
+      cacheControl: '31536000', upsert: false, contentType: file.type
+    });
+    if (error) throw error;
+    const { data: pub } = supabaseClient.storage.from('coach-photos').getPublicUrl(data.path);
+    const url = pub.publicUrl;
+    document.getElementById('coachPhotoUrl').value = url;
+    renderCoachPhotoPreview(url, document.getElementById('coachName').value);
+    status.textContent = '업로드 완료.';
+    e.target.value = '';
+  } catch (err) {
+    status.textContent = '업로드 실패: ' + (err.message || err);
+  }
+});
+
+function _coachCollectForm() {
+  const num = (id) => {
+    const v = document.getElementById(id).value.trim();
+    return v === '' ? null : (Number.isFinite(Number(v)) ? Number(v) : null);
+  };
+  const str = (id) => {
+    const v = document.getElementById(id).value.trim();
+    return v === '' ? null : v;
+  };
+  return {
+    name:              str('coachName') || '(이름 미기재)',
+    email:             str('coachEmail') ? str('coachEmail').toLowerCase() : null,
+    phone:             str('coachPhone'),
+    gender:            str('coachGender'),
+    language:          str('coachLanguage'),
+    location:          str('coachLocation'),
+    country:           str('coachCountry'),
+    regions:           [..._coachChipState.regions],
+    organization:      str('coachOrganization'),
+    position:          str('coachPosition'),
+    industries:        [..._coachChipState.industries],
+    expertise:         [..._coachChipState.expertise],
+    roles:             [..._coachChipState.roles],
+    tags:              [..._coachChipState.tags],
+    tier:              str('coachTier'),
+    category:          str('coachCategory'),
+    business_type:     str('coachBusinessType'),
+    status:            str('coachStatus') || 'active',
+    availability_status: str('coachAvailability') || 'available',
+    max_concurrent_projects: num('coachMaxConcurrent'),
+    career_years:      num('coachCareerYears'),
+    career_years_raw:  str('coachCareerYearsRaw'),
+    overseas:          document.getElementById('coachOverseas').value === 'true',
+    overseas_detail:   str('coachOverseasDetail'),
+    intro:             str('coachIntro'),
+    career_history:    str('coachCareerHistory'),
+    education:         str('coachEducation'),
+    underdogs_history: str('coachUnderdogsHistory'),
+    current_work:      str('coachCurrentWork'),
+    tools_skills:      str('coachToolsSkills'),
+    notes:             str('coachNotes'),
+    photo_url:         str('coachPhotoUrl')
+  };
+}
+
+async function saveCoach() {
+  const payload = _coachCollectForm();
+  if (!payload.name) {
+    document.getElementById('coachModalError').textContent = '이름은 필수입니다.';
+    return;
+  }
+  const btn = document.getElementById('coachSaveBtn');
+  btn.disabled = true;
+  try {
+    let data, error;
+    if (_coachModalId) {
+      ({ data, error } = await supabaseClient.from('coaches_directory')
+        .update(payload).eq('id', _coachModalId).select());
+    } else {
+      ({ data, error } = await supabaseClient.from('coaches_directory')
+        .insert([payload]).select());
+    }
+    if (error) throw error;
+    showToast(_coachModalId ? '저장되었습니다.' : '코치가 등록되었습니다.');
+    await loadCoachDirectory();
+    closeCoachModal();
+    renderCoachDirBody(document.getElementById('coachesContent'));
+  } catch (e) {
+    document.getElementById('coachModalError').textContent = '저장 실패: ' + (e.message || e);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function deleteCoach() {
+  if (!_coachModalId) return;
+  const c = coachDirectory.find(x => x.id === _coachModalId);
+  if (!confirm(`"${c ? c.name : ''}" 코치를 삭제하시겠어요?\n(archive로 대신 바꾸는 걸 권장합니다)`)) return;
+  try {
+    const { error } = await supabaseClient.from('coaches_directory').delete().eq('id', _coachModalId);
+    if (error) throw error;
+    showToast('삭제되었습니다.');
+    await loadCoachDirectory();
+    closeCoachModal();
+    renderCoachDirBody(document.getElementById('coachesContent'));
+  } catch (e) {
+    document.getElementById('coachModalError').textContent = '삭제 실패: ' + (e.message || e);
+  }
+}
+
+async function loadCoachHistory(id) {
+  const host = document.getElementById('coachHistory');
+  host.innerHTML = '<div style="padding:6px 10px;color:var(--gray400);">이력 로드 중…</div>';
+  try {
+    const { data, error } = await supabaseClient.from('coaches_directory_history')
+      .select('op, changed_at, changed_by')
+      .eq('coach_id', id).order('changed_at', { ascending: false }).limit(10);
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      host.innerHTML = '<div style="padding:6px 10px;">변경 이력 없음</div>';
+      return;
+    }
+    host.innerHTML = data.map(h => `
+      <div class="cd-history-row">
+        <strong>${escHtml(h.op)}</strong> ·
+        ${escHtml(new Date(h.changed_at).toLocaleString('ko-KR'))} ·
+        by ${escHtml(h.changed_by ? String(h.changed_by).slice(0, 8) + '…' : 'system')}
+      </div>`).join('');
+  } catch (e) {
+    host.innerHTML = `<div style="padding:6px 10px;color:var(--red);">이력 로드 실패: ${escHtml(e.message || String(e))}</div>`;
+  }
+}
+
+// ============================================================
+// Coach Directory — CSV Import / Export (admin)
+// ============================================================
+
+// Canonical column order for export + as the authoritative set on import.
+const COACH_CSV_COLUMNS = [
+  'external_id','name','email','phone','gender',
+  'location','country','regions','organization','position',
+  'industries','expertise','roles','language','tags',
+  'overseas','overseas_detail',
+  'intro','career_history','education','underdogs_history','current_work','tools_skills',
+  'career_years','career_years_raw',
+  'photo_url','photo_filename',
+  'tier','category','business_type',
+  'status','availability_status','max_concurrent_projects',
+  'notes'
+];
+const COACH_ARRAY_COLS = new Set(['regions','industries','expertise','roles','tags']);
+const COACH_BOOL_COLS = new Set(['overseas']);
+const COACH_NUM_COLS = new Set(['career_years','max_concurrent_projects']);
+
+function _csvCell(v) {
+  if (v === null || v === undefined) return '';
+  let s;
+  if (Array.isArray(v)) s = v.join('; ');             // arrays joined with ";" to avoid CSV commas
+  else if (typeof v === 'boolean') s = v ? 'TRUE' : 'FALSE';
+  else s = String(v);
+  if (/[",\r\n]/.test(s)) s = '"' + s.replace(/"/g, '""') + '"';
+  return s;
+}
+
+// Export — uses current filter. If no filter applied, exports everything.
+function exportCoachesCSV() {
+  // Reuse the same filter logic from renderCoachDirBody so what's visible is what's exported
+  const f = coachDirFilter;
+  const q = (f.q || '').trim().toLowerCase();
+  const rows = coachDirectory.filter(c => {
+    if (f.status && c.status !== f.status) return false;
+    if (f.availability && c.availability_status !== f.availability) return false;
+    if (f.tier && c.tier !== f.tier) return false;
+    if (f.expertise && !(c.expertise || []).includes(f.expertise)) return false;
+    if (f.region && !(c.regions || []).includes(f.region)) return false;
+    if (q) {
+      const hay = ((c.name || '') + ' ' + (c.email || '') + ' ' + (c.organization || '') + ' ' + (c.position || '')).toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  if (rows.length === 0) {
+    showToast('내보낼 코치가 없습니다. 필터를 조정하세요.');
+    return;
+  }
+
+  // We only have lightweight fields in memory (from the list query). For a
+  // proper export we fetch the full rows in one shot.
+  (async () => {
+    const ids = rows.map(r => r.id);
+    const allCols = COACH_CSV_COLUMNS.join(',');
+    let full;
+    try {
+      const { data, error } = await supabaseClient
+        .from('coaches_directory').select(allCols).in('id', ids);
+      if (error) throw error;
+      full = data;
+    } catch (e) {
+      showToast('내보내기 실패: ' + (e.message || e));
+      return;
+    }
+
+    const header = COACH_CSV_COLUMNS.join(',');
+    const lines = [header];
+    for (const c of full) lines.push(COACH_CSV_COLUMNS.map(k => _csvCell(c[k])).join(','));
+    // UTF-8 BOM so Excel reads Korean correctly
+    const blob = new Blob(['\uFEFF' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    const ts = new Date().toISOString().slice(0, 10);
+    downloadBlob(blob, `underdogs_coaches_${ts}.csv`);
+    showToast(`${full.length}명 CSV 다운로드`);
+  })();
+}
+
+// ─── CSV Import ──────────────────────────────────────────────
+// Small RFC4180-ish parser — handles quoted fields, commas in quotes,
+// escaped double-quotes, and \r\n / \n line endings. Adequate for
+// admin-managed spreadsheets.
+function _parseCSV(text) {
+  // Strip UTF-8 BOM
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  const rows = [];
+  let row = [];
+  let field = '';
+  let inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i], n = text[i + 1];
+    if (inQuotes) {
+      if (c === '"' && n === '"') { field += '"'; i++; }
+      else if (c === '"') { inQuotes = false; }
+      else { field += c; }
+    } else {
+      if (c === '"') inQuotes = true;
+      else if (c === ',') { row.push(field); field = ''; }
+      else if (c === '\r' && n === '\n') { row.push(field); rows.push(row); row = []; field = ''; i++; }
+      else if (c === '\n' || c === '\r') { row.push(field); rows.push(row); row = []; field = ''; }
+      else field += c;
+    }
+  }
+  // Flush last field/row
+  if (field !== '' || row.length > 0) { row.push(field); rows.push(row); }
+  // Drop trailing empty row
+  while (rows.length > 0 && rows[rows.length - 1].every(x => x === '')) rows.pop();
+  return rows;
+}
+
+let _csvImportState = { parsed: [], headers: [], file: null };
+
+function onCoachCSVFilePicked(ev) {
+  const file = ev.target.files && ev.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const rows = _parseCSV(reader.result);
+      if (rows.length < 2) throw new Error('헤더 + 데이터 행이 최소 1개 이상 필요합니다.');
+      const headers = rows[0].map(h => h.trim());
+      const records = [];
+      for (let i = 1; i < rows.length; i++) {
+        const r = rows[i];
+        if (r.every(x => (x || '').trim() === '')) continue;
+        const obj = {};
+        for (let j = 0; j < headers.length; j++) {
+          obj[headers[j]] = r[j] !== undefined ? r[j] : '';
+        }
+        records.push(obj);
+      }
+      _csvImportState = { parsed: records, headers, file };
+      showCsvImportPreview();
+    } catch (e) {
+      showToast('CSV 파싱 실패: ' + (e.message || e));
+    }
+    // Reset file input so the same file can be re-picked later
+    ev.target.value = '';
+  };
+  reader.readAsText(file, 'utf-8');
+}
+
+function showCsvImportPreview() {
+  const { parsed, headers } = _csvImportState;
+  // Summary
+  const sub = document.getElementById('csvImportSub');
+  sub.textContent = `${_csvImportState.file.name} · ${parsed.length}개 행`;
+
+  const unknownCols = headers.filter(h => !COACH_CSV_COLUMNS.includes(h));
+  const missingCols = COACH_CSV_COLUMNS.filter(h => !headers.includes(h));
+  const withEmail = parsed.filter(r => (r.email || '').trim()).length;
+  const withExtId = parsed.filter(r => (r.external_id || '').trim()).length;
+
+  document.getElementById('csvImportSummary').innerHTML = `
+    <div class="rpt-kpi"><div class="rpt-kpi-label">총 행</div><div class="rpt-kpi-value">${parsed.length}</div></div>
+    <div class="rpt-kpi"><div class="rpt-kpi-label">external_id 있음</div><div class="rpt-kpi-value">${withExtId}</div></div>
+    <div class="rpt-kpi"><div class="rpt-kpi-label">email 있음</div><div class="rpt-kpi-value">${withEmail}</div></div>
+    <div class="rpt-kpi"><div class="rpt-kpi-label">알 수 없는 컬럼</div><div class="rpt-kpi-value" style="color:${unknownCols.length ? 'var(--yellow)' : 'inherit'};">${unknownCols.length}</div></div>`;
+
+  let issues = '';
+  if (unknownCols.length > 0) issues += `<div>⚠ 알 수 없는 컬럼 (무시됨): ${unknownCols.join(', ')}</div>`;
+  if (missingCols.length > 0) issues += `<div style="color:var(--gray500);">※ CSV에 없는 컬럼 (기존 값 유지): ${missingCols.join(', ')}</div>`;
+  document.getElementById('csvImportIssues').innerHTML = issues;
+
+  // Preview table (first 5 rows × known cols only)
+  const previewCols = headers.filter(h => COACH_CSV_COLUMNS.includes(h)).slice(0, 8);
+  const thead = '<tr>' + previewCols.map(c => `<th style="padding:4px 8px;text-align:left;border-bottom:1px solid var(--gray200);font-weight:600;background:var(--gray100);">${escHtml(c)}</th>`).join('') + '</tr>';
+  const tbody = parsed.slice(0, 5).map(r => '<tr>' +
+    previewCols.map(c => `<td style="padding:4px 8px;border-bottom:1px solid var(--gray100);white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis;">${escHtml((r[c] || '').slice(0, 80))}</td>`).join('')
+    + '</tr>').join('');
+  document.getElementById('csvImportPreview').querySelector('thead').innerHTML = thead;
+  document.getElementById('csvImportPreview').querySelector('tbody').innerHTML = tbody;
+
+  document.getElementById('csvImportError').textContent = '';
+  document.getElementById('csvImportCommitBtn').disabled = parsed.length === 0;
+  document.getElementById('csvImportModal').classList.add('active');
+}
+
+function closeCsvImportModal() {
+  document.getElementById('csvImportModal').classList.remove('active');
+}
+
+function _toArrField(raw) {
+  if (raw == null) return [];
+  return String(raw).split(/[;,]/).map(x => x.trim()).filter(Boolean);
+}
+function _toBoolField(raw) {
+  if (raw == null) return false;
+  const s = String(raw).trim().toLowerCase();
+  return ['true','yes','y','1','t','예'].includes(s);
+}
+function _toNumField(raw) {
+  if (raw == null || String(raw).trim() === '') return null;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : null;
+}
+
+async function commitCsvImport() {
+  const { parsed } = _csvImportState;
+  if (!parsed || parsed.length === 0) return;
+  const keyCol = document.getElementById('csvImportKey').value;
+  const onConflict = document.getElementById('csvImportConflict').value;
+  const btn = document.getElementById('csvImportCommitBtn');
+  btn.disabled = true;
+  const errEl = document.getElementById('csvImportError');
+  errEl.textContent = '';
+
+  // Map rows → canonical shape
+  const mapped = [];
+  let skippedNoKey = 0;
+  for (const r of parsed) {
+    const keyVal = (r[keyCol] || '').trim();
+    if (!keyVal) { skippedNoKey++; continue; }
+    const row = {};
+    for (const col of COACH_CSV_COLUMNS) {
+      if (!(col in r)) continue;
+      const raw = r[col];
+      if (COACH_ARRAY_COLS.has(col)) row[col] = _toArrField(raw);
+      else if (COACH_BOOL_COLS.has(col)) row[col] = _toBoolField(raw);
+      else if (COACH_NUM_COLS.has(col)) row[col] = _toNumField(raw);
+      else {
+        const v = typeof raw === 'string' ? raw.trim() : raw;
+        row[col] = v === '' ? null : v;
+      }
+    }
+    // Normalize email
+    if (row.email) row.email = String(row.email).toLowerCase().trim();
+    // Ensure required fields
+    if (!row.name) row.name = row.name || '(이름 미기재)';
+    mapped.push(row);
+  }
+
+  if (mapped.length === 0) {
+    errEl.textContent = `매칭 기준 컬럼(${keyCol})에 값이 있는 행이 없습니다.`;
+    btn.disabled = false;
+    return;
+  }
+
+  try {
+    let inserted = 0, updated = 0, failed = 0;
+    const batchSize = 50;
+    for (let i = 0; i < mapped.length; i += batchSize) {
+      const batch = mapped.slice(i, i + batchSize);
+      const options = onConflict === 'skip'
+        ? { onConflict: keyCol, ignoreDuplicates: true }
+        : { onConflict: keyCol };
+      const { data, error } = await supabaseClient
+        .from('coaches_directory')
+        .upsert(batch, options)
+        .select('id');
+      if (error) { failed += batch.length; throw error; }
+      // supabase-js doesn't tell us inserted vs updated explicitly; estimate via
+      // returned count vs batch size when onConflict=skip.
+      if (onConflict === 'skip') inserted += (data || []).length;
+      else updated += (data || []).length;  // simplification: treat all as touched
+    }
+    showToast(`완료: ${onConflict === 'skip' ? inserted + '건 신규 (중복 건너뜀)' : updated + '건 반영'}${skippedNoKey > 0 ? ` · ${skippedNoKey}건 skip (키 없음)` : ''}`);
+    closeCsvImportModal();
+    await loadCoachDirectory();
+    renderCoachDirBody(document.getElementById('coachesContent'));
+  } catch (e) {
+    errEl.textContent = '실패: ' + (e.message || e);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ============================================================
+// View 7: User Management (admin-only)
+// ============================================================
+let allProfiles = [];
+let usersFilter = { q: '', role: '' };
+
+async function loadAllProfiles() {
+  if (!supabaseAvailable) return;
+  try {
+    const { data, error } = await supabaseClient
+      .from('profiles')
+      .select('id, email, display_name, role, created_at')
+      .order('created_at', { ascending: false });
+    if (!error && data) allProfiles = data;
+    else if (error) console.warn('loadAllProfiles error', error);
+  } catch (e) { console.warn('loadAllProfiles failed', e); }
+}
+
+async function renderUsersView() {
+  const host = document.getElementById('usersContent');
+  if (!host) return;
+  // Hard gate: admin only
+  if (currentUserRole !== 'admin') {
+    showToast('관리자 전용');
+    switchView('teams');
+    return;
+  }
+  if (allProfiles.length === 0) {
+    host.innerHTML = `<div class="um-empty">⏳ 로딩 중…</div>`;
+    await loadAllProfiles();
+  }
+  renderUsersBody(host);
+}
+
+function _usersFiltered() {
+  const f = usersFilter;
+  const q = f.q.trim().toLowerCase();
+  return allProfiles.filter(p => {
+    if (f.role && p.role !== f.role) return false;
+    if (q) {
+      const hay = ((p.display_name || '') + ' ' + (p.email || '')).toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+function _formatProfileDate(s) {
+  if (!s) return '-';
+  try {
+    const d = new Date(s);
+    if (isNaN(d.getTime())) return '-';
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  } catch (e) { return '-'; }
+}
+
+function _usersTableHtml(rows) {
+  if (rows.length === 0) {
+    return `<tr><td colspan="4" class="um-empty">일치하는 사용자가 없습니다.</td></tr>`;
+  }
+  const myId = currentUser ? currentUser.id : null;
+  let html = '';
+  for (const p of rows) {
+    const isSelf = (p.id === myId);
+    const roleOptions = ['admin', 'pm', 'coach'].map(r =>
+      `<option value="${r}"${p.role === r ? ' selected' : ''}>${r.toUpperCase()}</option>`
+    ).join('');
+    const selectAttrs = isSelf
+      ? `disabled title="본인 역할은 직접 변경할 수 없습니다"`
+      : `onchange="changeUserRole('${escAttr(p.id)}', this.value)"`;
+    html += `
+      <tr class="${isSelf ? 'um-row-self' : ''}">
+        <td>${escHtml(p.display_name || '-')}</td>
+        <td>${escHtml(p.email || '-')}</td>
+        <td><select ${selectAttrs}>${roleOptions}</select></td>
+        <td>${_formatProfileDate(p.created_at)}</td>
+      </tr>`;
+  }
+  return html;
+}
+
+function renderUsersBody(host) {
+  const f = usersFilter;
+  const filtered = _usersFiltered();
+  const html = `
+    <div class="um-wrap">
+      <div class="um-head">
+        <div>
+          <h2>사용자 관리</h2>
+          <div class="sub">로그인 계정과 역할(role)을 관리합니다. PM은 @udimpact.ai / @underdogs.co.kr 도메인이면 가입 시 자동 부여됩니다.</div>
+        </div>
+      </div>
+
+      <div class="um-quick">
+        <h3>PM 빠른 등록</h3>
+        <div class="um-quick-row">
+          <input type="email" id="umQuickEmail" placeholder="이메일 (예: name@udimpact.ai)" autocomplete="off">
+          <button class="btn btn-primary" onclick="quickAddPM(document.getElementById('umQuickEmail').value)">+ PM으로 등록</button>
+        </div>
+        <div class="um-quick-note">
+          ※ 이미 가입한 사용자면 role을 PM으로 승격합니다.<br>
+          &nbsp;&nbsp;&nbsp;가입 안 한 사용자면 가입 안내 메일을 보냅니다.
+        </div>
+      </div>
+
+      <div class="cd-toolbar">
+        <input type="text" placeholder="이름·이메일 검색" value="${escAttr(f.q)}"
+               oninput="updateUsersFilter('q', this.value)">
+        <select onchange="updateUsersFilter('role', this.value)">
+          <option value="">role: 전체</option>
+          <option value="admin"${f.role === 'admin' ? ' selected' : ''}>admin</option>
+          <option value="pm"${f.role === 'pm' ? ' selected' : ''}>pm</option>
+          <option value="coach"${f.role === 'coach' ? ' selected' : ''}>coach</option>
+        </select>
+        <span class="cd-count">${filtered.length} / ${allProfiles.length}명</span>
+      </div>
+
+      <table class="um-table">
+        <thead>
+          <tr>
+            <th style="width:22%;">이름</th>
+            <th style="width:38%;">이메일</th>
+            <th style="width:18%;">역할</th>
+            <th style="width:22%;">가입일</th>
+          </tr>
+        </thead>
+        <tbody id="umTableBody">
+          ${_usersTableHtml(filtered)}
+        </tbody>
+      </table>
+    </div>`;
+  host.innerHTML = html;
+}
+
+// Re-render only the table body + count — preserves the search input focus.
+function renderUsersTableOnly() {
+  const tbody = document.getElementById('umTableBody');
+  if (!tbody) {
+    renderUsersBody(document.getElementById('usersContent'));
+    return;
+  }
+  const filtered = _usersFiltered();
+  tbody.innerHTML = _usersTableHtml(filtered);
+  const countEl = document.querySelector('#viewUsers .cd-count');
+  if (countEl) countEl.textContent = `${filtered.length} / ${allProfiles.length}명`;
+}
+
+function updateUsersFilter(key, value) {
+  usersFilter[key] = value;
+  if (key === 'q') {
+    renderUsersTableOnly();
+  } else {
+    renderUsersBody(document.getElementById('usersContent'));
+  }
+}
+
+async function changeUserRole(userId, newRole) {
+  if (currentUserRole !== 'admin') { showToast('관리자만 역할을 변경할 수 있습니다.'); return; }
+  if (!supabaseAvailable) { showToast('서버 연결 안됨'); return; }
+  const target = allProfiles.find(p => p.id === userId);
+  if (!target) { showToast('사용자를 찾지 못했습니다.'); return; }
+  if (currentUser && userId === currentUser.id) {
+    showToast('본인 역할은 직접 변경할 수 없습니다.');
+    renderUsersBody(document.getElementById('usersContent'));   // revert select
+    return;
+  }
+  const labelMap = { admin: 'ADMIN', pm: 'PM', coach: 'COACH' };
+  const ok = window.confirm(`이 사용자의 역할을 ${labelMap[newRole] || newRole}로 변경합니다. 진행하시겠어요?`);
+  if (!ok) {
+    renderUsersBody(document.getElementById('usersContent'));   // revert select
+    return;
+  }
+  try {
+    const { error } = await supabaseClient
+      .from('profiles')
+      .update({ role: newRole })
+      .eq('id', userId);
+    if (error) throw error;
+    showToast(`역할 변경: ${target.email || userId} → ${labelMap[newRole] || newRole}`);
+    await loadAllProfiles();
+    renderUsersBody(document.getElementById('usersContent'));
+  } catch (e) {
+    showToast('역할 변경 실패: ' + (e.message || e));
+    console.error(e);
+  }
+}
+
+async function quickAddPM(email) {
+  if (currentUserRole !== 'admin') { showToast('관리자 전용'); return; }
+  if (!supabaseAvailable) { showToast('서버 연결 안됨'); return; }
+  const raw = String(email || '').trim();
+  if (!raw) { showToast('이메일을 입력하세요.'); return; }
+  // Basic email format check
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw)) {
+    showToast('이메일 형식이 올바르지 않습니다.');
+    return;
+  }
+  const emailLower = raw.toLowerCase();
+  // Domain warning (allow override)
+  const domainOk = /@(udimpact\.ai|underdogs\.co\.kr)$/.test(emailLower);
+  if (!domainOk) {
+    const proceed = window.confirm('이 이메일은 @udimpact.ai 또는 @underdogs.co.kr 도메인이 아닙니다.\nPM으로 등록을 계속하시겠어요?');
+    if (!proceed) return;
+  }
+  try {
+    const { data: existing, error: selErr } = await supabaseClient
+      .from('profiles')
+      .select('id, email, role')
+      .eq('email', emailLower)
+      .maybeSingle();
+    if (selErr) throw selErr;
+    if (existing) {
+      if (existing.role === 'pm') {
+        showToast('이미 PM 입니다.');
+        return;
+      }
+      const ok = window.confirm(`이미 가입한 사용자입니다. 역할을 PM으로 변경할까요? (현재: ${existing.role})`);
+      if (!ok) return;
+      const { error: upErr } = await supabaseClient
+        .from('profiles')
+        .update({ role: 'pm' })
+        .eq('id', existing.id);
+      if (upErr) throw upErr;
+      showToast(`${emailLower} → PM 으로 승격`);
+      const inputEl = document.getElementById('umQuickEmail');
+      if (inputEl) inputEl.value = '';
+      await loadAllProfiles();
+      renderUsersBody(document.getElementById('usersContent'));
+    } else {
+      // Not signed up — we can't invite without service_role, so guide the admin.
+      const signupUrl = 'https://underdogs-coaching-log.vercel.app/';
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(signupUrl);
+        }
+      } catch (_) { /* clipboard may be blocked; ignore */ }
+      window.alert(
+        '이 이메일은 아직 가입 전입니다.\n' +
+        '아래 가입 링크를 안내해주세요 (클립보드에 복사됨):\n\n' +
+        signupUrl + '\n\n' +
+        '가입이 완료되면 자동으로 PM 역할이 부여됩니다 (도메인 매칭 시).\n' +
+        '도메인이 다르면 가입 후 이 화면에서 직접 PM으로 승격해주세요.'
+      );
+      showToast('가입 링크 클립보드에 복사 (가입 안 된 사용자)');
+    }
+  } catch (e) {
+    showToast('PM 등록 실패: ' + (e.message || e));
+    console.error(e);
+  }
+}
+
+// ============================================================
 // View 5: Detail View
 // ============================================================
 function showDetail(id) {
@@ -5815,17 +8500,38 @@ function showDetail(id) {
        </div>`
     : '';
 
+  // Project info line (Phase 5-A). Looks up the human-readable name from
+  // myProjects; falls back to "미지정" when the row has no project_id.
+  const recordProject = record.project_id
+    ? myProjects.find(p => p.id === record.project_id)
+    : null;
+  const projectLabel = record.project_id
+    ? (recordProject ? recordProject.name : '(알 수 없음)')
+    : '미지정';
+  const projectLineStyle = record.project_id
+    ? 'color:var(--gray500);'
+    : 'color:var(--gray400);font-style:italic;';
+  const canMoveProject = currentUserRole === 'admin' || currentUserRole === 'pm';
+  const moveBtnHtml = canMoveProject
+    ? `<button class="btn btn-ghost" style="padding:4px 10px;font-size:12px;margin-left:8px;"
+              onclick="openMoveProjectModal('${escAttr(String(record.id))}')">프로젝트 이동</button>`
+    : '';
+
   let html = `
     <div class="detail-header">
       <h2>${escHtml(record.team_name || '-')}</h2>
       <span class="stage-badge">${escHtml(record.stage || '-')}</span>
     </div>
-    <div class="detail-meta" style="margin-bottom:24px;">
+    <div class="detail-meta" style="margin-bottom:8px;">
       <span>#${escHtml(record.session_num || '-')}</span>
       <span>${escHtml(record.date || '-')}</span>
       <span>${escHtml(record.coach || '-')}</span>
       <span>${escHtml(record.founder_name || '-')}</span>
       <span>${escHtml(record.session_type || '-')}</span>
+    </div>
+    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:24px;font-size:13px;${projectLineStyle}">
+      <span>📁 프로젝트: <strong>${escHtml(projectLabel)}</strong></span>
+      ${moveBtnHtml}
     </div>
     ${narrativeHtml}
     <div class="detail-grid">
