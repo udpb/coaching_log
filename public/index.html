@@ -1170,6 +1170,245 @@ body {
   font-size: 13px;
 }
 
+/* ---- Business Plans (admin / pm) ---- */
+.bp-wrap { padding: 0 4px 40px; }
+.bp-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 8px 4px 12px;
+  flex-wrap: wrap;
+}
+.bp-head h2 { font-size: 22px; font-weight: 700; color: var(--dark); margin: 0; }
+.bp-head .sub { font-size: 12px; color: var(--gray500); margin: 4px 0 0; max-width: 720px; line-height: 1.5; }
+.bp-head-actions { display: flex; gap: 8px; }
+
+.bp-toolbar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 12px;
+  background: var(--white);
+  border: 1px solid var(--gray200);
+  margin-bottom: 14px;
+  align-items: center;
+}
+.bp-toolbar input[type="text"],
+.bp-toolbar select {
+  padding: 6px 10px;
+  font-size: 12px;
+  border: 1px solid var(--gray300);
+  font-family: inherit;
+  background: var(--white);
+}
+.bp-toolbar input[type="text"] { min-width: 200px; }
+.bp-toolbar .bp-count {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--gray500);
+  letter-spacing: 0.05em;
+}
+
+.bp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 10px;
+}
+.bp-card {
+  position: relative;
+  background: var(--white);
+  border: 1px solid var(--gray200);
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: border-color var(--transition), transform var(--transition);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.bp-card:hover { border-color: var(--orange); transform: translateY(-1px); }
+.bp-card .bp-card-top {
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;
+}
+.bp-card .bp-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--dark);
+  line-height: 1.35;
+  flex: 1;
+}
+.bp-card .bp-client {
+  font-size: 12px;
+  color: var(--gray500);
+}
+.bp-card .bp-meta {
+  display: flex; gap: 10px; flex-wrap: wrap;
+  font-size: 11px;
+  color: var(--gray500);
+  margin-top: 4px;
+}
+.bp-card .bp-budget { font-weight: 600; color: var(--dark2); }
+
+.bp-status {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.bp-status-draft     { background: var(--gray200); color: var(--gray500); }
+.bp-status-proposed  { background: #E0EBFF; color: #2A4FD9; }
+.bp-status-won       { background: var(--green-bg); color: var(--green); }
+.bp-status-lost      { background: var(--red-bg); color: var(--red); }
+.bp-status-cancelled { background: var(--gray100); color: var(--gray400); }
+
+.bp-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--gray400);
+}
+.bp-empty-icon { font-size: 44px; margin-bottom: 14px; }
+
+/* Detail panel (inline, replaces grid) */
+.bp-detail-wrap { padding: 0 4px 40px; }
+.bp-detail-back {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: none; border: none; color: var(--gray500);
+  font-size: 12px; cursor: pointer; padding: 6px 0; margin-bottom: 10px;
+  font-family: inherit;
+}
+.bp-detail-back:hover { color: var(--orange); }
+.bp-detail-head {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  gap: 12px; flex-wrap: wrap; margin-bottom: 10px;
+}
+.bp-detail-title { font-size: 22px; font-weight: 700; color: var(--dark); margin: 0 0 4px; }
+.bp-detail-client { font-size: 13px; color: var(--gray500); }
+.bp-detail-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.bp-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 16px 0;
+}
+.bp-detail-card {
+  background: var(--white);
+  border: 1px solid var(--gray200);
+  padding: 14px 16px;
+}
+.bp-detail-card.full-width { grid-column: 1 / -1; }
+.bp-detail-card h4 {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gray500);
+  margin: 0 0 8px;
+}
+.bp-detail-card p {
+  font-size: 13px;
+  color: var(--dark);
+  margin: 0;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+.bp-detail-trans {
+  display: flex; gap: 6px; flex-wrap: wrap;
+  margin: 4px 0 14px;
+}
+.bp-detail-trans button {
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  border: 1px solid var(--gray300);
+  background: var(--white);
+  color: var(--dark2);
+  cursor: pointer;
+}
+.bp-detail-trans button:hover { border-color: var(--orange); color: var(--orange); }
+.bp-detail-trans button.bp-trans-won {
+  background: var(--green); color: #fff; border-color: var(--green);
+}
+.bp-detail-trans button.bp-trans-won:hover { opacity: 0.9; color: #fff; }
+.bp-detail-trans button.bp-trans-lost,
+.bp-detail-trans button.bp-trans-cancelled {
+  color: var(--red); border-color: var(--red);
+}
+
+.bp-coach-list {
+  border: 1px solid var(--gray200);
+  background: var(--white);
+  margin-top: 8px;
+}
+.bp-coach-row {
+  display: grid;
+  grid-template-columns: 1fr 130px 30px;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--gray100);
+  font-size: 12px;
+}
+.bp-coach-row:last-child { border-bottom: 0; }
+.bp-coach-row .c-name { font-weight: 600; color: var(--dark); }
+.bp-coach-row .c-org { font-size: 11px; color: var(--gray500); }
+.bp-coach-row select {
+  padding: 4px 6px;
+  font-size: 11px;
+  border: 1px solid var(--gray300);
+  font-family: inherit;
+}
+.bp-coach-row button {
+  background: none;
+  border: 1px solid var(--gray300);
+  font-size: 12px;
+  padding: 2px 6px;
+  cursor: pointer;
+  color: var(--red);
+  font-family: inherit;
+}
+.bp-coach-empty {
+  padding: 14px 12px;
+  font-size: 12px;
+  color: var(--gray400);
+  text-align: center;
+}
+
+/* Coach picker (sub-modal) */
+.bp-picker-results {
+  border: 1px solid var(--gray200);
+  margin-top: 6px;
+  max-height: 320px;
+  overflow-y: auto;
+  background: var(--white);
+}
+.bp-picker-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--gray100);
+  font-size: 12px;
+}
+.bp-picker-row:last-child { border-bottom: 0; }
+.bp-picker-row .pr-main { flex: 1; min-width: 0; }
+.bp-picker-row .pr-name { font-weight: 600; color: var(--dark); }
+.bp-picker-row .pr-meta { color: var(--gray500); font-size: 11px; }
+.bp-picker-row button {
+  padding: 4px 10px;
+  font-size: 11px;
+  background: var(--orange);
+  color: #fff;
+  border: none;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 /* ---- Edit-mode banner on the form view ---- */
 .edit-banner {
   position: sticky;
@@ -2611,6 +2850,7 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
       <button class="nav-tab" data-view="list" data-i18n="nav_list">List</button>
       <button class="nav-tab" data-view="dashboard" data-i18n="nav_dashboard">대시보드</button>
       <button class="nav-tab" data-view="coaches" id="navCoaches" style="display:none;" data-i18n="nav_coaches">코치 디렉토리</button>
+      <button class="nav-tab" data-view="plans" id="navPlans" style="display:none;" data-i18n="nav_plans">사업기획</button>
       <button class="nav-tab" data-view="users" id="navUsers" style="display:none;" data-i18n="nav_users">사용자 관리</button>
     </nav>
     <div class="header-right">
@@ -2941,6 +3181,15 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
   </div>
 </div>
 
+<!-- View 8: Business Plans (admin/pm) -->
+<div class="view" id="viewPlans">
+  <div class="container">
+    <div id="plansContent">
+      <!-- Rendered by JS -->
+    </div>
+  </div>
+</div>
+
 <!-- View 5: Detail View -->
 <div class="view" id="viewDetail">
   <div class="container">
@@ -2999,6 +3248,74 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
       <div style="display:flex;gap:8px;margin-left:auto;">
         <button class="btn btn-ghost" onclick="closeProjectModal()">취소</button>
         <button class="btn btn-primary" id="projSaveBtn" onclick="saveProjectModal()">저장</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Business Plan create/edit modal (admin/pm) -->
+<div class="rpt-modal-overlay" id="bpModal">
+  <div class="rpt-modal">
+    <h2 id="bpModalTitle">새 사업기획</h2>
+    <div class="sub" id="bpModalSub">사업기획(BP) 정보를 입력하세요. 수주(won)는 별도 버튼으로 처리합니다.</div>
+    <div class="proj-modal-body">
+      <label>제목 <span style="color:var(--red);">*</span></label>
+      <input type="text" id="bpTitle" placeholder="예: 2026 봄 BP — Acme Corp">
+      <label>고객사 / 조직</label>
+      <input type="text" id="bpClientOrg" placeholder="예: Acme Corp">
+      <label>설명</label>
+      <textarea id="bpDesc" placeholder="간단 설명 (선택)"></textarea>
+      <label>예상 기간 (선택)</label>
+      <div class="row2">
+        <input type="date" id="bpStart">
+        <input type="date" id="bpEnd">
+      </div>
+      <label>예상 예산 (KRW, 선택)</label>
+      <input type="number" id="bpBudget" placeholder="예: 30000000" min="0" step="1">
+      <label>상태</label>
+      <!-- 'won' is intentionally NOT selectable here. 수주는 BP 상세화면의
+           "수주 처리" 버튼으로만 진행됩니다 — DB 트리거(bp_on_won)가
+           project + project_members 자동 생성을 담당하기 때문입니다. -->
+      <select id="bpStatus">
+        <option value="draft">draft (작성중)</option>
+        <option value="proposed">proposed (제안)</option>
+        <option value="won" disabled>won (수주) — 별도 버튼으로 처리</option>
+        <option value="lost">lost (실주)</option>
+        <option value="cancelled">cancelled (취소)</option>
+      </select>
+      <label>비고</label>
+      <textarea id="bpNotes" placeholder="내부 메모 (선택)"></textarea>
+      <div class="auth-error" id="bpModalError" style="margin-top:10px;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger" id="bpDeleteBtn" onclick="deleteBP()" style="display:none;">BP 삭제</button>
+      <div style="display:flex;gap:8px;margin-left:auto;">
+        <button class="btn btn-ghost" onclick="closeBPModal()">취소</button>
+        <button class="btn btn-primary" id="bpSaveBtn" onclick="saveBP()">저장</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Business Plan coach picker modal (admin/pm) -->
+<div class="rpt-modal-overlay" id="bpCoachPickerModal">
+  <div class="rpt-modal" style="max-width:560px;">
+    <h2>코치 후보 추가</h2>
+    <div class="sub">이름·이메일·소속·전문 분야로 검색하세요.</div>
+    <div class="proj-modal-body">
+      <label>검색</label>
+      <input type="text" id="bpCoachPickerInput" placeholder="이름·이메일·소속·전문분야"
+             autocomplete="off"
+             oninput="searchBPCoachPicker(this.value)"
+             onfocus="searchBPCoachPicker(this.value)">
+      <div class="bp-picker-results" id="bpCoachPickerResults">
+        <div style="padding:14px;font-size:12px;color:var(--gray400);">검색어를 입력하세요.</div>
+      </div>
+      <div class="auth-error" id="bpCoachPickerError" style="margin-top:10px;"></div>
+    </div>
+    <div class="modal-footer">
+      <div style="display:flex;gap:8px;margin-left:auto;">
+        <button class="btn btn-ghost" onclick="closeBPCoachPicker()">닫기</button>
       </div>
     </div>
   </div>
@@ -3876,8 +4193,19 @@ async function checkAuth() {
       showResetForm();
       return;
     }
-    if (event === 'SIGNED_IN' && session) {
+    // INITIAL_SESSION fires on page load when a cached session exists (Supabase v2),
+    // SIGNED_IN fires on fresh login, TOKEN_REFRESHED fires on background refresh.
+    // In all three cases, currentUser may have just become defined — re-resolve the
+    // role to avoid the race where init's loadCurrentUserRole() ran before the
+    // session was attached and silently fell back to 'coach'.
+    if ((event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
+      const wasUnauthenticated = !currentUser;
       currentUser = session.user;
+      // Only re-fetch when role is unresolved or stuck at the conservative
+      // 'coach' fallback. If the role is already 'admin' or 'pm', leave it.
+      if (wasUnauthenticated || currentUserRole === null || currentUserRole === 'coach') {
+        loadCurrentUserRole();
+      }
     } else if (event === 'SIGNED_OUT') {
       currentUser = null;
       currentUserRole = 'coach';
@@ -3886,11 +4214,10 @@ async function checkAuth() {
       currentProject = null;
       logs = [];
       allProfiles = [];
+      allBusinessPlans = [];
       localStorage.removeItem('ud-current-project-id');
       renderRoleBadge();
       showAuthScreen();
-    } else if (event === 'TOKEN_REFRESHED' && session) {
-      currentUser = session.user;
     }
   });
 }
@@ -4077,6 +4404,8 @@ async function loadCurrentUserRole() {
   if (navCoachesEl) navCoachesEl.style.display = 'none';
   const navUsersEl = document.getElementById('navUsers');
   if (navUsersEl) navUsersEl.style.display = 'none';
+  const navPlansEl = document.getElementById('navPlans');
+  if (navPlansEl) navPlansEl.style.display = 'none';
 
   if (!supabaseAvailable || !currentUser) {
     currentUserRole = 'coach';
@@ -4114,6 +4443,10 @@ function renderRoleBadge() {
   // Coach directory tab: admin + pm see it (only admin can edit; gate is in modal handlers)
   const navCoaches = document.getElementById('navCoaches');
   if (navCoaches) navCoaches.style.display =
+    (currentUserRole === 'admin' || currentUserRole === 'pm') ? '' : 'none';
+  // Business plans tab: admin + pm see it (coach hides). Same gate as coaches.
+  const navPlans = document.getElementById('navPlans');
+  if (navPlans) navPlans.style.display =
     (currentUserRole === 'admin' || currentUserRole === 'pm') ? '' : 'none';
   // User management tab: admin ONLY (PMs cannot manage users)
   const navUsers = document.getElementById('navUsers');
@@ -4641,6 +4974,7 @@ function switchView(name) {
   if (name === 'dashboard') renderDashboard();
   if (name === 'coaches') renderCoachDirectory();
   if (name === 'users') renderUsersView();
+  if (name === 'plans') renderBPView();
   window.scrollTo(0, 0);
 }
 
@@ -8463,6 +8797,810 @@ async function quickAddPM(email) {
   } catch (e) {
     showToast('PM 등록 실패: ' + (e.message || e));
     console.error(e);
+  }
+}
+
+// ============================================================
+// View 8: Business Plans (admin / pm) — Phase 5-B
+// ============================================================
+//
+// Backend: tables `business_plans`, `business_plan_coaches`, `coach_evaluations`
+// (migration 20260428_phase5b_business_plans.sql). The `bp_on_won` AFTER UPDATE
+// trigger auto-creates a row in `projects` and copies accepted coaches into
+// `project_members` when status transitions to 'won' — so the UI just sets
+// status='won' and re-fetches to pick up the new project_id.
+//
+// State is intentionally module-level (not closure-scoped) so debug code in the
+// console can poke at it. All Supabase calls are wrapped in try/catch with
+// user-facing toasts on failure.
+
+let allBusinessPlans = [];                              // cache of BP rows
+let bpFilter = { q: '', status: '' };                   // toolbar filter
+let _bpModalState = { mode: 'create', id: null };       // create/edit modal
+let _bpDetailId = null;                                 // currently-open BP id (null => list view)
+let _bpDetailCoaches = [];                              // pinned coaches for the open BP
+let _bpDetailEvalCount = 0;                             // coach_evaluations count for the open BP
+let _bpCoachPickerState = { bp_id: null, q: '', results: [] };
+
+async function loadAllBusinessPlans() {
+  if (!supabaseAvailable) return;
+  try {
+    const { data, error } = await supabaseClient
+      .from('business_plans')
+      .select('id, title, client_org, description, status, target_start_date, target_end_date, estimated_budget, notes, project_id, created_by, created_at, updated_at')
+      .order('created_at', { ascending: false });
+    if (!error && data) allBusinessPlans = data;
+    else if (error) console.warn('loadAllBusinessPlans error', error);
+  } catch (e) { console.warn('loadAllBusinessPlans failed', e); }
+}
+
+async function renderBPView() {
+  const host = document.getElementById('plansContent');
+  if (!host) return;
+  // Hard gate: admin or pm only. (Coach role should never see the tab, but
+  // defend in depth in case the URL/state is reused.)
+  if (currentUserRole !== 'admin' && currentUserRole !== 'pm') {
+    showToast('관리자/PM만 접근 가능합니다');
+    switchView('teams');
+    return;
+  }
+  // Reset detail state when entering the view fresh from nav
+  _bpDetailId = null;
+  if (allBusinessPlans.length === 0) {
+    host.innerHTML = `<div class="bp-empty">⏳ 로딩 중…</div>`;
+    await loadAllBusinessPlans();
+  }
+  renderBPListBody(host);
+}
+
+function bpStatusPill(status) {
+  const map = {
+    draft:     { label: '작성중',   cls: 'bp-status-draft' },
+    proposed:  { label: '제안',     cls: 'bp-status-proposed' },
+    won:       { label: '수주 ✓',   cls: 'bp-status-won' },
+    lost:      { label: '실주',     cls: 'bp-status-lost' },
+    cancelled: { label: '취소',     cls: 'bp-status-cancelled' },
+  };
+  const m = map[status] || map.draft;
+  return `<span class="bp-status ${m.cls}">${m.label}</span>`;
+}
+
+function _bpFmtDate(s) {
+  if (!s) return '-';
+  try {
+    const d = new Date(s);
+    if (isNaN(d.getTime())) return String(s);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  } catch (e) { return String(s); }
+}
+
+function _bpFmtBudget(n) {
+  if (n === null || n === undefined || n === '') return '-';
+  const num = Number(n);
+  if (!isFinite(num)) return String(n);
+  // Korean Won, with thousands separator
+  return '₩ ' + num.toLocaleString('ko-KR');
+}
+
+function _bpFiltered() {
+  const f = bpFilter;
+  const q = f.q.trim().toLowerCase();
+  return allBusinessPlans.filter(bp => {
+    if (f.status && bp.status !== f.status) return false;
+    if (q) {
+      const hay = ((bp.title || '') + ' ' + (bp.client_org || '') + ' ' + (bp.description || '')).toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+function _bpGridHtml(rows) {
+  if (rows.length === 0) {
+    return `<div class="bp-empty">
+      <div class="bp-empty-icon">📋</div>
+      <div>등록된 사업기획이 없습니다.</div>
+      <div style="font-size:12px;margin-top:6px;">우측 상단의 "+ 새 BP" 버튼으로 시작하세요.</div>
+    </div>`;
+  }
+  let html = '';
+  for (const bp of rows) {
+    const dateRange = (bp.target_start_date || bp.target_end_date)
+      ? `${_bpFmtDate(bp.target_start_date)} ~ ${_bpFmtDate(bp.target_end_date)}`
+      : '기간 미정';
+    html += `
+      <div class="bp-card" onclick="openBPDetail('${escAttr(bp.id)}')">
+        <div class="bp-card-top">
+          <div class="bp-title">${escHtml(bp.title || '(제목 없음)')}</div>
+          ${bpStatusPill(bp.status)}
+        </div>
+        <div class="bp-client">${escHtml(bp.client_org || '(고객사 미정)')}</div>
+        <div class="bp-meta">
+          <span>📅 ${escHtml(dateRange)}</span>
+          <span class="bp-budget">${escHtml(_bpFmtBudget(bp.estimated_budget))}</span>
+        </div>
+        ${bp.project_id ? `<div style="font-size:11px;color:var(--green);margin-top:4px;">→ 프로젝트 생성됨</div>` : ''}
+      </div>`;
+  }
+  return `<div class="bp-grid">${html}</div>`;
+}
+
+function renderBPListBody(host) {
+  const f = bpFilter;
+  const filtered = _bpFiltered();
+  const html = `
+    <div class="bp-wrap">
+      <div class="bp-head">
+        <div>
+          <h2>사업기획 (BP)</h2>
+          <div class="sub">고객사 BP를 관리하고 후보 코치를 핀(고정)합니다. 수주(won)로 전환하면 프로젝트와 멤버가 자동 생성됩니다.</div>
+        </div>
+        <div class="bp-head-actions">
+          <button class="btn btn-primary" onclick="openBPCreateModal()">+ 새 BP</button>
+        </div>
+      </div>
+
+      <div class="bp-toolbar">
+        <input type="text" placeholder="제목·고객사·설명 검색" value="${escAttr(f.q)}"
+               oninput="updateBPFilter('q', this.value)">
+        <select onchange="updateBPFilter('status', this.value)">
+          <option value="">상태: 전체</option>
+          <option value="draft"${f.status === 'draft' ? ' selected' : ''}>draft (작성중)</option>
+          <option value="proposed"${f.status === 'proposed' ? ' selected' : ''}>proposed (제안)</option>
+          <option value="won"${f.status === 'won' ? ' selected' : ''}>won (수주)</option>
+          <option value="lost"${f.status === 'lost' ? ' selected' : ''}>lost (실주)</option>
+          <option value="cancelled"${f.status === 'cancelled' ? ' selected' : ''}>cancelled (취소)</option>
+        </select>
+        <span class="bp-count">${filtered.length} / ${allBusinessPlans.length}건</span>
+      </div>
+
+      <div id="bpGridHost">
+        ${_bpGridHtml(filtered)}
+      </div>
+    </div>`;
+  host.innerHTML = html;
+}
+
+// Re-render only the grid + count — preserves the search input focus.
+// (The user previously hit a focus-loss bug in updateCoachFilter; we mirror
+// the fix here: 'q' input changes MUST NOT redraw the toolbar input.)
+function renderBPGridOnly() {
+  const gridHost = document.getElementById('bpGridHost');
+  if (!gridHost) {
+    renderBPListBody(document.getElementById('plansContent'));
+    return;
+  }
+  const filtered = _bpFiltered();
+  gridHost.innerHTML = _bpGridHtml(filtered);
+  const countEl = document.querySelector('#viewPlans .bp-count');
+  if (countEl) countEl.textContent = `${filtered.length} / ${allBusinessPlans.length}건`;
+}
+
+function updateBPFilter(key, value) {
+  bpFilter[key] = value;
+  if (key === 'q') {
+    renderBPGridOnly();
+  } else {
+    renderBPListBody(document.getElementById('plansContent'));
+  }
+}
+
+// ---------- BP detail panel (inline, replaces grid) ----------
+
+async function openBPDetail(id) {
+  _bpDetailId = id;
+  _bpDetailCoaches = [];
+  _bpDetailEvalCount = 0;
+  // Show a loading shell first so the click feels responsive
+  const host = document.getElementById('plansContent');
+  if (host) {
+    host.innerHTML = `
+      <div class="bp-detail-wrap">
+        <button class="bp-detail-back" onclick="closeBPDetail()">← 목록으로</button>
+        <div class="bp-empty">⏳ 로딩 중…</div>
+      </div>`;
+  }
+  await _bpLoadDetailData(id);
+  renderBPDetailBody();
+}
+
+async function _bpLoadDetailData(bpId) {
+  if (!supabaseAvailable) return;
+  try {
+    // Pinned coaches with denormalized name/email/org from coaches_directory.
+    // We use Supabase's nested-select syntax (FK relationship name = the
+    // referenced table). If the relationship isn't auto-detected, fall back
+    // to two queries.
+    const { data: coachRows, error: cErr } = await supabaseClient
+      .from('business_plan_coaches')
+      .select('id, business_plan_id, coach_directory_id, rank, status, notes, added_at, coaches_directory:coach_directory_id(id, name, email, organization, expertise)')
+      .eq('business_plan_id', bpId)
+      .order('rank', { ascending: true, nullsFirst: false })
+      .order('added_at', { ascending: true });
+    if (cErr) {
+      console.warn('bp coaches join failed; falling back', cErr);
+      // Fallback: two-step
+      const { data: bpc } = await supabaseClient
+        .from('business_plan_coaches')
+        .select('*')
+        .eq('business_plan_id', bpId);
+      const ids = (bpc || []).map(r => r.coach_directory_id).filter(Boolean);
+      let dirs = [];
+      if (ids.length > 0) {
+        const { data: cd } = await supabaseClient
+          .from('coaches_directory')
+          .select('id, name, email, organization, expertise')
+          .in('id', ids);
+        dirs = cd || [];
+      }
+      _bpDetailCoaches = (bpc || []).map(r => ({
+        ...r,
+        coaches_directory: dirs.find(d => d.id === r.coach_directory_id) || null
+      }));
+    } else {
+      _bpDetailCoaches = coachRows || [];
+    }
+  } catch (e) { console.warn('bp detail coaches failed', e); }
+
+  try {
+    // Evaluation count — head:true returns count without rows
+    const { count, error: eErr } = await supabaseClient
+      .from('coach_evaluations')
+      .select('id', { count: 'exact', head: true })
+      .eq('business_plan_id', bpId);
+    if (!eErr && typeof count === 'number') _bpDetailEvalCount = count;
+    else if (eErr) console.warn('bp eval count failed', eErr);
+  } catch (e) { console.warn('bp eval count failed', e); }
+}
+
+function _bpTransitionsFor(status) {
+  // Returns array of {to, label, cls} for valid transitions from current status.
+  // 'won' uses dedicated styling because it triggers project auto-creation.
+  switch (status) {
+    case 'draft':
+      return [
+        { to: 'proposed',  label: '제안 단계로',     cls: '' },
+        { to: 'cancelled', label: '취소',            cls: 'bp-trans-cancelled' },
+      ];
+    case 'proposed':
+      return [
+        { to: 'won',       label: '수주 처리',       cls: 'bp-trans-won' },
+        { to: 'lost',      label: '실주',            cls: 'bp-trans-lost' },
+        { to: 'cancelled', label: '취소',            cls: 'bp-trans-cancelled' },
+        { to: 'draft',     label: '작성중으로 되돌리기', cls: '' },
+      ];
+    case 'won':
+      // Once won, the project exists; we don't allow rolling back from the UI.
+      return [];
+    case 'lost':
+    case 'cancelled':
+      return [
+        { to: 'draft', label: '다시 작성중으로', cls: '' },
+      ];
+    default:
+      return [];
+  }
+}
+
+function renderBPDetailBody() {
+  const host = document.getElementById('plansContent');
+  if (!host || !_bpDetailId) return;
+  const bp = allBusinessPlans.find(b => b.id === _bpDetailId);
+  if (!bp) {
+    host.innerHTML = `
+      <div class="bp-detail-wrap">
+        <button class="bp-detail-back" onclick="closeBPDetail()">← 목록으로</button>
+        <div class="bp-empty">BP를 찾을 수 없습니다.</div>
+      </div>`;
+    return;
+  }
+  const dateRange = (bp.target_start_date || bp.target_end_date)
+    ? `${_bpFmtDate(bp.target_start_date)} ~ ${_bpFmtDate(bp.target_end_date)}`
+    : '기간 미정';
+
+  // Status transition buttons
+  const trans = _bpTransitionsFor(bp.status);
+  const transHtml = trans.length === 0
+    ? `<div style="font-size:12px;color:var(--gray400);margin:4px 0 14px;">상태 전이 불가 (수주 완료된 BP는 잠금)</div>`
+    : `<div class="bp-detail-trans">${trans.map(t =>
+        `<button class="${t.cls}" onclick="transitionBPStatus('${escAttr(bp.id)}','${t.to}')">${escHtml(t.label)}</button>`
+      ).join('')}</div>`;
+
+  // Pinned coach rows
+  const coachRowsHtml = _bpDetailCoaches.length === 0
+    ? `<div class="bp-coach-empty">아직 핀(고정)된 코치가 없습니다. "+ 코치 추가"로 후보를 등록하세요.</div>`
+    : _bpDetailCoaches.map(bpc => {
+        const cd = bpc.coaches_directory || {};
+        const statusOpts = ['candidate', 'proposed', 'accepted', 'rejected', 'withdrawn']
+          .map(s => `<option value="${s}"${bpc.status === s ? ' selected' : ''}>${s}</option>`).join('');
+        const orgLine = cd.organization || cd.email || '';
+        return `
+          <div class="bp-coach-row">
+            <div>
+              <div class="c-name">${escHtml(cd.name || '(이름 없음)')}</div>
+              <div class="c-org">${escHtml(orgLine)}</div>
+            </div>
+            <select onchange="updateBPCoachStatus('${escAttr(bpc.id)}', this.value)">${statusOpts}</select>
+            <button title="제거" onclick="unpinCoachFromBP('${escAttr(bpc.id)}')">×</button>
+          </div>`;
+      }).join('');
+
+  // Project link
+  const projectLink = bp.project_id
+    ? `<a href="javascript:void(0)" onclick="_bpJumpToProject('${escAttr(bp.project_id)}')" style="color:var(--orange);font-weight:600;">프로젝트 보기 →</a>`
+    : `<span style="color:var(--gray400);">아직 프로젝트가 생성되지 않았습니다.</span>`;
+
+  // Edit / delete buttons (delete admin-only)
+  const editBtn = `<button class="btn btn-ghost" onclick="openBPEditModal('${escAttr(bp.id)}')">✏️ 편집</button>`;
+  const deleteBtn = (currentUserRole === 'admin')
+    ? `<button class="btn btn-danger" onclick="deleteBPFromDetail('${escAttr(bp.id)}')">🗑 삭제</button>`
+    : '';
+
+  host.innerHTML = `
+    <div class="bp-detail-wrap">
+      <button class="bp-detail-back" onclick="closeBPDetail()">← 목록으로</button>
+
+      <div class="bp-detail-head">
+        <div style="flex:1;min-width:0;">
+          <h2 class="bp-detail-title">${escHtml(bp.title || '(제목 없음)')}</h2>
+          <div class="bp-detail-client">${escHtml(bp.client_org || '(고객사 미정)')} · ${bpStatusPill(bp.status)}</div>
+        </div>
+        <div class="bp-detail-actions">
+          ${editBtn}
+          ${deleteBtn}
+        </div>
+      </div>
+
+      ${transHtml}
+
+      <div class="bp-detail-grid">
+        <div class="bp-detail-card">
+          <h4>예상 기간</h4>
+          <p>${escHtml(dateRange)}</p>
+        </div>
+        <div class="bp-detail-card">
+          <h4>예상 예산</h4>
+          <p>${escHtml(_bpFmtBudget(bp.estimated_budget))}</p>
+        </div>
+        <div class="bp-detail-card full-width">
+          <h4>설명</h4>
+          <p>${escHtml(bp.description || '-')}</p>
+        </div>
+        <div class="bp-detail-card full-width">
+          <h4>비고</h4>
+          <p>${escHtml(bp.notes || '-')}</p>
+        </div>
+        <div class="bp-detail-card">
+          <h4>연결된 프로젝트</h4>
+          <p>${projectLink}</p>
+        </div>
+        <div class="bp-detail-card">
+          <h4>코치 평가</h4>
+          <p>${_bpDetailEvalCount}건 (Phase C3에서 상세 표시)</p>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin:18px 4px 6px;">
+        <h3 style="margin:0;font-size:15px;font-weight:700;">핀(고정)된 코치 후보</h3>
+        <button class="btn btn-ghost" onclick="openBPCoachPicker('${escAttr(bp.id)}')">+ 코치 추가</button>
+      </div>
+      <div class="bp-coach-list">
+        ${coachRowsHtml}
+      </div>
+    </div>`;
+}
+
+function closeBPDetail() {
+  _bpDetailId = null;
+  _bpDetailCoaches = [];
+  _bpDetailEvalCount = 0;
+  renderBPListBody(document.getElementById('plansContent'));
+}
+
+function _bpJumpToProject(projectId) {
+  // Best-effort: set currentProject if it's in myProjects, then go to dashboard.
+  try {
+    if (Array.isArray(myProjects)) {
+      const p = myProjects.find(x => x.id === projectId);
+      if (p) { setCurrentProject(p); }
+    }
+  } catch (_) { /* myProjects may not exist for some roles; ignore */ }
+  switchView('list');
+}
+
+// ---------- BP CRUD modal ----------
+
+function openBPCreateModal() {
+  if (currentUserRole !== 'admin' && currentUserRole !== 'pm') {
+    showToast('BP 생성 권한이 없습니다.'); return;
+  }
+  _bpModalState = { mode: 'create', id: null };
+  document.getElementById('bpModalTitle').textContent = '새 사업기획';
+  document.getElementById('bpModalSub').textContent = 'BP 정보를 입력하세요. 수주(won)는 저장 후 상세 화면에서 처리합니다.';
+  document.getElementById('bpTitle').value = '';
+  document.getElementById('bpClientOrg').value = '';
+  document.getElementById('bpDesc').value = '';
+  document.getElementById('bpStart').value = '';
+  document.getElementById('bpEnd').value = '';
+  document.getElementById('bpBudget').value = '';
+  document.getElementById('bpStatus').value = 'draft';
+  document.getElementById('bpNotes').value = '';
+  document.getElementById('bpDeleteBtn').style.display = 'none';
+  document.getElementById('bpModalError').textContent = '';
+  document.getElementById('bpModal').classList.add('active');
+  setTimeout(() => document.getElementById('bpTitle').focus(), 0);
+}
+
+function openBPEditModal(id) {
+  if (currentUserRole !== 'admin' && currentUserRole !== 'pm') {
+    showToast('BP 편집 권한이 없습니다.'); return;
+  }
+  const bp = allBusinessPlans.find(b => b.id === id);
+  if (!bp) { showToast('BP를 찾을 수 없습니다.'); return; }
+  _bpModalState = { mode: 'edit', id };
+  document.getElementById('bpModalTitle').textContent = 'BP 편집';
+  document.getElementById('bpModalSub').textContent = '사업기획 정보를 수정합니다.';
+  document.getElementById('bpTitle').value = bp.title || '';
+  document.getElementById('bpClientOrg').value = bp.client_org || '';
+  document.getElementById('bpDesc').value = bp.description || '';
+  document.getElementById('bpStart').value = bp.target_start_date || '';
+  document.getElementById('bpEnd').value = bp.target_end_date || '';
+  document.getElementById('bpBudget').value = bp.estimated_budget != null ? bp.estimated_budget : '';
+  // 'won' rows lock the status select to avoid inadvertent demotion bypassing
+  // the project-cleanup question (out of scope here).
+  const statusSel = document.getElementById('bpStatus');
+  statusSel.value = bp.status === 'won' ? 'draft' : (bp.status || 'draft');
+  // Always keep 'won' option disabled; status change to won uses transition btn
+  document.getElementById('bpNotes').value = bp.notes || '';
+  // Delete button: admin only
+  document.getElementById('bpDeleteBtn').style.display =
+    (currentUserRole === 'admin') ? '' : 'none';
+  document.getElementById('bpModalError').textContent = '';
+  document.getElementById('bpModal').classList.add('active');
+  setTimeout(() => document.getElementById('bpTitle').focus(), 0);
+}
+
+function closeBPModal() {
+  document.getElementById('bpModal').classList.remove('active');
+}
+
+async function saveBP() {
+  const errEl = document.getElementById('bpModalError');
+  errEl.textContent = '';
+  const title = (document.getElementById('bpTitle').value || '').trim();
+  if (!title) { errEl.textContent = '제목은 필수입니다.'; return; }
+  if (!supabaseAvailable) { errEl.textContent = '서버 연결 안됨'; return; }
+
+  const status = document.getElementById('bpStatus').value;
+  if (status === 'won') {
+    // Belt-and-suspenders: the option is disabled, but reject just in case.
+    errEl.textContent = '수주(won)는 상세 화면의 "수주 처리" 버튼으로만 가능합니다.';
+    return;
+  }
+
+  const budgetRaw = (document.getElementById('bpBudget').value || '').trim();
+  const payload = {
+    title,
+    client_org: (document.getElementById('bpClientOrg').value || '').trim() || null,
+    description: (document.getElementById('bpDesc').value || '').trim() || null,
+    target_start_date: document.getElementById('bpStart').value || null,
+    target_end_date: document.getElementById('bpEnd').value || null,
+    estimated_budget: budgetRaw === '' ? null : Number(budgetRaw),
+    status,
+    notes: (document.getElementById('bpNotes').value || '').trim() || null,
+  };
+  if (payload.estimated_budget != null && !isFinite(payload.estimated_budget)) {
+    errEl.textContent = '예산은 숫자여야 합니다.';
+    return;
+  }
+
+  const btn = document.getElementById('bpSaveBtn');
+  if (btn) btn.disabled = true;
+  try {
+    if (_bpModalState.mode === 'create') {
+      payload.created_by = currentUser ? currentUser.id : null;
+      const { data, error } = await supabaseClient
+        .from('business_plans')
+        .insert([payload])
+        .select()
+        .single();
+      if (error) throw error;
+      // Optimistic local update; full reload below for consistency
+      if (data) allBusinessPlans.unshift(data);
+      showToast('BP가 생성되었습니다.');
+    } else {
+      // Edit: don't allow demoting away from 'won' here (UI prevented above
+      // by mapping won→draft in the select; reject if someone forced it).
+      const orig = allBusinessPlans.find(b => b.id === _bpModalState.id);
+      if (orig && orig.status === 'won' && payload.status !== 'won') {
+        // Strip status from payload so we don't accidentally demote a won BP.
+        delete payload.status;
+      }
+      const { data, error } = await supabaseClient
+        .from('business_plans')
+        .update(payload)
+        .eq('id', _bpModalState.id)
+        .select()
+        .single();
+      if (error) throw error;
+      // Replace in cache
+      const idx = allBusinessPlans.findIndex(b => b.id === _bpModalState.id);
+      if (idx >= 0 && data) allBusinessPlans[idx] = data;
+      showToast('BP가 저장되었습니다.');
+    }
+    closeBPModal();
+    // Re-render: detail if currently open, else list
+    if (_bpDetailId) renderBPDetailBody();
+    else renderBPListBody(document.getElementById('plansContent'));
+  } catch (e) {
+    errEl.textContent = '저장 실패: ' + (e.message || e);
+    console.error('saveBP failed', e);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function deleteBP() {
+  // Called from inside the edit modal
+  if (currentUserRole !== 'admin') { showToast('관리자만 삭제할 수 있습니다.'); return; }
+  if (_bpModalState.mode !== 'edit' || !_bpModalState.id) return;
+  const bp = allBusinessPlans.find(b => b.id === _bpModalState.id);
+  const titleLabel = bp ? bp.title : _bpModalState.id;
+  if (!window.confirm(`정말로 이 BP를 삭제하시겠습니까?\n\n"${titleLabel}"\n\n핀된 코치 정보도 함께 삭제됩니다.`)) return;
+  if (bp && bp.project_id) {
+    if (!window.confirm('이 BP는 이미 수주되어 프로젝트가 생성되어 있습니다.\nBP 삭제는 프로젝트에는 영향을 주지 않지만, 추적 기록이 사라집니다.\n계속하시겠습니까?')) return;
+  }
+  try {
+    const { error } = await supabaseClient
+      .from('business_plans')
+      .delete()
+      .eq('id', _bpModalState.id);
+    if (error) throw error;
+    allBusinessPlans = allBusinessPlans.filter(b => b.id !== _bpModalState.id);
+    showToast('BP가 삭제되었습니다.');
+    closeBPModal();
+    closeBPDetail();
+  } catch (e) {
+    document.getElementById('bpModalError').textContent = '삭제 실패: ' + (e.message || e);
+    console.error('deleteBP failed', e);
+  }
+}
+
+// Convenience: delete from detail panel without opening edit modal
+async function deleteBPFromDetail(id) {
+  if (currentUserRole !== 'admin') { showToast('관리자만 삭제할 수 있습니다.'); return; }
+  _bpModalState = { mode: 'edit', id };
+  await deleteBP();
+}
+
+// ---------- Status transitions ----------
+
+async function transitionBPStatus(id, newStatus) {
+  if (currentUserRole !== 'admin' && currentUserRole !== 'pm') {
+    showToast('상태 변경 권한이 없습니다.'); return;
+  }
+  if (!supabaseAvailable) { showToast('서버 연결 안됨'); return; }
+  const bp = allBusinessPlans.find(b => b.id === id);
+  if (!bp) { showToast('BP를 찾을 수 없습니다.'); return; }
+
+  let confirmMsg = '';
+  if (newStatus === 'won') {
+    const acceptedCount = _bpDetailCoaches.filter(c => c.status === 'accepted').length;
+    confirmMsg = `수주(won) 처리합니다.\n\n` +
+      `→ 자동으로 프로젝트가 생성되고,\n` +
+      `→ accepted 상태인 코치(${acceptedCount}명)가 프로젝트 멤버로 등록됩니다.\n\n` +
+      `진행하시겠습니까?`;
+  } else if (newStatus === 'lost') {
+    confirmMsg = '실주(lost)로 표시합니다. 진행하시겠습니까?';
+  } else if (newStatus === 'cancelled') {
+    confirmMsg = '취소(cancelled)로 표시합니다. 진행하시겠습니까?';
+  } else if (newStatus === 'draft') {
+    confirmMsg = '"작성중(draft)"으로 되돌립니다. 진행하시겠습니까?';
+  } else if (newStatus === 'proposed') {
+    confirmMsg = '"제안(proposed)"으로 변경합니다. 진행하시겠습니까?';
+  }
+  if (confirmMsg && !window.confirm(confirmMsg)) return;
+
+  try {
+    const { error } = await supabaseClient
+      .from('business_plans')
+      .update({ status: newStatus })
+      .eq('id', id);
+    if (error) throw error;
+
+    // For 'won', the bp_on_won trigger asynchronously sets project_id —
+    // re-fetch the row to pick it up. (Trigger runs synchronously inside the
+    // same transaction so a SELECT right after sees the updated row.)
+    let updated = null;
+    try {
+      const { data: row, error: rErr } = await supabaseClient
+        .from('business_plans')
+        .select('id, title, client_org, description, status, target_start_date, target_end_date, estimated_budget, notes, project_id, created_by, created_at, updated_at')
+        .eq('id', id)
+        .single();
+      if (!rErr && row) updated = row;
+    } catch (_) { /* fall through to cache patch */ }
+    if (updated) {
+      const idx = allBusinessPlans.findIndex(b => b.id === id);
+      if (idx >= 0) allBusinessPlans[idx] = updated;
+    } else {
+      // Best-effort patch
+      const idx = allBusinessPlans.findIndex(b => b.id === id);
+      if (idx >= 0) allBusinessPlans[idx] = { ...allBusinessPlans[idx], status: newStatus };
+    }
+
+    if (newStatus === 'won') {
+      const projId = updated && updated.project_id ? updated.project_id : null;
+      showToast(projId ? `수주 완료 — 프로젝트 자동 생성됨` : `수주 완료 (프로젝트 ID 확인 중)`);
+      // Refresh user's project list cache if a loader exists, so the link works
+      try { if (typeof loadProjects === 'function') await loadProjects(); } catch (_) {}
+    } else {
+      showToast(`상태 변경: ${newStatus}`);
+    }
+    if (_bpDetailId === id) renderBPDetailBody();
+    else renderBPListBody(document.getElementById('plansContent'));
+  } catch (e) {
+    showToast('상태 변경 실패: ' + (e.message || e));
+    console.error('transitionBPStatus failed', e);
+  }
+}
+
+// ---------- Coach pinning ----------
+
+function openBPCoachPicker(bpId) {
+  if (currentUserRole !== 'admin' && currentUserRole !== 'pm') {
+    showToast('코치 추가 권한이 없습니다.'); return;
+  }
+  _bpCoachPickerState = { bp_id: bpId, q: '', results: [] };
+  const inp = document.getElementById('bpCoachPickerInput');
+  if (inp) inp.value = '';
+  const results = document.getElementById('bpCoachPickerResults');
+  if (results) results.innerHTML = `<div style="padding:14px;font-size:12px;color:var(--gray400);">검색어를 입력하세요.</div>`;
+  document.getElementById('bpCoachPickerError').textContent = '';
+  document.getElementById('bpCoachPickerModal').classList.add('active');
+  setTimeout(() => { if (inp) inp.focus(); }, 0);
+}
+
+function closeBPCoachPicker() {
+  document.getElementById('bpCoachPickerModal').classList.remove('active');
+  _bpCoachPickerState = { bp_id: null, q: '', results: [] };
+}
+
+async function searchBPCoachPicker(q) {
+  _bpCoachPickerState.q = q || '';
+  const host = document.getElementById('bpCoachPickerResults');
+  if (!host) return;
+  const query = (q || '').trim();
+  if (query.length < 1) {
+    host.innerHTML = `<div style="padding:14px;font-size:12px;color:var(--gray400);">검색어를 입력하세요.</div>`;
+    _bpCoachPickerState.results = [];
+    return;
+  }
+  if (!supabaseAvailable) {
+    host.innerHTML = `<div style="padding:14px;font-size:12px;color:var(--red);">서버 연결 안됨</div>`;
+    return;
+  }
+  // Prefer the in-memory coachDirectory cache (already loaded for the coach
+  // directory tab). Falls back to a Supabase query if the cache is empty.
+  const matchLocal = (dir) => {
+    const ql = query.toLowerCase();
+    const pinnedIds = new Set(_bpDetailCoaches.map(c => c.coach_directory_id));
+    return dir.filter(c => {
+      if (pinnedIds.has(c.id)) return false;   // already pinned
+      const expertiseTxt = Array.isArray(c.expertise) ? c.expertise.join(' ') : (c.expertise || '');
+      const hay = ((c.name || '') + ' ' + (c.email || '') + ' ' + (c.organization || '') + ' ' + expertiseTxt).toLowerCase();
+      return hay.includes(ql);
+    }).slice(0, 30);
+  };
+
+  let dir = (typeof coachDirectory !== 'undefined' && Array.isArray(coachDirectory)) ? coachDirectory : [];
+  if (dir.length === 0) {
+    try {
+      const { data, error } = await supabaseClient
+        .from('coaches_directory')
+        .select('id, name, email, organization, expertise, photo_url')
+        .or(`name.ilike.%${query}%,email.ilike.%${query}%,organization.ilike.%${query}%`)
+        .limit(30);
+      if (error) throw error;
+      dir = data || [];
+    } catch (e) {
+      host.innerHTML = `<div style="padding:14px;font-size:12px;color:var(--red);">검색 실패: ${escHtml(e.message || String(e))}</div>`;
+      return;
+    }
+  }
+  const matches = matchLocal(dir);
+  _bpCoachPickerState.results = matches;
+
+  if (matches.length === 0) {
+    host.innerHTML = `<div style="padding:14px;font-size:12px;color:var(--gray400);">일치하는 코치 없음.</div>`;
+    return;
+  }
+  host.innerHTML = matches.map(c => {
+    const meta = [c.email, c.organization].filter(Boolean).join(' · ');
+    return `
+      <div class="bp-picker-row">
+        <div class="pr-main">
+          <div class="pr-name">${escHtml(c.name || '(이름 없음)')}</div>
+          <div class="pr-meta">${escHtml(meta)}</div>
+        </div>
+        <button onclick="pinCoachToBP('${escAttr(c.id)}')">+ 추가</button>
+      </div>`;
+  }).join('');
+}
+
+async function pinCoachToBP(coachDirectoryId) {
+  const bpId = _bpCoachPickerState.bp_id;
+  if (!bpId) return;
+  if (!supabaseAvailable) { showToast('서버 연결 안됨'); return; }
+  const errEl = document.getElementById('bpCoachPickerError');
+  errEl.textContent = '';
+  try {
+    const payload = {
+      business_plan_id: bpId,
+      coach_directory_id: coachDirectoryId,
+      status: 'candidate',
+      added_by: currentUser ? currentUser.id : null,
+    };
+    const { error } = await supabaseClient
+      .from('business_plan_coaches')
+      .insert([payload]);
+    if (error) {
+      if (/duplicate|unique/i.test(error.message)) {
+        errEl.textContent = '이미 핀된 코치입니다.';
+        return;
+      }
+      throw error;
+    }
+    showToast('코치가 핀(고정)되었습니다.');
+    // Refresh the detail panel data; close picker
+    await _bpLoadDetailData(bpId);
+    renderBPDetailBody();
+    // Re-run search to drop the just-added coach from the list
+    searchBPCoachPicker(_bpCoachPickerState.q);
+  } catch (e) {
+    errEl.textContent = '추가 실패: ' + (e.message || e);
+    console.error('pinCoachToBP failed', e);
+  }
+}
+
+async function updateBPCoachStatus(bpcId, newStatus) {
+  if (!supabaseAvailable) { showToast('서버 연결 안됨'); return; }
+  try {
+    const { error } = await supabaseClient
+      .from('business_plan_coaches')
+      .update({ status: newStatus })
+      .eq('id', bpcId);
+    if (error) throw error;
+    // Patch local cache to avoid full re-fetch
+    const idx = _bpDetailCoaches.findIndex(c => c.id === bpcId);
+    if (idx >= 0) _bpDetailCoaches[idx] = { ..._bpDetailCoaches[idx], status: newStatus };
+    showToast('코치 상태 변경');
+    // No re-render needed for the select itself, but the accepted-count hint
+    // shown in the 수주 confirm would be stale; that's recomputed at trigger.
+  } catch (e) {
+    showToast('상태 변경 실패: ' + (e.message || e));
+    console.error('updateBPCoachStatus failed', e);
+  }
+}
+
+async function unpinCoachFromBP(bpcId) {
+  if (!confirm('이 코치를 BP에서 제거하시겠어요?')) return;
+  if (!supabaseAvailable) { showToast('서버 연결 안됨'); return; }
+  try {
+    const { error } = await supabaseClient
+      .from('business_plan_coaches')
+      .delete()
+      .eq('id', bpcId);
+    if (error) throw error;
+    _bpDetailCoaches = _bpDetailCoaches.filter(c => c.id !== bpcId);
+    showToast('제거되었습니다.');
+    renderBPDetailBody();
+  } catch (e) {
+    showToast('제거 실패: ' + (e.message || e));
+    console.error('unpinCoachFromBP failed', e);
   }
 }
 

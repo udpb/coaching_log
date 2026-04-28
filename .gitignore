@@ -31,3 +31,6 @@ supabase/.temp/
 # Temp scratch files used during local testing
 _*.json
 _*.txt
+
+.vercel
+.env*.local
