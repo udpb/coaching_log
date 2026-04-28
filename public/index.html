@@ -743,15 +743,22 @@ body {
 }
 .proj-context-banner button {
   margin-left: auto;
-  font-size: 11px;
-  padding: 4px 10px;
-  background: none;
-  border: 1px solid var(--gray300);
-  color: var(--gray500);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 12px;
+  background: var(--white);
+  border: 1px solid var(--gray400);
+  color: var(--dark);
   cursor: pointer;
   font-family: inherit;
+  border-radius: 4px;
+  transition: all 0.15s ease;
 }
-.proj-context-banner button:hover { border-color: var(--orange); color: var(--orange); }
+.proj-context-banner button:hover {
+  border-color: var(--orange);
+  color: var(--orange);
+  background: #FFF8F2;
+}
 
 /* Empty state: no projects */
 .proj-empty {
@@ -3612,6 +3619,7 @@ const i18n = {
     nav_list: '목록',
     nav_dashboard: '대시보드',
     nav_coaches: '코치 디렉토리',
+    nav_plans: '사업기획',
     nav_users: '사용자 관리',
     teams_title: '어떤 팀의 세션인가요?',
     teams_subtitle: '기존 팀을 선택하거나 새 팀을 만드세요',
@@ -3729,6 +3737,7 @@ const i18n = {
     nav_list: 'List',
     nav_dashboard: 'Dashboard',
     nav_coaches: 'Coach Directory',
+    nav_plans: 'Business Plans',
     nav_users: 'Users',
     teams_title: 'Which team is this session for?',
     teams_subtitle: 'Select an existing team or create a new one',
@@ -3841,6 +3850,7 @@ const i18n = {
     nav_list: '一覧',
     nav_dashboard: 'ダッシュボード',
     nav_coaches: 'コーチ一覧',
+    nav_plans: '事業企画',
     nav_users: 'ユーザー管理',
     teams_title: 'どのチームのセッションですか？',
     teams_subtitle: '既存のチームを選択するか新しいチームを作成',
@@ -4330,7 +4340,15 @@ function showApp() {
     .then(() => loadMyCoachDirectoryRow())
     .then(() => loadProjects())
     .then(() => { restoreCurrentProject(); return loadLogs(); })
-    .then(() => { renderTeams(); applyI18n(); })
+    .then(() => {
+      renderTeams();
+      applyI18n();
+      // After everything is loaded, attempt to restore the view from the URL
+      // hash so deep links / refresh / back-button land you on the right tab.
+      // restoreViewFromHash respects role and project gating; if it returns
+      // false (no hash or gated out) we stay on the default 'teams' view.
+      try { restoreViewFromHash(); } catch (e) { console.warn('hash restore skipped', e); }
+    })
     .catch(e => {
       console.error('Load logs failed:', e);
       renderTeams();
@@ -4985,7 +5003,13 @@ function downloadCsv() {
 // ============================================================
 // Navigation
 // ============================================================
-function switchView(name) {
+// Set of valid view names — used both for switchView and for URL hash parsing.
+// Keep in sync with the `data-view` values on the nav tabs.
+const VALID_VIEWS = new Set([
+  'teams', 'form', 'list', 'dashboard', 'coaches', 'users', 'plans', 'detail'
+]);
+
+function switchView(name, opts) {
   // Phase 4-B gate: new-session recording only makes sense inside a real
   // project. Bounce to the project picker if no project is selected (or only
   // the virtual orphan project is selected, since you can't ADD to that).
@@ -5006,8 +5030,72 @@ function switchView(name) {
   if (name === 'coaches') renderCoachDirectory();
   if (name === 'users') renderUsersView();
   if (name === 'plans') renderBPView();
+
+  // Sync URL hash so the active tab is bookmarkable / refresh-stable / back-
+  // button-friendly. Use replaceState by default (no history pollution); pass
+  // {pushHistory:true} to push a new entry (e.g., navigation from a deep link).
+  // Skip the sync when the change originated from a hashchange event itself
+  // (suppressHashUpdate) to avoid an update loop.
+  try {
+    if (typeof window !== 'undefined' && window.history && !(opts && opts.suppressHashUpdate)) {
+      const newHash = '#' + name;
+      if (window.location.hash !== newHash) {
+        if (opts && opts.pushHistory) window.history.pushState(null, '', newHash);
+        else window.history.replaceState(null, '', newHash);
+      }
+    }
+  } catch (_) { /* history API may be unavailable in some contexts; non-fatal */ }
+
   window.scrollTo(0, 0);
 }
+
+// Read the current view from the URL hash. Returns null if the hash is empty
+// or doesn't correspond to a known view.
+function viewFromLocationHash() {
+  try {
+    const raw = (window.location.hash || '').replace(/^#/, '').trim();
+    if (!raw) return null;
+    if (VALID_VIEWS.has(raw)) return raw;
+  } catch (_) { /* ignore */ }
+  return null;
+}
+
+// Restore the view referenced by URL hash on app boot — but ONLY if it makes
+// sense given the current auth/project state. Returns true if a non-default
+// view was activated.
+function restoreViewFromHash() {
+  const target = viewFromLocationHash();
+  if (!target) return false;
+  if (target === 'teams') return false;  // default; nothing to do
+  // Role-gated views: don't activate if the user isn't allowed there.
+  if ((target === 'users' || target === 'coaches' || target === 'plans') &&
+      currentUserRole !== 'admin' && currentUserRole !== 'pm') {
+    return false;
+  }
+  if (target === 'users' && currentUserRole !== 'admin') return false;
+  // Project-gated views: 'form' needs a real project context.
+  if (target === 'form' && (!currentProject || currentProject.__virtual)) {
+    return false;
+  }
+  // 'detail' requires a record id we don't track here; punt to teams.
+  if (target === 'detail') return false;
+  switchView(target, { suppressHashUpdate: true });
+  return true;
+}
+
+// Browser back/forward should follow URL hash too.
+window.addEventListener('hashchange', () => {
+  const target = viewFromLocationHash();
+  if (target && target !== currentView && VALID_VIEWS.has(target)) {
+    // Same role/project gating as on-boot restore
+    if ((target === 'users' || target === 'coaches' || target === 'plans') &&
+        currentUserRole !== 'admin' && currentUserRole !== 'pm') return;
+    if (target === 'users' && currentUserRole !== 'admin') return;
+    if (target === 'form' && (!currentProject || currentProject.__virtual)) return;
+    if (target === 'detail') return;
+    switchView(target, { suppressHashUpdate: true });
+  }
+});
 
 function goHome() {
   switchView('teams');
@@ -5399,7 +5487,7 @@ function renderTeams() {
       <span class="proj-label">PROJECT</span>
       <span class="proj-name">${escHtml(currentProject.name)}</span>
       ${currentProject.status && !currentProject.__virtual ? `<span class="proj-card-status ${escAttr(currentProject.status)}">${escHtml(currentProject.status)}</span>` : ''}
-      <button onclick="exitProject()">프로젝트 변경</button>
+      <button onclick="exitProject()" title="다른 프로젝트로 전환">↔ 프로젝트 변경</button>
     </div>`;
 
   let teamsHtml = '';
@@ -9257,7 +9345,11 @@ function openBPCreateModal() {
   document.getElementById('bpStart').value = '';
   document.getElementById('bpEnd').value = '';
   document.getElementById('bpBudget').value = '';
-  document.getElementById('bpStatus').value = 'draft';
+  // Reset status select state — was potentially disabled by a prior 'won' edit
+  const _bpStatusSel = document.getElementById('bpStatus');
+  _bpStatusSel.value = 'draft';
+  _bpStatusSel.disabled = false;
+  _bpStatusSel.title = '';
   document.getElementById('bpNotes').value = '';
   document.getElementById('bpDeleteBtn').style.display = 'none';
   document.getElementById('bpModalError').textContent = '';
@@ -9281,10 +9373,18 @@ function openBPEditModal(id) {
   document.getElementById('bpEnd').value = bp.target_end_date || '';
   document.getElementById('bpBudget').value = bp.estimated_budget != null ? bp.estimated_budget : '';
   // 'won' rows lock the status select to avoid inadvertent demotion bypassing
-  // the project-cleanup question (out of scope here).
+  // the project-cleanup question. Show the actual status in the select but
+  // disable it entirely so the user sees "수주" rather than a misleading "draft".
   const statusSel = document.getElementById('bpStatus');
-  statusSel.value = bp.status === 'won' ? 'draft' : (bp.status || 'draft');
-  // Always keep 'won' option disabled; status change to won uses transition btn
+  if (bp.status === 'won') {
+    statusSel.value = 'won';
+    statusSel.disabled = true;
+    statusSel.title = '수주 완료된 BP는 상태 변경 불가 (DB 트리거 보호)';
+  } else {
+    statusSel.value = bp.status || 'draft';
+    statusSel.disabled = false;
+    statusSel.title = '';
+  }
   document.getElementById('bpNotes').value = bp.notes || '';
   // Delete button: admin only
   document.getElementById('bpDeleteBtn').style.display =
@@ -9313,18 +9413,29 @@ async function saveBP() {
   }
 
   const budgetRaw = (document.getElementById('bpBudget').value || '').trim();
+  const startDate = document.getElementById('bpStart').value || null;
+  const endDate = document.getElementById('bpEnd').value || null;
+  // Date range sanity check (both dates entered → end must not precede start)
+  if (startDate && endDate && endDate < startDate) {
+    errEl.textContent = '종료일이 시작일보다 빠를 수 없습니다.';
+    return;
+  }
   const payload = {
     title,
     client_org: (document.getElementById('bpClientOrg').value || '').trim() || null,
     description: (document.getElementById('bpDesc').value || '').trim() || null,
-    target_start_date: document.getElementById('bpStart').value || null,
-    target_end_date: document.getElementById('bpEnd').value || null,
+    target_start_date: startDate,
+    target_end_date: endDate,
     estimated_budget: budgetRaw === '' ? null : Number(budgetRaw),
     status,
     notes: (document.getElementById('bpNotes').value || '').trim() || null,
   };
   if (payload.estimated_budget != null && !isFinite(payload.estimated_budget)) {
     errEl.textContent = '예산은 숫자여야 합니다.';
+    return;
+  }
+  if (payload.estimated_budget != null && payload.estimated_budget < 0) {
+    errEl.textContent = '예산은 0 이상이어야 합니다.';
     return;
   }
 

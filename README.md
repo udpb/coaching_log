@@ -25,7 +25,9 @@ No build step. No framework.
 - 📊 **Team timeline dashboard** — session strip, metrics trend chart (SVG), commitment-follow-through bars, repeat-blocker warning, real-issue evolution
 - 📄 **Reports** — individual or bundle, PDF or Word, with optional Evidence / STT appendices
 - ✏️ **Edit saved sessions** — full form hydration + UPDATE (created_at preserved)
-- 🔐 **Role-based access** — admin sees all coaches' sessions (read-only); coach sees only their own (full CRUD). Enforced at Postgres RLS layer, not just UI
+- 🔐 **3-tier RBAC** — admin (full system, manages users/coaches), pm (UDImpact/Underdogs internal staff, manages BPs and projects, read-all logs), coach (own sessions only, project-scoped). Enforced at Postgres RLS layer
+- 📋 **Business Plans (Phase 5-B)** — PM-only tab to manage 사업기획 lifecycle (draft → proposed → won/lost/cancelled). Pin candidate coaches from the directory, then "수주 처리" auto-creates a project and copies accepted coaches into project_members via a DB trigger
+- 🔗 **URL-routed tabs** — every nav tab updates the URL hash (`#plans`, `#dashboard`, etc.) so the active view is bookmarkable, refresh-stable, and back-button friendly
 - 🔑 **Password recovery** — standard email-link flow via Supabase Auth
 
 ---
@@ -47,6 +49,11 @@ supabase/
     20260421_add_narrative_and_evidence.sql
     20260421_phase15_scalar_fields.sql
     20260421_phase4a_roles_rls.sql
+    20260423_phase4b_projects.sql
+    20260423_phase4d_coaches_directory.sql
+    20260424_phase4e_pgvector_rag.sql
+    20260427_phase5a_pm_role.sql
+    20260428_phase5b_business_plans.sql
 lib/, data/, server.js      Legacy local-dev server + CSV backup scripts.
                             Not used in the Vercel deployment.
 vercel.json                 Static + /api routing
