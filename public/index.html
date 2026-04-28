@@ -4168,51 +4168,27 @@ function showAuthError(form, msg) {
   document.getElementById(form + '-error').textContent = msg;
 }
 
-async function checkAuth() {
-  // If the user arrived via a password-recovery email link, the URL hash
-  // contains `type=recovery`. Short-circuit so we don't dump them into the
-  // app before they set a new password.
-  if (typeof window !== 'undefined' && window.location.hash &&
-      /[#&]type=recovery(&|$)/.test(window.location.hash)) {
-    showAuthScreen();
-    showResetForm();
-    return;
-  }
-
-  try {
-    const { data: { session }, error } = await supabaseClient.auth.getSession();
-    if (error) throw error;
-    if (session) {
-      currentUser = session.user;
-      showApp();
-    } else {
-      showAuthScreen();
-    }
-  } catch (e) {
-    console.error('Auth check failed:', e);
-    showAuthScreen();
-  }
-
-  // Listen for auth state changes (tab switch, token refresh, password recovery, etc.)
+// Auth state listener — attached ONCE before any getSession() call so that
+// Supabase v2's INITIAL_SESSION event (which fires synchronously inside
+// getSession's resolution) is not missed by a late subscription.
+let _authListenerAttached = false;
+function attachAuthListener() {
+  if (_authListenerAttached) return;
+  _authListenerAttached = true;
   supabaseClient.auth.onAuthStateChange((event, session) => {
     if (event === 'PASSWORD_RECOVERY') {
       // Triggered when user arrives via the reset-password email link.
-      // A temporary session is already attached; we just need to prompt them
-      // for a new password.
       currentUser = session ? session.user : null;
       showResetForm();
       return;
     }
-    // INITIAL_SESSION fires on page load when a cached session exists (Supabase v2),
-    // SIGNED_IN fires on fresh login, TOKEN_REFRESHED fires on background refresh.
-    // In all three cases, currentUser may have just become defined — re-resolve the
-    // role to avoid the race where init's loadCurrentUserRole() ran before the
-    // session was attached and silently fell back to 'coach'.
+    // INITIAL_SESSION fires on page load with a cached session (Supabase v2).
+    // SIGNED_IN fires on fresh login. TOKEN_REFRESHED fires on background refresh.
+    // For all three, sync currentUser and re-resolve role if it isn't yet
+    // known to be admin/pm.
     if ((event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
       const wasUnauthenticated = !currentUser;
       currentUser = session.user;
-      // Only re-fetch when role is unresolved or stuck at the conservative
-      // 'coach' fallback. If the role is already 'admin' or 'pm', leave it.
       if (wasUnauthenticated || currentUserRole === null || currentUserRole === 'coach') {
         loadCurrentUserRole();
       }
@@ -4230,6 +4206,39 @@ async function checkAuth() {
       showAuthScreen();
     }
   });
+}
+
+async function checkAuth() {
+  // If the user arrived via a password-recovery email link, the URL hash
+  // contains `type=recovery`. Short-circuit so we don't dump them into the
+  // app before they set a new password.
+  if (typeof window !== 'undefined' && window.location.hash &&
+      /[#&]type=recovery(&|$)/.test(window.location.hash)) {
+    showAuthScreen();
+    showResetForm();
+    return;
+  }
+
+  // STEP 1: Attach listener BEFORE getSession so INITIAL_SESSION is captured.
+  // (This was Bug B in the audit — listener attachment after getSession was
+  // missing the INITIAL_SESSION event entirely, leaving the user stuck on
+  // role='coach' until a TOKEN_REFRESHED fired minutes later.)
+  attachAuthListener();
+
+  // STEP 2: Read the current session and route into the app.
+  try {
+    const { data: { session }, error } = await supabaseClient.auth.getSession();
+    if (error) throw error;
+    if (session) {
+      currentUser = session.user;
+      showApp();
+    } else {
+      showAuthScreen();
+    }
+  } catch (e) {
+    console.error('Auth check failed:', e);
+    showAuthScreen();
+  }
 }
 
 async function handleLogin() {
@@ -4362,7 +4371,11 @@ function showApp() {
 //   (2) admin manually setting linked_user_id
 async function loadMyCoachDirectoryRow() {
   myCoachDirectoryRow = null;
-  if (!supabaseAvailable || !currentUser) return;
+  // NOTE: supabaseAvailable used to gate this, but supabaseAvailable only flips
+  // to true INSIDE loadLogs() (later in the init chain), so the check made every
+  // first-paint init call a no-op. We rely on currentUser only — Supabase client
+  // is always usable once createClient() returned.
+  if (!currentUser) return;
   try {
     const { data, error } = await supabaseClient
       .from('coaches_directory')
@@ -4377,7 +4390,9 @@ async function loadMyCoachDirectoryRow() {
 // all, coach only ones they're a member of).
 async function loadProjects() {
   myProjects = [];
-  if (!supabaseAvailable) return;
+  // Same fix as loadMyCoachDirectoryRow — supabaseAvailable is set lazily inside
+  // loadLogs(), so checking it here was a dead branch on first paint.
+  if (!currentUser) return;
   try {
     const { data, error } = await supabaseClient
       .from('projects')
@@ -4425,7 +4440,13 @@ async function loadCurrentUserRole() {
   const navPlansEl = document.getElementById('navPlans');
   if (navPlansEl) navPlansEl.style.display = 'none';
 
-  if (!supabaseAvailable || !currentUser) {
+  // CRITICAL: do NOT gate on supabaseAvailable here. It is set true lazily
+  // inside loadLogs(), which runs AFTER this function in the init chain — so
+  // gating on it made first-paint role lookup a no-op for every page load,
+  // forcing the user to wait for TOKEN_REFRESHED (~1-3 minutes) to recover.
+  // The Supabase client returned by createClient() is always usable; only
+  // the presence of a logged-in user gates this lookup.
+  if (!currentUser) {
     currentUserRole = 'coach';
     renderRoleBadge();
     return;
@@ -4524,6 +4545,12 @@ const SUPABASE_URL = 'https://zwvrtxxgctyyctirntzj.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp3dnJ0eHhnY3R5eWN0aXJudHpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwNTYzNTQsImV4cCI6MjA5MTYzMjM1NH0.VGjjnvR12xBZ68GN1cXIFwqU_1tWLff3fWkOIselb1g';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// supabaseAvailable: misleadingly named — really means "loadLogs() has at least
+// once succeeded against Supabase". DO NOT use it to gate init-path functions
+// (loadCurrentUserRole / loadProjects / loadMyCoachDirectoryRow) because those
+// run BEFORE loadLogs in the chain and would deadlock on first paint.
+// User-action handlers further down the file may use it as a soft signal that
+// the network is reachable, since by then loadLogs has run.
 let supabaseAvailable = false;
 
 // ============================================================
