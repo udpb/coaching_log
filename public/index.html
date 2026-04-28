@@ -4412,22 +4412,53 @@ async function loadCurrentUserRole() {
     renderRoleBadge();
     return;
   }
-  try {
+
+  // Stale-token race mitigation:
+  //   getSession()이 페이지 로드 직후 캐시된 (만료 임박) 토큰을 그대로 돌려주는
+  //   경우, 첫 profiles 쿼리가 RLS에서 auth.uid()=null로 보여 빈 결과를 받고
+  //   'coach'로 떨어지는 race가 있다. Supabase가 ~1분 후에 자동 토큰 갱신을
+  //   firing해 줄 때까지 기다리지 않도록, 짧은 백오프 retry + 첫 실패 시
+  //   refreshSession() 강제 호출로 즉시 풀어낸다.
+  const tryFetchRole = async () => {
     const { data, error } = await supabaseClient
       .from('profiles')
       .select('role')
       .eq('id', currentUser.id)
       .single();
-    if (!error && data && data.role) {
-      currentUserRole = data.role;
-    } else {
-      currentUserRole = 'coach';
-      if (error) console.warn('Profile role lookup returned error; defaulting to coach.', error);
+    return { data, error };
+  };
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const { data, error } = await tryFetchRole();
+      if (!error && data && data.role) {
+        currentUserRole = data.role;
+        renderRoleBadge();
+        return;
+      }
+      if (error) {
+        console.warn(`Profile role lookup attempt ${attempt + 1} returned error:`, error);
+      }
+    } catch (e) {
+      console.warn(`Profile role lookup attempt ${attempt + 1} threw:`, e);
     }
-  } catch (e) {
-    currentUserRole = 'coach';
-    console.warn('Profile role lookup failed; defaulting to coach.', e);
+    // 첫 실패 직후 토큰을 강제 갱신해 다음 시도가 fresh JWT로 RLS를 통과하게 한다.
+    if (attempt === 0) {
+      try {
+        await supabaseClient.auth.refreshSession();
+      } catch (e) {
+        console.warn('refreshSession() failed:', e);
+      }
+    } else if (attempt < 2) {
+      // 두 번째 실패 시에는 짧게 기다렸다 다시 시도한다.
+      await new Promise(r => setTimeout(r, 600));
+    }
   }
+
+  // 3회 모두 실패 → 보수적으로 coach 폴백. TOKEN_REFRESHED가 나중에 fire되면
+  // onAuthStateChange 핸들러가 다시 loadCurrentUserRole()을 호출해 회복시킨다.
+  currentUserRole = 'coach';
+  console.warn('Profile role lookup exhausted retries; defaulting to coach (will recover on TOKEN_REFRESHED).');
   renderRoleBadge();
 }
 
