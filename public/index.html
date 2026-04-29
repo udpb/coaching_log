@@ -126,6 +126,22 @@ body {
 .nav-tab:hover { color: var(--white); background: rgba(255,255,255,0.1); }
 .nav-tab.active { color: var(--action-orange); background: rgba(255,255,255,0.15); font-weight: 600; }
 
+/* Hub return link (Phase H2) */
+.hub-link {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.65);
+  text-decoration: none;
+  padding: 5px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  white-space: nowrap;
+  transition: var(--transition);
+}
+.hub-link:hover {
+  color: var(--action-orange);
+  border-color: var(--action-orange);
+}
+
 /* Language switcher */
 .lang-switch {
   display: flex;
@@ -2975,6 +2991,7 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         CSV
       </button>
+      <a href="https://underdogs-hub.vercel.app/" class="hub-link" id="hubLink" title="허브로 돌아가기">↩ Hub</a>
       <div class="auth-user" id="authUserInfo" style="display:none">
         <span id="authUserRole" class="auth-role-badge" style="display:none;"></span>
         <span id="authUserName"></span>
