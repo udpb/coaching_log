@@ -1385,6 +1385,111 @@ body {
   text-align: center;
 }
 
+/* ---- Coach evaluations (Phase C3) ---- */
+.bp-eval-section {
+  margin-top: 18px;
+}
+.bp-eval-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 0 4px 6px;
+}
+.bp-eval-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.bp-eval-empty {
+  padding: 16px 12px;
+  font-size: 12px;
+  color: var(--gray400);
+  text-align: center;
+  border: 1px dashed var(--gray200);
+  background: var(--white);
+}
+.bp-eval-card {
+  border: 1px solid var(--gray200);
+  background: var(--white);
+  padding: 12px 14px;
+  border-radius: 6px;
+}
+.bp-eval-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.bp-eval-card-meta {
+  font-size: 11px;
+  color: var(--gray500);
+  margin-top: 2px;
+}
+.bp-eval-ratings {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px 18px;
+  margin-top: 4px;
+}
+.bp-eval-rating-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--dark);
+}
+.bp-eval-rating-row > span:first-child {
+  color: var(--gray500);
+}
+.bp-eval-stars {
+  letter-spacing: 1px;
+  color: var(--orange);
+  font-size: 13px;
+}
+.bp-eval-rehire-yes,
+.bp-eval-rehire-no {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.bp-eval-rehire-yes {
+  background: var(--green);
+  color: #fff;
+}
+.bp-eval-rehire-no {
+  background: var(--gray200, #e5e7eb);
+  color: var(--gray500);
+}
+.bp-eval-comment {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--dark);
+  white-space: pre-wrap;
+  background: var(--gray100, #f5f5f5);
+  padding: 8px 10px;
+  border-radius: 4px;
+}
+/* Modal: interactive star input */
+.bp-eval-rating-input {
+  display: inline-flex;
+  gap: 2px;
+  letter-spacing: 1px;
+  font-size: 18px;
+  cursor: pointer;
+  user-select: none;
+  color: var(--gray400);
+}
+.bp-eval-rating-input span {
+  cursor: pointer;
+  padding: 0 1px;
+}
+.bp-eval-rating-input span.active {
+  color: var(--orange);
+}
+
 /* Coach picker (sub-modal) */
 .bp-picker-results {
   border: 1px solid var(--gray200);
@@ -3299,6 +3404,79 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
       <div style="display:flex;gap:8px;margin-left:auto;">
         <button class="btn btn-ghost" onclick="closeBPModal()">취소</button>
         <button class="btn btn-primary" id="bpSaveBtn" onclick="saveBP()">저장</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Coach evaluation create/edit modal (admin/pm) — Phase C3 -->
+<div class="rpt-modal-overlay" id="bpEvalModal">
+  <div class="rpt-modal" style="max-width:560px;">
+    <h2 id="bpEvalModalTitle">코치 평가 작성</h2>
+    <div class="sub" id="bpEvalModalSub">핀(고정)된 코치 중에서 선택해 평가를 등록하세요.</div>
+    <div class="proj-modal-body">
+      <label>대상 코치 <span style="color:var(--red);">*</span></label>
+      <select id="bpEvalCoachSelect"></select>
+
+      <label style="margin-top:14px;">평가 점수</label>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px;">
+        <div class="bp-eval-rating-row" id="bpEvalRow_overall" style="font-size:13px;">
+          <span style="color:var(--dark);">종합 <span style="color:var(--red);">*</span></span>
+          <span class="bp-eval-rating-input" data-dim="overall">
+            <span data-n="1" onclick="setBPEvalRating('overall',1)">☆</span>
+            <span data-n="2" onclick="setBPEvalRating('overall',2)">☆</span>
+            <span data-n="3" onclick="setBPEvalRating('overall',3)">☆</span>
+            <span data-n="4" onclick="setBPEvalRating('overall',4)">☆</span>
+            <span data-n="5" onclick="setBPEvalRating('overall',5)">☆</span>
+          </span>
+        </div>
+        <div class="bp-eval-rating-row" id="bpEvalRow_communication" style="font-size:13px;">
+          <span style="color:var(--dark);">소통</span>
+          <span class="bp-eval-rating-input" data-dim="communication">
+            <span data-n="1" onclick="setBPEvalRating('communication',1)">☆</span>
+            <span data-n="2" onclick="setBPEvalRating('communication',2)">☆</span>
+            <span data-n="3" onclick="setBPEvalRating('communication',3)">☆</span>
+            <span data-n="4" onclick="setBPEvalRating('communication',4)">☆</span>
+            <span data-n="5" onclick="setBPEvalRating('communication',5)">☆</span>
+          </span>
+        </div>
+        <div class="bp-eval-rating-row" id="bpEvalRow_expertise" style="font-size:13px;">
+          <span style="color:var(--dark);">전문성</span>
+          <span class="bp-eval-rating-input" data-dim="expertise">
+            <span data-n="1" onclick="setBPEvalRating('expertise',1)">☆</span>
+            <span data-n="2" onclick="setBPEvalRating('expertise',2)">☆</span>
+            <span data-n="3" onclick="setBPEvalRating('expertise',3)">☆</span>
+            <span data-n="4" onclick="setBPEvalRating('expertise',4)">☆</span>
+            <span data-n="5" onclick="setBPEvalRating('expertise',5)">☆</span>
+          </span>
+        </div>
+        <div class="bp-eval-rating-row" id="bpEvalRow_reliability" style="font-size:13px;">
+          <span style="color:var(--dark);">신뢰성</span>
+          <span class="bp-eval-rating-input" data-dim="reliability">
+            <span data-n="1" onclick="setBPEvalRating('reliability',1)">☆</span>
+            <span data-n="2" onclick="setBPEvalRating('reliability',2)">☆</span>
+            <span data-n="3" onclick="setBPEvalRating('reliability',3)">☆</span>
+            <span data-n="4" onclick="setBPEvalRating('reliability',4)">☆</span>
+            <span data-n="5" onclick="setBPEvalRating('reliability',5)">☆</span>
+          </span>
+        </div>
+      </div>
+
+      <label style="margin-top:14px;display:flex;align-items:center;gap:8px;">
+        <input type="checkbox" id="bpEvalRehire" style="width:auto;margin:0;">
+        <span>재의뢰 의향 있음</span>
+      </label>
+
+      <label style="margin-top:10px;">코멘트</label>
+      <textarea id="bpEvalComment" placeholder="평가 내용을 자유롭게 작성하세요 (선택)" style="min-height:80px;"></textarea>
+
+      <div class="auth-error" id="bpEvalModalError" style="margin-top:10px;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger" id="bpEvalDeleteBtn" onclick="deleteBPEvalFromModal()" style="display:none;">평가 삭제</button>
+      <div style="display:flex;gap:8px;margin-left:auto;">
+        <button class="btn btn-ghost" onclick="closeBPEvalModal()">취소</button>
+        <button class="btn btn-primary" id="bpEvalSaveBtn" onclick="saveBPEval()">저장</button>
       </div>
     </div>
   </div>
@@ -8965,7 +9143,8 @@ let bpFilter = { q: '', status: '' };                   // toolbar filter
 let _bpModalState = { mode: 'create', id: null };       // create/edit modal
 let _bpDetailId = null;                                 // currently-open BP id (null => list view)
 let _bpDetailCoaches = [];                              // pinned coaches for the open BP
-let _bpDetailEvalCount = 0;                             // coach_evaluations count for the open BP
+let _bpDetailEvaluations = [];                          // full coach_evaluations rows for the open BP (Phase C3)
+let _bpEvalModalState = { mode: 'create', id: null, coach_directory_id: null, ratings: { overall: 0, communication: 0, expertise: 0, reliability: 0 } };
 let _bpCoachPickerState = { bp_id: null, q: '', results: [] };
 
 async function loadAllBusinessPlans() {
@@ -9139,7 +9318,7 @@ function updateBPFilter(key, value) {
 async function openBPDetail(id) {
   _bpDetailId = id;
   _bpDetailCoaches = [];
-  _bpDetailEvalCount = 0;
+  _bpDetailEvaluations = [];
   // Show a loading shell first so the click feels responsive
   const host = document.getElementById('plansContent');
   if (host) {
@@ -9192,14 +9371,60 @@ async function _bpLoadDetailData(bpId) {
   } catch (e) { console.warn('bp detail coaches failed', e); }
 
   try {
-    // Evaluation count — head:true returns count without rows
-    const { count, error: eErr } = await supabaseClient
+    // Phase C3: load full evaluation rows. Try the nested-select first (FK
+    // relationship to coaches_directory). If relationship inference fails,
+    // fall back to a two-step fetch (mirrors the business_plan_coaches block
+    // above). Sort by created_at DESC so newest evaluations appear first.
+    const { data: evalRows, error: eErr } = await supabaseClient
       .from('coach_evaluations')
-      .select('id', { count: 'exact', head: true })
-      .eq('business_plan_id', bpId);
-    if (!eErr && typeof count === 'number') _bpDetailEvalCount = count;
-    else if (eErr) console.warn('bp eval count failed', eErr);
-  } catch (e) { console.warn('bp eval count failed', e); }
+      .select('id, coach_directory_id, business_plan_id, project_id, evaluator_id, rating_overall, rating_communication, rating_expertise, rating_reliability, would_rehire, comment, created_at, updated_at, coaches_directory:coach_directory_id(id, name, email, organization)')
+      .eq('business_plan_id', bpId)
+      .order('created_at', { ascending: false });
+    let evalsBase = [];
+    if (eErr) {
+      console.warn('bp eval join failed; falling back', eErr);
+      const { data: rawEvals } = await supabaseClient
+        .from('coach_evaluations')
+        .select('*')
+        .eq('business_plan_id', bpId)
+        .order('created_at', { ascending: false });
+      const cIds = (rawEvals || []).map(r => r.coach_directory_id).filter(Boolean);
+      let cDirs = [];
+      if (cIds.length > 0) {
+        const { data: cd } = await supabaseClient
+          .from('coaches_directory')
+          .select('id, name, email, organization')
+          .in('id', cIds);
+        cDirs = cd || [];
+      }
+      evalsBase = (rawEvals || []).map(r => ({
+        ...r,
+        coaches_directory: cDirs.find(d => d.id === r.coach_directory_id) || null
+      }));
+    } else {
+      evalsBase = evalRows || [];
+    }
+    // Resolve evaluator display_name via a separate profiles fetch (no direct
+    // FK relationship from coach_evaluations to profiles in PostgREST).
+    const evIds = Array.from(new Set(evalsBase.map(r => r.evaluator_id).filter(Boolean)));
+    let profById = {};
+    if (evIds.length > 0) {
+      try {
+        const { data: profs, error: pErr } = await supabaseClient
+          .from('profiles')
+          .select('id, email, display_name')
+          .in('id', evIds);
+        if (!pErr && profs) profs.forEach(p => { profById[p.id] = p; });
+      } catch (pe) { console.warn('bp eval profile fetch failed', pe); }
+    }
+    _bpDetailEvaluations = evalsBase.map(r => ({
+      ...r,
+      _evaluator_profile: profById[r.evaluator_id] || null
+    }));
+  } catch (e) {
+    console.warn('bp eval load failed', e);
+    _bpDetailEvaluations = [];
+  }
 }
 
 function _bpTransitionsFor(status) {
@@ -9285,6 +9510,58 @@ function renderBPDetailBody() {
     ? `<button class="btn btn-danger" onclick="deleteBPFromDetail('${escAttr(bp.id)}')">🗑 삭제</button>`
     : '';
 
+  // Coach evaluation list (Phase C3). Permissions: any admin/pm can edit
+  // their own evaluation; admin can edit any; only admin can delete.
+  // RLS already enforces these; the UI gates layer on top.
+  const canWriteEval = (currentUserRole === 'admin' || currentUserRole === 'pm');
+  const evalListHtml = _bpDetailEvaluations.length === 0
+    ? `<div class="bp-eval-empty">아직 작성된 평가가 없습니다.</div>`
+    : _bpDetailEvaluations.map(ev => {
+        const cd = ev.coaches_directory || {};
+        const coachName = cd.name || '(이름 없음)';
+        const evProf = ev._evaluator_profile || null;
+        const evaluatorLabel = (evProf && (evProf.display_name || evProf.email)) || ev.evaluator_id || '-';
+        const createdAt = _bpFmtDate(ev.created_at);
+        const rehireBadge = (ev.would_rehire === true)
+          ? `<span class="bp-eval-rehire-yes">재의뢰 의향 ✓</span>`
+          : (ev.would_rehire === false)
+            ? `<span class="bp-eval-rehire-no">재의뢰 의향 ✗</span>`
+            : `<span class="bp-eval-rehire-no">재의뢰 의향 —</span>`;
+        const isOwn = currentUser && ev.evaluator_id === currentUser.id;
+        const canEditThis = canWriteEval && (currentUserRole === 'admin' || (currentUserRole === 'pm' && isOwn));
+        const canDeleteThis = (currentUserRole === 'admin');
+        const editEvalBtn = canEditThis
+          ? `<button class="btn btn-ghost" onclick="openBPEvalEditModal('${escAttr(ev.id)}')">✏️ 편집</button>`
+          : '';
+        const deleteEvalBtn = canDeleteThis
+          ? `<button class="btn btn-danger" onclick="deleteBPEval('${escAttr(ev.id)}')">🗑 삭제</button>`
+          : '';
+        const commentHtml = ev.comment
+          ? `<div class="bp-eval-comment">${escHtml(ev.comment)}</div>`
+          : '';
+        return `
+          <div class="bp-eval-card">
+            <div class="bp-eval-card-top">
+              <div>
+                <div style="font-weight:700;color:var(--dark);">${escHtml(coachName)}</div>
+                <div class="bp-eval-card-meta">평가자: ${escHtml(evaluatorLabel)} · 작성일: ${escHtml(createdAt)}</div>
+              </div>
+              <div style="display:flex;gap:6px;">${editEvalBtn}${deleteEvalBtn}</div>
+            </div>
+            <div class="bp-eval-ratings">
+              ${_bpStarRow('종합', ev.rating_overall)}
+              ${_bpStarRow('소통', ev.rating_communication)}
+              ${_bpStarRow('전문성', ev.rating_expertise)}
+              ${_bpStarRow('신뢰성', ev.rating_reliability)}
+            </div>
+            <div style="margin-top:6px;">${rehireBadge}</div>
+            ${commentHtml}
+          </div>`;
+      }).join('');
+  const newEvalBtn = canWriteEval
+    ? `<button class="btn btn-ghost" onclick="openBPEvalCreateModal('${escAttr(bp.id)}')">+ 새 평가</button>`
+    : '';
+
   host.innerHTML = `
     <div class="bp-detail-wrap">
       <button class="bp-detail-back" onclick="closeBPDetail()">← 목록으로</button>
@@ -9325,7 +9602,7 @@ function renderBPDetailBody() {
         </div>
         <div class="bp-detail-card">
           <h4>코치 평가</h4>
-          <p>${_bpDetailEvalCount}건 (Phase C3에서 상세 표시)</p>
+          <p style="font-size:13px;color:var(--gray500);margin-bottom:0;">${_bpDetailEvaluations.length}건</p>
         </div>
       </div>
 
@@ -9336,13 +9613,32 @@ function renderBPDetailBody() {
       <div class="bp-coach-list">
         ${coachRowsHtml}
       </div>
+
+      <div class="bp-eval-section">
+        <div class="bp-eval-header">
+          <h3 style="margin:0;font-size:15px;font-weight:700;">코치 평가</h3>
+          ${newEvalBtn}
+        </div>
+        <div class="bp-eval-list">
+          ${evalListHtml}
+        </div>
+      </div>
     </div>`;
+}
+
+// Helper: render a single rating dimension row with filled/empty stars.
+// Used by the read-only evaluation cards. The interactive rating input in
+// the modal uses its own per-span DOM update path (setBPEvalRating).
+function _bpStarRow(label, rating) {
+  const r = Math.max(0, Math.min(5, Number(rating) || 0));
+  const stars = '★'.repeat(r) + '☆'.repeat(5 - r);
+  return `<div class="bp-eval-rating-row"><span>${escHtml(label)}</span><span class="bp-eval-stars">${stars}</span></div>`;
 }
 
 function closeBPDetail() {
   _bpDetailId = null;
   _bpDetailCoaches = [];
-  _bpDetailEvalCount = 0;
+  _bpDetailEvaluations = [];
   renderBPListBody(document.getElementById('plansContent'));
 }
 
@@ -9770,6 +10066,292 @@ async function unpinCoachFromBP(bpcId) {
   } catch (e) {
     showToast('제거 실패: ' + (e.message || e));
     console.error('unpinCoachFromBP failed', e);
+  }
+}
+
+// ---------- Coach evaluations (Phase C3) ----------
+//
+// CRUD on coach_evaluations. RLS gates SELECT/INSERT to admin/pm,
+// UPDATE to admin or PM-own-row, DELETE to admin only. UI mirrors
+// these gates so coaches never see write affordances.
+//
+// Focus stability: setBPEvalRating mutates DOM in place rather than
+// re-rendering the modal — keeps the textarea focus during edits.
+
+function _bpEvalSetModalTitle(mode) {
+  const t = document.getElementById('bpEvalModalTitle');
+  if (t) t.textContent = mode === 'edit' ? '코치 평가 편집' : '코치 평가 작성';
+  const delBtn = document.getElementById('bpEvalDeleteBtn');
+  if (delBtn) {
+    // Delete is admin-only AND only meaningful in edit mode.
+    delBtn.style.display = (mode === 'edit' && currentUserRole === 'admin') ? '' : 'none';
+  }
+}
+
+function _bpEvalPaintRatingRow(dim) {
+  const row = document.getElementById('bpEvalRow_' + dim);
+  if (!row) return;
+  const n = Math.max(0, Math.min(5, Number(_bpEvalModalState.ratings[dim]) || 0));
+  const spans = row.querySelectorAll('.bp-eval-rating-input span[data-n]');
+  spans.forEach(s => {
+    const v = Number(s.getAttribute('data-n'));
+    if (v <= n) {
+      s.textContent = '★';
+      s.classList.add('active');
+    } else {
+      s.textContent = '☆';
+      s.classList.remove('active');
+    }
+  });
+}
+
+function _bpEvalPaintAllRatingRows() {
+  ['overall', 'communication', 'expertise', 'reliability'].forEach(_bpEvalPaintRatingRow);
+}
+
+function setBPEvalRating(dim, n) {
+  if (!_bpEvalModalState.ratings) _bpEvalModalState.ratings = { overall: 0, communication: 0, expertise: 0, reliability: 0 };
+  // Click the same rating again to clear (toggle off) — only meaningful for
+  // optional dimensions; overall is required at save time.
+  const cur = Number(_bpEvalModalState.ratings[dim]) || 0;
+  _bpEvalModalState.ratings[dim] = (cur === n) ? 0 : n;
+  _bpEvalPaintRatingRow(dim);
+}
+
+function _bpEvalPopulateCoachSelect(selectedId, lock) {
+  const sel = document.getElementById('bpEvalCoachSelect');
+  if (!sel) return;
+  sel.innerHTML = '';
+  if (!_bpDetailCoaches || _bpDetailCoaches.length === 0) {
+    const opt = document.createElement('option');
+    opt.value = '';
+    opt.textContent = '핀(고정)된 코치가 없습니다';
+    sel.appendChild(opt);
+    sel.disabled = true;
+    return;
+  }
+  for (const bpc of _bpDetailCoaches) {
+    const cd = bpc.coaches_directory || {};
+    const opt = document.createElement('option');
+    opt.value = bpc.coach_directory_id;
+    const orgPart = cd.organization ? ` (${cd.organization})` : '';
+    opt.textContent = (cd.name || '(이름 없음)') + orgPart;
+    if (selectedId && bpc.coach_directory_id === selectedId) opt.selected = true;
+    sel.appendChild(opt);
+  }
+  // In edit mode the coach is locked to the original; in create mode editable.
+  sel.disabled = !!lock;
+}
+
+function openBPEvalCreateModal(bpId) {
+  // Permission gate (UI). DB RLS enforces independently.
+  if (currentUserRole !== 'admin' && currentUserRole !== 'pm') {
+    showToast('평가 작성 권한이 없습니다.'); return;
+  }
+  if (!currentUser) { showToast('로그인이 필요합니다.'); return; }
+  if (!_bpDetailId || _bpDetailId !== bpId) {
+    // Defensive: only allow opening from the currently-open BP detail.
+    showToast('BP 상세가 열려있지 않습니다.'); return;
+  }
+  _bpEvalModalState = {
+    mode: 'create',
+    id: null,
+    coach_directory_id: null,
+    ratings: { overall: 0, communication: 0, expertise: 0, reliability: 0 }
+  };
+  _bpEvalSetModalTitle('create');
+  _bpEvalPopulateCoachSelect(null, false);
+  const rehire = document.getElementById('bpEvalRehire');
+  if (rehire) rehire.checked = false;
+  const cmt = document.getElementById('bpEvalComment');
+  if (cmt) cmt.value = '';
+  const errEl = document.getElementById('bpEvalModalError');
+  if (errEl) errEl.textContent = '';
+  _bpEvalPaintAllRatingRows();
+  // If no coaches pinned, show inline error and disable Save.
+  const saveBtn = document.getElementById('bpEvalSaveBtn');
+  if (_bpDetailCoaches.length === 0) {
+    if (errEl) errEl.textContent = '먼저 코치를 핀(고정)하세요.';
+    if (saveBtn) saveBtn.disabled = true;
+  } else {
+    if (saveBtn) saveBtn.disabled = false;
+  }
+  document.getElementById('bpEvalModal').classList.add('active');
+  setTimeout(() => {
+    const sel = document.getElementById('bpEvalCoachSelect');
+    if (sel) sel.focus();
+  }, 0);
+}
+
+function openBPEvalEditModal(evalId) {
+  if (currentUserRole !== 'admin' && currentUserRole !== 'pm') {
+    showToast('평가 편집 권한이 없습니다.'); return;
+  }
+  if (!currentUser) { showToast('로그인이 필요합니다.'); return; }
+  const ev = _bpDetailEvaluations.find(r => r.id === evalId);
+  if (!ev) { showToast('평가를 찾을 수 없습니다.'); return; }
+  // PM may only edit their own; admin any.
+  const isOwn = ev.evaluator_id === currentUser.id;
+  if (currentUserRole === 'pm' && !isOwn) {
+    showToast('본인이 작성한 평가만 편집할 수 있습니다.'); return;
+  }
+  _bpEvalModalState = {
+    mode: 'edit',
+    id: ev.id,
+    coach_directory_id: ev.coach_directory_id,
+    ratings: {
+      overall: Number(ev.rating_overall) || 0,
+      communication: Number(ev.rating_communication) || 0,
+      expertise: Number(ev.rating_expertise) || 0,
+      reliability: Number(ev.rating_reliability) || 0
+    }
+  };
+  _bpEvalSetModalTitle('edit');
+  _bpEvalPopulateCoachSelect(ev.coach_directory_id, true);
+  const rehire = document.getElementById('bpEvalRehire');
+  if (rehire) rehire.checked = (ev.would_rehire === true);
+  const cmt = document.getElementById('bpEvalComment');
+  if (cmt) cmt.value = ev.comment || '';
+  const errEl = document.getElementById('bpEvalModalError');
+  if (errEl) errEl.textContent = '';
+  const saveBtn = document.getElementById('bpEvalSaveBtn');
+  if (saveBtn) saveBtn.disabled = false;
+  _bpEvalPaintAllRatingRows();
+  document.getElementById('bpEvalModal').classList.add('active');
+  setTimeout(() => { if (cmt) cmt.focus(); }, 0);
+}
+
+function closeBPEvalModal() {
+  const m = document.getElementById('bpEvalModal');
+  if (m) m.classList.remove('active');
+  _bpEvalModalState = {
+    mode: 'create',
+    id: null,
+    coach_directory_id: null,
+    ratings: { overall: 0, communication: 0, expertise: 0, reliability: 0 }
+  };
+}
+
+async function saveBPEval() {
+  // UI permission gate.
+  if (currentUserRole !== 'admin' && currentUserRole !== 'pm') {
+    showToast('평가 저장 권한이 없습니다.'); return;
+  }
+  if (!currentUser) { showToast('로그인이 필요합니다.'); return; }
+  if (!supabaseAvailable) { showToast('서버 연결 안됨'); return; }
+  const errEl = document.getElementById('bpEvalModalError');
+  const setErr = (m) => { if (errEl) errEl.textContent = m; };
+  setErr('');
+
+  const sel = document.getElementById('bpEvalCoachSelect');
+  const coachId = sel ? sel.value : '';
+  if (!coachId) { setErr('대상 코치를 선택하세요.'); return; }
+
+  const r = _bpEvalModalState.ratings || {};
+  const overall = Number(r.overall) || 0;
+  if (overall < 1 || overall > 5) {
+    setErr('"종합" 점수를 1~5점으로 매겨주세요.'); return;
+  }
+  const optInt = (v) => {
+    const n = Number(v) || 0;
+    return (n >= 1 && n <= 5) ? n : null;
+  };
+
+  const rehire = document.getElementById('bpEvalRehire');
+  const cmt = document.getElementById('bpEvalComment');
+  const commentRaw = cmt ? cmt.value : '';
+  const comment = (commentRaw && commentRaw.trim().length > 0) ? commentRaw : null;
+
+  const bp = allBusinessPlans.find(b => b.id === _bpDetailId);
+  if (!bp) { setErr('BP를 찾을 수 없습니다.'); return; }
+
+  const payloadBase = {
+    coach_directory_id: coachId,
+    business_plan_id: bp.id,
+    project_id: bp.project_id || null,
+    rating_overall: overall,
+    rating_communication: optInt(r.communication),
+    rating_expertise: optInt(r.expertise),
+    rating_reliability: optInt(r.reliability),
+    would_rehire: rehire ? !!rehire.checked : false,
+    comment: comment
+  };
+
+  const saveBtn = document.getElementById('bpEvalSaveBtn');
+  if (saveBtn) saveBtn.disabled = true;
+  try {
+    if (_bpEvalModalState.mode === 'edit' && _bpEvalModalState.id) {
+      // UPDATE — coach_directory_id is locked in edit mode but we still send
+      // the full payload for consistency. evaluator_id NOT updated (the RLS
+      // policy checks it against auth.uid()).
+      const { error } = await supabaseClient
+        .from('coach_evaluations')
+        .update(payloadBase)
+        .eq('id', _bpEvalModalState.id);
+      if (error) throw error;
+      showToast('평가가 수정되었습니다.');
+    } else {
+      // INSERT — set evaluator_id to the current user.
+      const insertPayload = { ...payloadBase, evaluator_id: currentUser.id };
+      const { error } = await supabaseClient
+        .from('coach_evaluations')
+        .insert(insertPayload);
+      if (error) throw error;
+      showToast('평가가 저장되었습니다.');
+    }
+    // Refresh detail data and re-render the panel.
+    await _bpLoadDetailData(_bpDetailId);
+    renderBPDetailBody();
+    closeBPEvalModal();
+  } catch (e) {
+    setErr('저장 실패: ' + (e.message || e));
+    console.error('saveBPEval failed', e);
+    if (saveBtn) saveBtn.disabled = false;
+  }
+}
+
+async function deleteBPEval(evalId) {
+  if (currentUserRole !== 'admin') {
+    showToast('평가 삭제는 관리자만 가능합니다.'); return;
+  }
+  if (!supabaseAvailable) { showToast('서버 연결 안됨'); return; }
+  if (!confirm('이 평가를 삭제하시겠어요? 되돌릴 수 없습니다.')) return;
+  try {
+    const { error } = await supabaseClient
+      .from('coach_evaluations')
+      .delete()
+      .eq('id', evalId);
+    if (error) throw error;
+    _bpDetailEvaluations = _bpDetailEvaluations.filter(r => r.id !== evalId);
+    showToast('평가가 삭제되었습니다.');
+    renderBPDetailBody();
+  } catch (e) {
+    showToast('삭제 실패: ' + (e.message || e));
+    console.error('deleteBPEval failed', e);
+  }
+}
+
+// Delete from inside the edit modal (admin-only). Closes the modal on success.
+async function deleteBPEvalFromModal() {
+  if (currentUserRole !== 'admin') {
+    showToast('평가 삭제는 관리자만 가능합니다.'); return;
+  }
+  const id = _bpEvalModalState && _bpEvalModalState.id;
+  if (!id) { showToast('편집 중인 평가가 없습니다.'); return; }
+  if (!confirm('이 평가를 삭제하시겠어요? 되돌릴 수 없습니다.')) return;
+  try {
+    const { error } = await supabaseClient
+      .from('coach_evaluations')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
+    _bpDetailEvaluations = _bpDetailEvaluations.filter(r => r.id !== id);
+    showToast('평가가 삭제되었습니다.');
+    closeBPEvalModal();
+    renderBPDetailBody();
+  } catch (e) {
+    showToast('삭제 실패: ' + (e.message || e));
+    console.error('deleteBPEvalFromModal failed', e);
   }
 }
 
