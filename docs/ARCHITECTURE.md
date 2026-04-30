@@ -316,8 +316,9 @@ coach_evaluations  📋 (Phase B에서 도입)
 
 | 앱 | Supabase 연결 | RAG RPC 호출 | 상태 |
 |---|---|---|---|
-| **coaching-log** | ✅ profiles, projects, project_members, coaching_logs, coaches_directory, storage | ❌ (의도적 — coach-finder 영역) | **production ready** |
-| **coach-finder** | ❌ 아직 JSON + Firebase | 📋 Phase C2 | 마이그레이션 대기 |
+| **coaching-log** | ✅ profiles, projects, project_members, coaching_logs, coaches_directory, business_plans, business_plan_coaches, coach_evaluations, storage | ❌ (의도적 — coach-finder 영역) | **production ready** |
+| **coach-finder** | ✅ coaches_directory, business_plans, business_plan_coaches, coach_evaluations, profiles (Auth) — **Firebase 0%** (Phase F 완료) | 📋 Phase C2 | **production ready** (RAG UI 대기) |
+| **underdogs-hub** | ✅ profiles (Auth만) | — | local commit (배포 대기) |
 | **ud-ops** | ❌ 자체 DB | 📋 Phase D | 통합 대기 |
 
 ---
@@ -345,11 +346,16 @@ coach_evaluations  📋 (Phase B에서 도입)
 |---|---|---|---|
 | **5-A polish** | 미배정 세션 → 프로젝트 이동 UI · 폼 컨텍스트 배너 · 상세뷰 프로젝트 표시 | 🔥 즉시 | 진행 중 |
 | **C1** | coach-finder 백엔드 Supabase 연결 (JSON → coaches_directory) | 🔥 다음 | |
-| **C2** | coach-finder PM RAG 검색 UI (FAISS → search_coaches_by_embedding) | 🟡 | C1 후 |
-| **B** | business_plans + coach_evaluations 스키마 + 수주 트리거 | 🟡 | D 진입 전 |
-| **D** | ud-ops Supabase 통합 + 코치 추천 RPC 호출 + 수주 자동화 | 🟡 | |
-| **C3** | coach-finder 코치 평가 UI (PM이 평가 입력) | 🟢 | 첫 사이클 후 |
-| **C4** | Firebase Auth → Supabase Auth 통합 (선택) | 🟢 | 안정화 후 |
+| **C1** | coach-finder coach data (Supabase 직접 fetch) | ✅ 완료 | — |
+| **B/5-B** | business_plans + business_plan_coaches + coach_evaluations 스키마 + 수주 트리거 | ✅ 완료 | — |
+| **C3** | coaching-log BP 상세에 코치 평가 CRUD UI | ✅ 완료 | — |
+| **C4** | coach-finder Firebase Auth → Supabase Auth | ✅ 완료 | — |
+| **F** | coach-finder Firebase 0% (Firestore overlay/projects → Supabase, firebase 패키지 제거) | ✅ 완료 | — |
+| **H1/H2** | underdogs-hub 앱 + 양쪽 앱 헤더 Hub 링크 | 🟡 코드 완료, 배포 대기 | 사용자 액션 |
+| **C2** | coach-finder PM RAG 검색 UI (pgvector → search_coaches_by_embedding RPC) | 🟡 | F 후 |
+| **C5** | coach-finder에 코치 평가 read-only aggregated view (코치별 평균 별점) | 🟡 | C2 병행 |
+| **H3** | 진짜 SSO (cookie subdomain or OAuth handoff) | 🟡 | 도메인 정리 후 |
+| **D** | ud-ops 부트스트랩 — BP+평가 CRUD를 coaching-log에서 이전 | 🟡 | H3 이후 |
 | **Z** | **AWS 이관** (전체 안정화 후 최종) | 🏁 마지막 | 모든 Phase 완료 후 |
 
 ### 🏁 Phase Z — AWS 이관 (최종)
@@ -463,10 +469,12 @@ coach_evaluations  📋 (Phase B에서 도입)
 
 ## 부록 B. 다른 두 앱 통합 가이드
 
-### coach-finder 통합 시 (Phase C1)
-- 기존 `python-service/coaches_db.json` → 신규 `coaches_directory` 테이블 read
-- 인증: 당분간 Firebase 유지 OK, 나중에 Supabase Auth로 일원화 (Phase C4)
-- RAG 검색: 자체 FAISS → `search_coaches_by_embedding` RPC
+### coach-finder 통합 (Phase C1+C4+F 완료)
+- 코치 풀: `python-service/coaches_db.json` → `coaches_directory` ✅
+- 인증: Firebase Auth → Supabase Auth ✅ (Phase C4)
+- 데이터: Firestore overlay/projects → `coaches_directory` 직접 + BP 테이블들 ✅ (Phase F)
+- 패키지: `firebase` runtime dep 제거됨 (`firebase-admin`만 devDep, 일회성 마이그레이션용)
+- RAG 검색: 자체 FAISS → `search_coaches_by_embedding` RPC (Phase C2 대기)
 
 ### ud-ops 통합 시 (Phase D)
 - 기존 자체 DB는 일단 유지 (자체 도메인 데이터)
