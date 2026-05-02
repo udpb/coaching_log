@@ -127,7 +127,15 @@ module.exports = async function handler(req, res) {
       contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
       generationConfig: {
         temperature: 0.4,
-        maxOutputTokens: 5120,
+        // gemini-2.5-pro uses thinking tokens by default (~1500-3000 hidden
+        // reasoning tokens before the visible answer). Our JSON output alone
+        // is ~5000-8000 tokens with KO+EN mixed. The previous limit of 5120
+        // was sized for gemini-3.1-pro which had no thinking — under 2.5-pro
+        // the answer was being truncated mid-JSON, parseJsonFromText returned
+        // null, and fields ended up {} (UI silently skipped applying anything,
+        // surfacing only the metrics-shape warning).
+        // Bumping to 16384 gives ~3x headroom: thinking + full answer + buffer.
+        maxOutputTokens: 16384,
         responseMimeType: 'application/json'
       },
       // Block none — we trust the input is a coaching transcript, not adversarial.
