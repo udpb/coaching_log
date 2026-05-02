@@ -1,7 +1,10 @@
 // Vercel Serverless Function — STT transcript → structured coaching log
 // POST /api/extract-session
 //
-// Backend: Google Gemini 3.1 Pro (generativelanguage.googleapis.com)
+// Backend: Google Gemini (PRIMARY: gemini-2.5-pro by default, FALLBACK: gemini-2.5-flash)
+//          Auto-retry on 429/5xx (1s/3s/7s backoff), then auto-fallback to flash
+//          if PRIMARY exhausts retries on retryable status. Set GEMINI_CHAT_MODEL
+//          and/or GEMINI_CHAT_FALLBACK_MODEL env vars to override.
 // Auth:    GEMINI_API_KEY env var (server-side only)
 //
 // Body:
@@ -24,15 +27,67 @@
 //   data: { narrative_summary, fields, low_confidence, raw, usage }
 
 const GEMINI_KEY   = '';   // resolved at request time from env
-// Model fallback. The literal 'gemini-3.1-pro' isn't a valid v1beta ID —
-// preview models always carry a dated suffix (e.g.
-// 'gemini-2.5-pro-preview-04-XX'). We fall back to the stable
-// 'gemini-2.5-pro' here. To use a preview model, set GEMINI_CHAT_MODEL in
-// Vercel → Project Settings → Environment Variables to the EXACT id listed
-// at `GET https://generativelanguage.googleapis.com/v1beta/models?key=KEY`.
-// Do NOT use bare 'gemini-3.1-pro' — it 404s.
-const MODEL        = process.env.GEMINI_CHAT_MODEL || 'gemini-2.5-pro';
+// PRIMARY model — env override allowed. Don't use bare 'gemini-3.1-pro' (404
+// in v1beta); preview IDs need a dated suffix.
+const PRIMARY_MODEL  = process.env.GEMINI_CHAT_MODEL || 'gemini-2.5-pro';
+// FALLBACK model — used automatically when PRIMARY exhausts retries on a
+// retryable status (typically 503 high-demand). Flash has bigger capacity
+// and is ~10× faster; quality is close enough for STT extraction.
+const FALLBACK_MODEL = process.env.GEMINI_CHAT_FALLBACK_MODEL || 'gemini-2.5-flash';
+// Backoff schedule for retries. 4 fetches total per model
+// (initial + 3 retries) — worst case ~11s per model before falling back.
+const RETRY_DELAYS_MS = [1000, 3000, 7000];
 const API_BASE     = 'https://generativelanguage.googleapis.com/v1beta';
+
+function isRetryableStatus(status) {
+  return status === 429 || status === 500 || status === 502 || status === 503 || status === 504;
+}
+
+// Single-model fetch with retry on transient failures (429/5xx/network).
+// Returns the final fetch Response object (caller decides what to do).
+async function fetchWithRetry(model, body, apiKey, isStream) {
+  const op = isStream ? 'streamGenerateContent?alt=sse&' : 'generateContent?';
+  const url = `${API_BASE}/models/${encodeURIComponent(model)}:${op}key=${encodeURIComponent(apiKey)}`;
+  let lastResponse = null;
+  for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
+    let response;
+    try {
+      response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+    } catch (err) {
+      // Network-level error — treat as retryable.
+      if (attempt < RETRY_DELAYS_MS.length) {
+        await new Promise(r => setTimeout(r, RETRY_DELAYS_MS[attempt]));
+        continue;
+      }
+      throw err;
+    }
+    if (response.ok) return response;
+    if (!isRetryableStatus(response.status)) return response;
+    lastResponse = response;
+    if (attempt < RETRY_DELAYS_MS.length) {
+      try { await response.text(); } catch (_) { /* drain */ }
+      await new Promise(r => setTimeout(r, RETRY_DELAYS_MS[attempt]));
+    }
+  }
+  return lastResponse;
+}
+
+// Try PRIMARY (with retries); on persistent retryable failure, try FALLBACK
+// (also with retries). Returns { response, modelUsed }.
+async function callWithFallback(body, apiKey, isStream) {
+  let response = await fetchWithRetry(PRIMARY_MODEL, body, apiKey, isStream);
+  let modelUsed = PRIMARY_MODEL;
+  if (!response.ok && isRetryableStatus(response.status)) {
+    try { await response.text(); } catch (_) { /* drain */ }
+    response = await fetchWithRetry(FALLBACK_MODEL, body, apiKey, isStream);
+    modelUsed = FALLBACK_MODEL;
+  }
+  return { response, modelUsed };
+}
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -89,28 +144,27 @@ module.exports = async function handler(req, res) {
       return handleStream(res, body, apiKey, prev);
     }
 
-    // Non-stream
-    const url = `${API_BASE}/models/${encodeURIComponent(MODEL)}:generateContent?key=${encodeURIComponent(apiKey)}`;
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
+    // Non-stream — auto-retry + fallback flash on persistent 503/etc.
+    const { response, modelUsed } = await callWithFallback(body, apiKey, false);
     if (!response.ok) {
       const errText = await response.text();
-      return res.status(response.status).json({ error: errText });
+      return res.status(response.status).json({ error: errText, modelTried: modelUsed });
     }
     const data = await response.json();
     const raw = extractGeminiText(data);
     if (!raw) {
-      return res.status(500).json({ error: 'Model returned no text', detail: data });
+      return res.status(500).json({ error: 'Model returned no text', detail: data, modelUsed });
     }
     const parsed = parseJsonFromText(raw);
     if (!parsed) {
-      return res.status(500).json({ error: 'Model did not return valid JSON', raw });
+      return res.status(500).json({ error: 'Model did not return valid JSON', raw, modelUsed });
     }
     const normalized = normalizeModelOutput(parsed, prev);
-    return res.status(200).json(Object.assign({}, normalized, { raw, usage: data.usageMetadata || null }));
+    return res.status(200).json(Object.assign({}, normalized, {
+      raw,
+      usage: data.usageMetadata || null,
+      modelUsed
+    }));
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
@@ -132,21 +186,19 @@ async function handleStream(res, body, apiKey, prev) {
     res.write(`data: ${JSON.stringify(data)}\n\n`);
   };
 
-  const url = `${API_BASE}/models/${encodeURIComponent(MODEL)}:streamGenerateContent?alt=sse&key=${encodeURIComponent(apiKey)}`;
   let upstream;
+  let modelUsed;
   try {
-    upstream = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
+    const result = await callWithFallback(body, apiKey, true);
+    upstream = result.response;
+    modelUsed = result.modelUsed;
   } catch (err) {
     writeEvent('error', { error: 'upstream fetch failed: ' + err.message });
     return res.end();
   }
   if (!upstream.ok || !upstream.body) {
     const errTxt = await upstream.text().catch(() => '');
-    writeEvent('error', { error: errTxt || `upstream status ${upstream.status}` });
+    writeEvent('error', { error: errTxt || `upstream status ${upstream.status}`, modelTried: modelUsed });
     return res.end();
   }
 
@@ -188,7 +240,7 @@ async function handleStream(res, body, apiKey, prev) {
   const normalized = parsed
     ? normalizeModelOutput(parsed, prev)
     : { narrative_summary: '', fields: {}, low_confidence: [] };
-  writeEvent('done', Object.assign({}, normalized, { raw: fullText, usage }));
+  writeEvent('done', Object.assign({}, normalized, { raw: fullText, usage, modelUsed }));
   return res.end();
 }
 
