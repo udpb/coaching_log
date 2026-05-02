@@ -127,16 +127,22 @@ module.exports = async function handler(req, res) {
       contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
       generationConfig: {
         temperature: 0.4,
-        // gemini-2.5-pro uses thinking tokens by default (~1500-3000 hidden
-        // reasoning tokens before the visible answer). Our JSON output alone
-        // is ~5000-8000 tokens with KO+EN mixed. The previous limit of 5120
-        // was sized for gemini-3.1-pro which had no thinking — under 2.5-pro
-        // the answer was being truncated mid-JSON, parseJsonFromText returned
-        // null, and fields ended up {} (UI silently skipped applying anything,
-        // surfacing only the metrics-shape warning).
-        // Bumping to 16384 gives ~3x headroom: thinking + full answer + buffer.
+        // Token budget for thinking + answer combined. gemini-2.5-pro uses
+        // hidden reasoning tokens before emitting the JSON answer. The
+        // previous 5120 (sized for gemini-3.1-pro which had no thinking)
+        // was too tight; bumping to 16384 gives ~3x headroom.
         maxOutputTokens: 16384,
-        responseMimeType: 'application/json'
+        // Force JSON output so parseJsonFromText doesn't have to deal with
+        // markdown fences in the happy path.
+        responseMimeType: 'application/json',
+        // CRITICAL for gemini-2.5-pro: cap thinking explicitly. Without this
+        // the model's default unbounded thinking + responseMimeType:json
+        // sometimes finishes thinking and emits zero visible text, returning
+        // an empty stream. A modest 1024 budget covers schema-anchored
+        // structured extraction; the real reasoning happens in the prompt.
+        // (gemini-2.5-flash accepts 0 to disable thinking entirely; 1024
+        //  works for both PRIMARY and FALLBACK without per-model branching.)
+        thinkingConfig: { thinkingBudget: 1024 }
       },
       // Block none — we trust the input is a coaching transcript, not adversarial.
       // Adjust if false-positive safety blocks become an issue.
@@ -212,6 +218,8 @@ async function handleStream(res, body, apiKey, prev) {
 
   let fullText = '';
   let usage = null;
+  let lastFinishReason = null;
+  let chunkCount = 0;
   const reader = upstream.body.getReader();
   const decoder = new TextDecoder();
   let buf = '';
@@ -234,6 +242,7 @@ async function handleStream(res, body, apiKey, prev) {
       if (!dataLine) continue;
       let payload;
       try { payload = JSON.parse(dataLine); } catch { continue; }
+      chunkCount++;
 
       const text = extractGeminiText(payload);
       if (text) {
@@ -241,14 +250,38 @@ async function handleStream(res, body, apiKey, prev) {
         writeEvent(null, { type: 'delta', text, accumulated: fullText });
       }
       if (payload.usageMetadata) usage = payload.usageMetadata;
+      if (payload.candidates && payload.candidates[0] && payload.candidates[0].finishReason) {
+        lastFinishReason = payload.candidates[0].finishReason;
+      }
     }
+  }
+
+  // Diagnostic: log to Vercel function logs when the answer comes back empty.
+  // (Visible at Vercel → coaching-log → Functions → /api/extract-session → Logs.)
+  if (!fullText || fullText.length < 50) {
+    try {
+      console.warn('[extract-session] empty/short response from upstream', {
+        modelUsed,
+        chunkCount,
+        fullTextLength: fullText.length,
+        lastFinishReason,
+        usage,
+        firstChunkBuf: buf.slice(0, 500)
+      });
+    } catch (_) {}
   }
 
   const parsed = parseJsonFromText(fullText);
   const normalized = parsed
     ? normalizeModelOutput(parsed, prev)
     : { narrative_summary: '', fields: {}, low_confidence: [] };
-  writeEvent('done', Object.assign({}, normalized, { raw: fullText, usage, modelUsed }));
+  writeEvent('done', Object.assign({}, normalized, {
+    raw: fullText,
+    usage,
+    modelUsed,
+    finishReason: lastFinishReason,
+    chunkCount
+  }));
   return res.end();
 }
 
