@@ -224,16 +224,18 @@ async function handleStream(res, body, apiKey, prev) {
   const decoder = new TextDecoder();
   let buf = '';
 
-  // Gemini SSE format: each event is `data: {<JSON>}\n\n` where the JSON
-  // contains a `candidates[0].content.parts[*].text` chunk and (on the last
-  // event) `usageMetadata` + `finishReason`.
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    buf += decoder.decode(value, { stream: true });
-    const parts = buf.split('\n\n');
-    buf = parts.pop();
-
+  // Gemini SSE format: each event is `data: {<JSON>}\n\n` (or `\r\n\r\n`
+  // depending on Google's HTTP layer; gemini-2.5 uses CRLF so we normalize).
+  // Each JSON contains a `candidates[0].content.parts[*].text` chunk and
+  // (on the last event) `usageMetadata` + `finishReason`.
+  //
+  // Helper: drains every complete `data: {...}` event from a string buffer,
+  // returning the partial leftover. CRLF-tolerant.
+  const processBuffer = (rawBuf, onPayload) => {
+    // Normalize CRLF → LF first so the rest of the parser can stay simple.
+    const normalized = rawBuf.replace(/\r\n/g, '\n');
+    const parts = normalized.split('\n\n');
+    const leftover = parts.pop();
     for (const evt of parts) {
       let dataLine = '';
       for (const line of evt.split('\n')) {
@@ -242,18 +244,35 @@ async function handleStream(res, body, apiKey, prev) {
       if (!dataLine) continue;
       let payload;
       try { payload = JSON.parse(dataLine); } catch { continue; }
-      chunkCount++;
-
-      const text = extractGeminiText(payload);
-      if (text) {
-        fullText += text;
-        writeEvent(null, { type: 'delta', text, accumulated: fullText });
-      }
-      if (payload.usageMetadata) usage = payload.usageMetadata;
-      if (payload.candidates && payload.candidates[0] && payload.candidates[0].finishReason) {
-        lastFinishReason = payload.candidates[0].finishReason;
-      }
+      onPayload(payload);
     }
+    return leftover;
+  };
+
+  const handlePayload = (payload) => {
+    chunkCount++;
+    const text = extractGeminiText(payload);
+    if (text) {
+      fullText += text;
+      writeEvent(null, { type: 'delta', text, accumulated: fullText });
+    }
+    if (payload.usageMetadata) usage = payload.usageMetadata;
+    if (payload.candidates && payload.candidates[0] && payload.candidates[0].finishReason) {
+      lastFinishReason = payload.candidates[0].finishReason;
+    }
+  };
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    buf = processBuffer(buf, handlePayload);
+  }
+
+  // Drain any final event the upstream forgot to terminate with `\n\n`
+  // (Gemini occasionally closes the stream without a trailing blank line).
+  if (buf && /^\s*data:/.test(buf.replace(/\r\n/g, '\n'))) {
+    processBuffer(buf + '\n\n', handlePayload);
   }
 
   // Diagnostic: log to Vercel function logs when the answer comes back empty.
