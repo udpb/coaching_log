@@ -24,7 +24,14 @@
 //   data: { narrative_summary, fields, low_confidence, raw, usage }
 
 const GEMINI_KEY   = '';   // resolved at request time from env
-const MODEL        = process.env.GEMINI_CHAT_MODEL || 'gemini-3.1-pro';
+// Model fallback. The literal 'gemini-3.1-pro' isn't a valid v1beta ID —
+// preview models always carry a dated suffix (e.g.
+// 'gemini-2.5-pro-preview-04-XX'). We fall back to the stable
+// 'gemini-2.5-pro' here. To use a preview model, set GEMINI_CHAT_MODEL in
+// Vercel → Project Settings → Environment Variables to the EXACT id listed
+// at `GET https://generativelanguage.googleapis.com/v1beta/models?key=KEY`.
+// Do NOT use bare 'gemini-3.1-pro' — it 404s.
+const MODEL        = process.env.GEMINI_CHAT_MODEL || 'gemini-2.5-pro';
 const API_BASE     = 'https://generativelanguage.googleapis.com/v1beta';
 
 module.exports = async function handler(req, res) {
