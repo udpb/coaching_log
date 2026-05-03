@@ -1,11 +1,13 @@
 # underdogs. 운영 시스템 인수인계서
 
-> **작성 시점**: 2026-04-30
+> **작성 시점**: 2026-04-30 (2026-05-03 갱신: ud-ops 4번째 앱 발견 후 보강)
 > **대상 독자**: 본 시스템을 인수받아 고도화할 다음 개발자
-> **현재 상태**: production ready (3개 앱 중 2개 배포 완료, 1개 배포 대기)
-> **백엔드**: Supabase 단일 프로젝트 (Firebase 0% 달성)
+> **현재 상태**: production ready (3개 앱 중 2개 배포, 1개 배포 대기). 추가로 별도 시스템인 ud-ops 가 4번째 앱으로 운영 중 (Neon Postgres 별도 DB).
+> **백엔드**: Supabase (3-앱 공유) + Neon Postgres (ud-ops 단독). 4-앱 통합 SSoT는 [INTEGRATED_ARCHITECTURE.md](INTEGRATED_ARCHITECTURE.md) 참조.
 
 이 문서는 (1) 제품 구조, (2) 데이터 모델, (3) 사용자 흐름, (4) 운영/배포 정보를 담습니다. 끝에 **검증 매트릭스**가 있어 모든 주장이 실제 코드와 일치하는지 한눈에 확인할 수 있습니다.
+
+> **🔔 ud-ops 포함 4-앱 시스템 전체 그림은 [INTEGRATED_ARCHITECTURE.md](INTEGRATED_ARCHITECTURE.md)** 를 참조하세요. 본 문서는 Supabase 3-앱(coaching-log/coach-finder/hub) 중심 인수인계입니다.
 
 ---
 
@@ -13,13 +15,16 @@
 
 **제품**: 언더독스(UDImpact) 사내용 스타트업 코칭 운영 시스템.
 
-**3개의 앱** (Vercel 배포, Supabase 단일 백엔드 공유):
+**4개의 앱** (Vercel 배포):
 
-| 앱 | URL | 사용자 | 역할 |
-|---|---|---|---|
-| **underdogs-hub** | (배포 대기) | 모든 직원 | 로그인 후 진입할 서비스 선택 |
-| **coaching-log** | https://coaching-log-lemon.vercel.app/ | Coach + PM + Admin | 코칭 세션 기록·STT 자동 추출·BP/평가 관리 |
-| **coach-finder** | (Vercel URL — 사용자가 envvar 추가 후 redeploy 필요) | PM + Admin | 코치 디렉토리 검색·프로젝트 코치 배정·평가 조회 |
+| 앱 | URL | 사용자 | 역할 | DB |
+|---|---|---|---|---|
+| **ud-ops** | https://ud-planner.vercel.app | PM (UDI 직원) | 사업 기획·RFP 분석·커리큘럼·예산·제안서 PDF | Neon Postgres (별도) |
+| **underdogs-hub** | (배포 대기) | 모든 직원 | 로그인 후 진입할 서비스 선택 | Supabase (Auth만) |
+| **coaching-log** | https://coaching-log-lemon.vercel.app/ | Coach + PM + Admin | 코칭 세션 기록·STT 자동 추출·BP/평가 관리 | Supabase |
+| **coach-finder** | (Vercel URL — 사용자가 envvar 추가 후 redeploy 필요) | PM + Admin | 코치 디렉토리 검색·프로젝트 코치 배정·평가 조회 | Supabase |
+
+본 인수인계서는 **Supabase 3개 앱**(coaching-log/coach-finder/hub) 중심입니다. ud-ops 단독 인수인계는 `ud-ops-workspace/HANDOVER.md` (별도 PRD-v7.1) 참조.
 
 **3-tier 권한** (`public.profiles.role`):
 

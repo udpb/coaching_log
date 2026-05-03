@@ -1,15 +1,17 @@
 # Underdogs · 코칭 운영 시스템 아키텍처
 
-> **단일 진실 원본 (Single Source of Truth)** for 세 앱 + 공유 백엔드
+> **⚠️ 이 문서의 범위**: Supabase 3개 앱(coaching-log/coach-finder/hub) 중심. ud-ops(별도 Neon Postgres)는 **이 문서의 범위 밖**입니다.
+>
+> **4개 앱 통합 SSoT** → [INTEGRATED_ARCHITECTURE.md](INTEGRATED_ARCHITECTURE.md) (2026-05-03 신설)
 >
 > | 항목 | 값 |
 > |---|---|
 > | 버전 | v1.0 (2026-04-27) |
-> | 상태 | Active — 현재 구현 진행 중 |
+> | 상태 | Active — Supabase 3-앱 한정 SSoT |
 > | 관리 주체 | udpb@udimpact.ai |
 > | 갱신 시점 | 각 Phase 완료 시 + 구조적 결정 시 |
 
-이 문서는 언더독스 코칭 운영의 **세 앱 + 하나의 공유 DB** 구조, 데이터 흐름, 권한, 진행 상황을 한 화면에서 파악하기 위한 문서입니다. 새 작업 시작 전 **반드시** 이 문서부터 검토하세요.
+이 문서는 언더독스 코칭 운영의 **세 앱 + 하나의 공유 DB** (Supabase) 구조, 데이터 흐름, 권한, 진행 상황을 한 화면에서 파악하기 위한 문서입니다. 새 작업 시작 전 본 문서 + INTEGRATED_ARCHITECTURE.md 둘 다 검토하세요.
 
 ---
 
