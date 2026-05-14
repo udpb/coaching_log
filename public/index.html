@@ -2368,7 +2368,46 @@ body {
 }
 @media (max-width: 600px) {
   .header .container { flex-wrap: wrap; }
-  .nav-tabs { order: 3; width: 100%; justify-content: center; }
+
+  /* Step D1 (2026-05-03): 모바일에서 탭 잘림 fix.
+     - 가로 스크롤 + scroll-snap (활성 탭이 자연스럽게 보임)
+     - 가운데 정렬 제거 (justify-content: flex-start) — 첫 탭부터 보이게
+     - 우측 fade hint 로 "더 있어요" 시각 표시
+     - 스크롤바는 숨김 (모바일 터치 스크롤은 충분히 직관적) */
+  .nav-tabs {
+    order: 3;
+    width: 100%;
+    justify-content: flex-start;
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-wrap: nowrap;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    position: relative;
+  }
+  .nav-tabs::-webkit-scrollbar { display: none; }
+  .nav-tab { flex: 0 0 auto; scroll-snap-align: start; }
+
+  /* 모바일에선 보조 액션 (언어 토글·CSV) 숨김.
+     - 언어는 한 번 설정하면 거의 안 바꿈 (대부분 KO)
+     - CSV download 는 모바일 화면에서 거의 사용 안 함
+     → Hub link + 사용자명 + 로그아웃은 유지 (정체성·이탈 흐름) */
+  .lang-switch { display: none; }
+  #csvDownloadBtn { display: none; }
+
+  /* 사용자 영역 컴팩트화 — 우측 잘림 방지 */
+  .header-right { gap: 4px; }
+  .auth-user { font-size: 11px; gap: 4px; }
+  .auth-user span#authUserName {
+    max-width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .auth-user button { padding: 4px 8px; font-size: 11px; }
+  .hub-link { font-size: 11px; padding: 4px 8px; }
+
   .form-row, .form-row-3 { grid-template-columns: 1fr; }
   .prev-banner-grid { grid-template-columns: 1fr; }
   .detail-grid { grid-template-columns: 1fr; }
@@ -2987,7 +3026,7 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
         <button class="lang-btn" data-lang="en">EN</button>
         <button class="lang-btn" data-lang="ja">JA</button>
       </div>
-      <button class="btn btn-sm btn-secondary" onclick="downloadCsv()" title="CSV Download">
+      <button id="csvDownloadBtn" class="btn btn-sm btn-secondary" onclick="downloadCsv()" title="CSV Download">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         CSV
       </button>
@@ -5246,6 +5285,15 @@ function switchView(name, opts) {
   document.querySelectorAll('.nav-tab').forEach(tab => {
     tab.classList.toggle('active', tab.dataset.view === name);
   });
+  // Step D1: 모바일에서 가로 스크롤 탭일 때 활성 탭을 자동으로 화면 안으로.
+  // 데스크탑(@media >600px)에선 탭이 한 줄에 다 보이므로 무동작 (`scrollIntoView`
+  // 가 nearest 라 비활성).
+  try {
+    const activeTab = document.querySelector('.nav-tab.active');
+    if (activeTab && typeof activeTab.scrollIntoView === 'function') {
+      activeTab.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+    }
+  } catch (_) { /* SSR / old browsers — best-effort */ }
   if (name === 'teams') renderTeams();
   if (name === 'list') renderList();
   if (name === 'dashboard') renderDashboard();
