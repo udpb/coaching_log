@@ -3474,7 +3474,7 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
           </div>
           <select id="projMemberRole">
             <option value="coach">coach</option>
-            <option value="lead_coach">lead_coach</option>
+            <option value="pm">pm (협업)</option>
             <option value="observer">observer</option>
           </select>
           <button onclick="addProjectMember()">배정</button>
@@ -5675,7 +5675,7 @@ function renderProjectMembers() {
       </div>
       <select onchange="updateProjectMemberRole('${escAttr(m.id)}', this.value)">
         <option value="coach"${m.role === 'coach' ? ' selected' : ''}>coach</option>
-        <option value="lead_coach"${m.role === 'lead_coach' ? ' selected' : ''}>lead_coach</option>
+        <option value="pm"${m.role === 'pm' ? ' selected' : ''}>pm (협업)</option>
         <option value="observer"${m.role === 'observer' ? ' selected' : ''}>observer</option>
       </select>
       <button title="해제" onclick="removeProjectMember('${escAttr(m.id)}')">×</button>
