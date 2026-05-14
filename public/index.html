@@ -3464,11 +3464,16 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
         <option value="archived">archived (보관)</option>
       </select>
       <div id="projMemberSection" style="display:none;">
-        <label style="margin-top:20px;">코치 배정</label>
+        <label style="margin-top:20px;display:flex;align-items:center;gap:6px;">
+          코치 배정
+          <span style="font-size:10px;color:var(--gray500);font-weight:400;">
+            (코치는 <a href="https://coach-finder-iota.vercel.app/" target="_blank" rel="noreferrer" style="color:var(--orange);text-decoration:underline;">coach-finder</a> 에 먼저 등록되어 있어야 합니다)
+          </span>
+        </label>
         <div class="proj-member-list" id="projMemberList"></div>
         <div class="proj-member-add">
           <div style="position:relative;">
-            <input type="text" id="projMemberEmail" placeholder="이름·이메일로 코치 검색" autocomplete="off"
+            <input type="text" id="projMemberEmail" placeholder="이름·이메일·소속으로 코치 검색" autocomplete="off"
                    oninput="onMemberSearchInput(this.value)" onfocus="onMemberSearchInput(this.value)">
             <div id="projMemberSuggestions" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--gray300);z-index:10;max-height:220px;overflow-y:auto;"></div>
           </div>
@@ -3478,6 +3483,23 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
             <option value="observer">observer</option>
           </select>
           <button onclick="addProjectMember()">배정</button>
+        </div>
+        <!-- D3-c (2026-05-03): 미가입 코치 검출 시 inline 초대 영역 자동 표시 -->
+        <div id="projMemberInvite" style="display:none;flex-direction:column;gap:6px;background:var(--orange-bg);border:1px solid var(--orange);padding:10px 12px;border-radius:4px;margin-top:8px;font-size:12px;">
+          <div>
+            📩 <strong id="projMemberInviteEmail"></strong> 는 coaching-log 가입 전입니다. 가입을 도와주세요.
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button type="button" onclick="sendInviteMagicLink()"
+                    style="background:var(--orange);color:white;border:none;padding:6px 10px;border-radius:3px;font-size:12px;font-weight:600;cursor:pointer;">
+              ✉️ 초대 메일 발송
+            </button>
+            <button type="button" onclick="copyInviteUrl()"
+                    style="background:white;border:1px solid var(--orange);color:var(--orange);padding:6px 10px;border-radius:3px;font-size:12px;font-weight:600;cursor:pointer;">
+              🔗 가입 URL 복사
+            </button>
+            <span id="projMemberInviteStatus" style="font-size:11px;color:var(--gray500);align-self:center;"></span>
+          </div>
         </div>
       </div>
       <div class="auth-error" id="projModalError" style="margin-top:10px;"></div>
@@ -5685,11 +5707,16 @@ function renderProjectMembers() {
 
 // Live search over coaches_directory for the member-assignment input.
 // Falls back gracefully to plain email entry if the user ignores the dropdown.
-let _memberSearchSelectedEmail = null;   // populated when user picks a suggestion
+// D3-c (2026-05-03): 코치 검색 + 미가입 검출 + Magic Link 초대.
+// _memberSearchSelected 에 directory row 전체 정보를 보관 — linked_user_id 로
+// 가입 여부를 즉시 판단해서 inline 초대 영역 (#projMemberInvite) 자동 토글.
+let _memberSearchSelected = null;
+// { email, name, linkedUserId, fromDirectory: true|false }
 
 function onMemberSearchInput(v) {
   const q = (v || '').trim().toLowerCase();
-  _memberSearchSelectedEmail = null;
+  _memberSearchSelected = null;
+  _updateInviteSection();
   const host = document.getElementById('projMemberSuggestions');
   if (!host) return;
   if (q.length < 1) { host.style.display = 'none'; host.innerHTML = ''; return; }
@@ -5700,11 +5727,19 @@ function onMemberSearchInput(v) {
       return hay.includes(q);
     }).slice(0, 8);
     if (matches.length === 0) {
-      host.innerHTML = `<div style="padding:8px 10px;font-size:11px;color:var(--gray400);">일치하는 코치 없음 — 이메일 그대로 입력 후 배정 누르면 profiles에서도 찾습니다.</div>`;
+      // 사용자 요청: coach-finder 가 코치 마스터 — 검색 결과 없으면 그쪽으로 안내
+      host.innerHTML = `<div style="padding:10px;font-size:12px;color:var(--gray500);line-height:1.6;">
+        일치하는 코치 없음.<br>
+        <a href="https://coach-finder-iota.vercel.app/" target="_blank" rel="noreferrer"
+           style="color:var(--orange);text-decoration:underline;font-weight:600;">
+          → coach-finder 에 신규 등록
+        </a>
+        후 다시 검색해 주세요.
+      </div>`;
     } else {
       host.innerHTML = matches.map(c => `
         <div style="padding:6px 10px;cursor:pointer;border-bottom:1px solid var(--gray100);font-size:12px;display:flex;gap:8px;align-items:center;"
-             onmousedown="event.preventDefault();pickMemberSuggestion('${escAttr(c.email || '')}','${escAttr(c.name || '')}')">
+             onmousedown="event.preventDefault();pickMemberSuggestion('${escAttr(c.email || '')}','${escAttr(c.name || '')}','${escAttr(c.linked_user_id || '')}')">
           <div style="width:24px;height:24px;background:var(--gray100);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--gray500);overflow:hidden;">${c.photo_url ? `<img src="${escAttr(c.photo_url)}" style="width:100%;height:100%;object-fit:cover;">` : escHtml(coachInitials(c.name))}</div>
           <div style="flex:1;min-width:0;">
             <div style="font-weight:600;">${escHtml(c.name || '')}${!c.linked_user_id ? ' <span style="color:var(--red);font-size:10px;">(앱 가입 전)</span>' : ''}</div>
@@ -5718,11 +5753,76 @@ function onMemberSearchInput(v) {
   loadCoachDirectory().then(() => go(coachDirectory));
 }
 
-function pickMemberSuggestion(email, name) {
+function pickMemberSuggestion(email, name, linkedUserId) {
   document.getElementById('projMemberEmail').value = email || name;
-  _memberSearchSelectedEmail = (email || '').toLowerCase();
+  _memberSearchSelected = {
+    email: (email || '').toLowerCase(),
+    name,
+    linkedUserId: linkedUserId || null,
+    fromDirectory: true,
+  };
   const host = document.getElementById('projMemberSuggestions');
   if (host) { host.style.display = 'none'; host.innerHTML = ''; }
+  _updateInviteSection();
+}
+
+// 미가입 검출 시 inline 초대 영역 표시/숨김 (선택 변화마다 자동).
+function _updateInviteSection() {
+  const sec = document.getElementById('projMemberInvite');
+  if (!sec) return;
+  const emailEl = document.getElementById('projMemberInviteEmail');
+  const statusEl = document.getElementById('projMemberInviteStatus');
+  if (statusEl) statusEl.textContent = '';
+  const sel = _memberSearchSelected;
+  // 표시 조건: directory 에서 선택했고 + email 있음 + linked_user_id 비어있음
+  if (sel && sel.fromDirectory && sel.email && !sel.linkedUserId) {
+    if (emailEl) emailEl.textContent = sel.email;
+    sec.style.display = 'flex';
+  } else {
+    sec.style.display = 'none';
+  }
+}
+
+// ✉️ Magic Link 초대 — Supabase Auth signInWithOtp.
+// 코치가 메일의 링크 클릭 시 자동 가입 + handle_new_user → autolink trigger
+// → coaches_directory.linked_user_id 자동 채움 → PM 이 다시 와서 배정 가능.
+async function sendInviteMagicLink() {
+  const sel = _memberSearchSelected;
+  const statusEl = document.getElementById('projMemberInviteStatus');
+  if (!sel || !sel.email) {
+    if (statusEl) statusEl.textContent = '코치를 먼저 선택하세요.';
+    return;
+  }
+  if (statusEl) statusEl.textContent = '발송 중…';
+  try {
+    const { error } = await supabaseClient.auth.signInWithOtp({
+      email: sel.email,
+      options: {
+        emailRedirectTo: window.location.origin + '/#teams',
+        shouldCreateUser: true,
+      },
+    });
+    if (error) throw error;
+    if (statusEl) statusEl.textContent = '✓ 발송 완료. 코치 가입 후 재배정.';
+  } catch (e) {
+    if (statusEl) statusEl.textContent = '발송 실패: ' + (e.message || e);
+  }
+}
+
+// 🔗 가입 URL 클립보드 복사 — PM 이 카톡 등 다른 채널로 직접 전달.
+async function copyInviteUrl() {
+  const sel = _memberSearchSelected;
+  const statusEl = document.getElementById('projMemberInviteStatus');
+  const url = window.location.origin;
+  const msg = sel && sel.name
+    ? `${sel.name} 코치님, coaching-log 가입 안내:\n${url}\n\n위 링크에서 본인 이메일(${sel.email})로 가입 후 알려주세요.`
+    : `coaching-log 가입 안내:\n${url}`;
+  try {
+    await navigator.clipboard.writeText(msg);
+    if (statusEl) statusEl.textContent = '✓ 복사 완료. 코치에게 보내주세요.';
+  } catch (e) {
+    if (statusEl) statusEl.textContent = '복사 실패. URL: ' + url;
+  }
 }
 
 // Close suggestion dropdown on outside click
@@ -5735,21 +5835,39 @@ document.addEventListener('click', (e) => {
 async function addProjectMember() {
   if (_projModalState.mode !== 'edit' || !_projModalState.id) return;
   const typed = (document.getElementById('projMemberEmail').value || '').trim().toLowerCase();
-  const email = _memberSearchSelectedEmail || typed;
+  const sel = _memberSearchSelected;
+  const email = (sel && sel.email) || typed;
   const role = document.getElementById('projMemberRole').value;
   const errEl = document.getElementById('projModalError');
   errEl.textContent = '';
   if (!email) { errEl.textContent = '코치를 검색하거나 이메일을 입력하세요.'; return; }
   try {
-    // Look up the user by email in profiles (needs the coach to have signed up)
-    const { data: profiles, error: pErr } = await supabaseClient
-      .from('profiles').select('id, email').eq('email', email).limit(1);
-    if (pErr) throw pErr;
-    if (!profiles || profiles.length === 0) {
-      errEl.textContent = '이 이메일로 아직 앱에 가입하지 않았습니다. 코치에게 가입 안내를 보낸 뒤 재시도해주세요.';
-      return;
+    // D3-c: 우선 coaches_directory 의 linked_user_id 활용 (한 번에 가능).
+    //   sel.linkedUserId 가 있으면 → 그대로 사용 (가입자, profile lookup 생략).
+    //   비어있으면 → invite section 표시되어 있을 것, 배정 거절.
+    //   sel 자체가 없으면 (직접 타이핑) → profiles 검색 fallback.
+    let userId = null;
+    if (sel && sel.fromDirectory) {
+      if (sel.linkedUserId) {
+        userId = sel.linkedUserId;
+      } else {
+        // 미가입 — invite section 자동 표시 + 명확한 안내
+        _updateInviteSection();
+        errEl.textContent = '이 코치는 아직 coaching-log에 가입하지 않았습니다. 위의 "초대 메일 발송" 으로 안내해 주세요.';
+        return;
+      }
+    } else {
+      // directory 에 없음 → profiles 직접 검색 (옛 흐름 백업)
+      const { data: profiles, error: pErr } = await supabaseClient
+        .from('profiles').select('id, email').eq('email', email).limit(1);
+      if (pErr) throw pErr;
+      if (!profiles || profiles.length === 0) {
+        errEl.textContent = '이 이메일의 코치를 찾을 수 없습니다. coach-finder 에 먼저 등록한 뒤 다시 시도하세요.';
+        return;
+      }
+      userId = profiles[0].id;
     }
-    const userId = profiles[0].id;
+
     const payload = {
       project_id: _projModalState.id,
       user_id: userId,
@@ -5763,7 +5881,8 @@ async function addProjectMember() {
       return;
     }
     document.getElementById('projMemberEmail').value = '';
-    _memberSearchSelectedEmail = null;
+    _memberSearchSelected = null;
+    _updateInviteSection();
     await loadAndRenderProjectMembers(_projModalState.id);
     showToast('배정되었습니다.');
   } catch (e) {
