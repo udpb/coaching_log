@@ -1,6 +1,11 @@
 {
   "outputDirectory": "public",
   "buildCommand": "",
+  "functions": {
+    "api/extract-session.js": {
+      "maxDuration": 60
+    }
+  },
   "rewrites": [
     { "source": "/api/:path*", "destination": "/api/:path*" }
   ],

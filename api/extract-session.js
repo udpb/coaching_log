@@ -101,12 +101,38 @@ module.exports = async function handler(req, res) {
   if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY not configured on server' });
 
   try {
-    const { transcript, context, stream: wantStream } = req.body || {};
-    if (!transcript || typeof transcript !== 'string' || transcript.trim().length < 50) {
-      return res.status(400).json({ error: 'transcript must be a non-empty string of meaningful length' });
+    const { transcript, audio, audioMimeType, context, stream: wantStream } = req.body || {};
+
+    // Phase D2 (2026-05-03): two input modes — transcript text OR audio file.
+    //   - transcript mode (legacy): caller pasted STT text. Must be ≥50 chars.
+    //   - audio mode (new): caller recorded with MediaRecorder. Gemini 2.5 Pro
+    //     accepts inline_data audio and will (a) implicitly transcribe in its
+    //     reasoning, (b) emit the same structured JSON in one round-trip.
+    //     Saves the user the "external STT → paste" step on mobile.
+    // At least one is required. If both are present, audio wins (richer signal).
+    const hasAudio = typeof audio === 'string' && audio.length > 100;
+    const hasTranscript = typeof transcript === 'string' && transcript.trim().length >= 50;
+
+    if (!hasAudio && !hasTranscript) {
+      return res.status(400).json({
+        error: 'Provide either `transcript` (≥50 chars) or `audio` (base64 inline_data).'
+      });
     }
-    if (transcript.length > 120000) {
+    if (hasTranscript && transcript.length > 120000) {
       return res.status(413).json({ error: 'transcript too long (max 120k chars)' });
+    }
+    if (hasAudio) {
+      // Vercel Node Function request body hard limit is 4.5MB. base64 inflates
+      // raw bytes by ~33%, so we cap at 4_000_000 chars ≈ 3MB raw audio.
+      // At 64kbps Opus that's ~6-7 min; at 96kbps ~4-5 min. The client's
+      // 15-min auto-stop is the secondary guard but most coaching sessions
+      // exceed 4MB anyway, so the realistic ceiling is closer to 7 min.
+      // Future: upload to Supabase Storage and pass a signed URL instead.
+      if (audio.length > 4_000_000) {
+        return res.status(413).json({
+          error: 'audio too long. 약 7분 이하로 녹음하거나 외부 STT 도구로 transcript를 만들어 붙여넣어 주세요.'
+        });
+      }
     }
 
     const ctx = context || {};
@@ -114,7 +140,12 @@ module.exports = async function handler(req, res) {
     const isFirst = !prev;
 
     const systemPrompt = buildSystemPrompt();
-    const userPrompt = buildUserPrompt(transcript, ctx, prev, isFirst);
+    // In audio-only mode we pass an empty transcript placeholder; the model
+    // gets the real transcript from the audio part below.
+    const userPrompt = buildUserPrompt(
+      hasTranscript ? transcript : '(아래 첨부된 음성 녹음을 듣고 직접 transcript를 추출하여 분석하세요. 한국어·영어 혼용 가능.)',
+      ctx, prev, isFirst
+    );
 
     // Gemini request body:
     //  - `system_instruction`: single message-like object holding the system prompt
@@ -122,9 +153,23 @@ module.exports = async function handler(req, res) {
     //  - `generationConfig.responseMimeType: 'application/json'` forces clean JSON
     //    out of the model (no markdown fences in happy path)
     //  - `streamGenerateContent?alt=sse` for SSE streaming (handled below)
+    // Build the parts array. Text always first (it has the schema + context),
+    // audio inline_data appended when in audio mode. Gemini 2.5 Pro/Flash both
+    // support audio/* inline_data up to ~9 hours; we cap at ~15min via the
+    // body size check above.
+    const userParts = [{ text: userPrompt }];
+    if (hasAudio) {
+      userParts.push({
+        inline_data: {
+          mime_type: audioMimeType || 'audio/webm',
+          data: audio,
+        }
+      });
+    }
+
     const body = {
       system_instruction: { parts: [{ text: systemPrompt }] },
-      contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+      contents: [{ role: 'user', parts: userParts }],
       generationConfig: {
         temperature: 0.4,
         // Token budget for thinking + answer combined. gemini-2.5-pro uses

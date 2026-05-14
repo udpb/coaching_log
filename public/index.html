@@ -1982,6 +1982,61 @@ body {
 }
 
 /* Streaming progress bar */
+/* Phase D2: 녹음 컨트롤 */
+.stt-record-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.stt-record-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: var(--orange);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s;
+}
+.stt-record-btn:hover { background: var(--orange-light); }
+.stt-record-btn:disabled { background: var(--gray400); cursor: not-allowed; }
+.stt-record-btn-stop { background: var(--red); }
+.stt-record-btn-stop:hover { background: var(--red); opacity: .9; }
+.stt-record-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--red);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.stt-record-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--red);
+  animation: stt-pulse 1s ease-in-out infinite;
+}
+@keyframes stt-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: .25; }
+}
+.stt-record-hint {
+  font-size: 11px;
+  color: var(--gray500);
+  margin-left: auto;
+}
+@media (max-width: 600px) {
+  .stt-record-hint { display: none; }
+  .stt-record-btn { padding: 10px 14px; font-size: 14px; flex: 1; justify-content: center; }
+}
+
 .stt-progress {
   margin-top: 10px;
   width: 100%;
@@ -3067,9 +3122,25 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
         <div class="stt-toggle-arrow">▼</div>
       </div>
       <div class="stt-body">
+        <!-- Phase D2 (2026-05-03): 녹음 컨트롤 추가. 기존 textarea 붙여넣기 흐름 그대로 유지.
+             - 모바일에서 휴대폰 마이크로 즉석 녹음 → 자동 분석까지 한번에.
+             - PC 에서는 외부 STT 도구로 transcript 만들어서 붙여넣어도 OK (legacy).
+             - 마이크 권한 없는 브라우저 (예: 일부 webview)는 녹음 버튼 자동 숨김. -->
+        <div class="stt-record-row" id="sttRecordRow" style="display:none;">
+          <button type="button" class="stt-record-btn" id="sttRecordBtn" onclick="startSttRecording()">
+            🎙️ <span>음성 녹음 시작</span>
+          </button>
+          <button type="button" class="stt-record-btn stt-record-btn-stop" id="sttRecordStop" onclick="stopSttRecording()" style="display:none;">
+            ■ <span>녹음 정지 · 분석</span>
+          </button>
+          <span class="stt-record-time" id="sttRecordTime" style="display:none;">
+            <span class="stt-record-dot"></span> <span id="sttRecordElapsed">00:00</span>
+          </span>
+          <span class="stt-record-hint">또는 ↓ STT 텍스트를 붙여넣으세요</span>
+        </div>
         <textarea class="stt-textarea" id="sttTranscript" data-i18n-ph="stt_placeholder" placeholder="세션 녹취/스크립트를 여기에 붙여넣으세요. 한국어·영어 모두 가능합니다."></textarea>
         <div class="stt-actions">
-          <button class="stt-btn" id="sttExtractBtn" onclick="runSttExtract()"><span data-i18n="stt_extract">초안 생성</span></button>
+          <button class="stt-btn" id="sttExtractBtn" onclick="runSttExtract()"><span data-i18n="stt_extract">붙여넣은 텍스트로 초안 생성</span></button>
           <span class="stt-hint" data-i18n="stt_hint">⚠ 표시된 필드는 확신도가 낮아 검토가 필요합니다.</span>
           <span class="stt-status" id="sttStatus"></span>
         </div>
@@ -6445,16 +6516,150 @@ function markLowConfidence(fieldName) {
 // Most-recent raw transcript (so we can save it to DB when 'Save raw' is checked)
 let lastTranscriptRaw = '';
 
-async function runSttExtract() {
+// ─── Phase D2 (2026-05-03): MediaRecorder 기반 음성 녹음 ─────────────────
+// 흐름:
+//   사용자가 "🎙️ 녹음" 버튼 → getUserMedia 마이크 권한 → MediaRecorder 시작
+//   → 녹음 중 timer 표시
+//   → "■ 정지" 누름 → onstop → blob → base64 → runSttExtract({audio, audioMimeType})
+//   → /api/extract-session 가 audio inline_data 로 Gemini 2.5 Pro 호출
+//   → transcript + 구조화 JSON 한 번에 받음
+//
+// 가용성 검사:
+//   navigator.mediaDevices.getUserMedia 가 없는 (HTTPS 아닌 환경, 또는 일부
+//   in-app webview) 경우 녹음 row 자체를 숨김. 기존 붙여넣기 흐름은 동작.
+let _sttMediaRecorder = null;
+let _sttAudioChunks = [];
+let _sttRecordStartMs = 0;
+let _sttRecordTimerId = null;
+let _sttRecordStream = null;
+
+(function checkSttRecorderAvailability() {
+  // window load 후에 실행되도록 — onload 핸들러 또는 그냥 즉시 실행 (script 가 body 끝에 있음 가정)
+  if (typeof navigator === 'undefined') return;
+  const canRecord =
+    !!navigator.mediaDevices &&
+    !!navigator.mediaDevices.getUserMedia &&
+    typeof window.MediaRecorder !== 'undefined';
+  // DOMContentLoaded 후 호출되도록 지연
+  document.addEventListener('DOMContentLoaded', () => {
+    const row = document.getElementById('sttRecordRow');
+    if (row && canRecord) row.style.display = 'flex';
+  });
+})();
+
+async function startSttRecording() {
+  const btnStart = document.getElementById('sttRecordBtn');
+  const btnStop  = document.getElementById('sttRecordStop');
+  const timeEl   = document.getElementById('sttRecordTime');
+  try {
+    _sttRecordStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    // mime preference: webm opus (Chrome/Android), mp4 aac (Safari/iOS), fallback default
+    let mimeType = '';
+    const prefs = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4;codecs=mp4a.40.2', 'audio/mp4'];
+    for (const m of prefs) {
+      if (window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(m)) {
+        mimeType = m;
+        break;
+      }
+    }
+    _sttMediaRecorder = mimeType
+      ? new MediaRecorder(_sttRecordStream, { mimeType })
+      : new MediaRecorder(_sttRecordStream);
+    _sttAudioChunks = [];
+    _sttMediaRecorder.ondataavailable = (e) => {
+      if (e.data && e.data.size > 0) _sttAudioChunks.push(e.data);
+    };
+    _sttMediaRecorder.onstop = async () => {
+      try { _sttRecordStream && _sttRecordStream.getTracks().forEach(t => t.stop()); } catch (_) {}
+      const finalType = _sttMediaRecorder.mimeType || mimeType || 'audio/webm';
+      const blob = new Blob(_sttAudioChunks, { type: finalType });
+      // 너무 짧으면 의미 없음 (코칭 세션 최소 30초)
+      if (blob.size < 5000) {
+        setSttStatus('녹음이 너무 짧습니다. 다시 녹음하거나 텍스트를 붙여넣어 주세요.', 'error');
+        return;
+      }
+      setSttStatus('🎙️ 업로드 중… (Gemini 가 transcript 추출 + 구조화 동시 진행)', null);
+      const b64 = await _sttBlobToBase64(blob);
+      // runSttExtract 의 audio 모드로 직접 진입 — 이후 흐름은 텍스트 모드와 동일
+      runSttExtract({ audio: b64, audioMimeType: finalType });
+    };
+    _sttMediaRecorder.start();
+    _sttRecordStartMs = Date.now();
+    _sttRecordTimerId = setInterval(_sttUpdateRecordTime, 250);
+    btnStart.style.display = 'none';
+    btnStop.style.display  = 'inline-flex';
+    timeEl.style.display   = 'inline-flex';
+    setSttStatus('🎙️ 녹음 중… (정지 누르면 자동 분석)', null);
+  } catch (err) {
+    const msg = (err && err.name === 'NotAllowedError')
+      ? '마이크 권한이 거부됐습니다. 브라우저 주소창 옆 자물쇠 아이콘에서 권한을 허용해 주세요.'
+      : '녹음을 시작할 수 없습니다: ' + (err && err.message || err);
+    setSttStatus(msg, 'error');
+  }
+}
+
+function stopSttRecording() {
+  try {
+    if (_sttMediaRecorder && _sttMediaRecorder.state !== 'inactive') {
+      _sttMediaRecorder.stop();
+    }
+  } catch (_) { /* defensive */ }
+  if (_sttRecordTimerId) clearInterval(_sttRecordTimerId);
+  _sttRecordTimerId = null;
+  document.getElementById('sttRecordBtn').style.display  = 'inline-flex';
+  document.getElementById('sttRecordStop').style.display = 'none';
+  document.getElementById('sttRecordTime').style.display = 'none';
+}
+
+function _sttUpdateRecordTime() {
+  const el = document.getElementById('sttRecordElapsed');
+  if (!el) return;
+  const elapsed = Math.floor((Date.now() - _sttRecordStartMs) / 1000);
+  const mm = String(Math.floor(elapsed / 60)).padStart(2, '0');
+  const ss = String(elapsed % 60).padStart(2, '0');
+  el.textContent = `${mm}:${ss}`;
+  // Vercel body limit ≈ 7분 (4.5MB 기준 raw). 그 전에 미리 경고.
+  if (elapsed === 6 * 60) {
+    setSttStatus('⚠ 약 1분 후 자동 정지됩니다 (서버 한도 ~7분). 더 길게 녹음해야 한다면 텍스트 모드를 이용해 주세요.', null);
+  } else if (elapsed >= 7 * 60) {
+    stopSttRecording();
+  }
+}
+
+function _sttBlobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onloadend = () => {
+      // result is "data:audio/webm;base64,XXXX" — strip the data: prefix
+      const s = String(r.result || '');
+      const idx = s.indexOf(',');
+      resolve(idx >= 0 ? s.slice(idx + 1) : s);
+    };
+    r.onerror = reject;
+    r.readAsDataURL(blob);
+  });
+}
+
+// Phase D2 (2026-05-03): unified entry point for both modes.
+//   - text mode  : runSttExtract()                            ← legacy
+//   - audio mode : runSttExtract({ audio, audioMimeType })    ← MediaRecorder
+// In audio mode we skip the transcript length check; the server validates the
+// audio size separately. The response shape is identical, so the UI flow that
+// follows (SSE → partial parse → applyExtractedFields) is reused unchanged.
+async function runSttExtract(opts) {
+  opts = opts || {};
+  const audioMode = !!opts.audio;
   const btn = document.getElementById('sttExtractBtn');
-  const transcript = (document.getElementById('sttTranscript').value || '').trim();
-  if (transcript.length < 50) {
+  const transcript = audioMode
+    ? '' // server skips transcript check when audio is provided
+    : (document.getElementById('sttTranscript').value || '').trim();
+  if (!audioMode && transcript.length < 50) {
     setSttStatus('원문이 너무 짧습니다 (최소 50자).', 'error');
     return;
   }
-  lastTranscriptRaw = transcript;
+  lastTranscriptRaw = transcript; // audio mode 일 땐 빈 문자열 (필요시 서버가 transcribe해서 별도 반환 가능)
   btn.disabled = true;
-  setSttStatus('AI 분석 중…', null);
+  setSttStatus(audioMode ? '🎙️ 음성 → transcript + 구조화 중…' : 'AI 분석 중…', null);
   showSttProgress(true, 0);
   clearSttLowConfidence();
 
@@ -6481,10 +6686,13 @@ async function runSttExtract() {
   }
 
   try {
+    const reqBody = audioMode
+      ? { audio: opts.audio, audioMimeType: opts.audioMimeType, context: Object.assign({}, ctx, { prev }), stream: true }
+      : { transcript, context: Object.assign({}, ctx, { prev }), stream: true };
     const res = await fetch('/api/extract-session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
-      body: JSON.stringify({ transcript, context: Object.assign({}, ctx, { prev }), stream: true })
+      body: JSON.stringify(reqBody)
     });
     if (!res.ok || !res.body) {
       const errTxt = await (res.text ? res.text() : Promise.resolve(''));
