@@ -3611,10 +3611,27 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
         </div>
       </div>
 
-      <label style="margin-top:14px;display:flex;align-items:center;gap:8px;">
-        <input type="checkbox" id="bpEvalRehire" style="width:auto;margin:0;">
-        <span>재의뢰 의향 있음</span>
-      </label>
+      <!-- 평가 일원화 2단계 (2026-05-03): coach-finder 와 동일한 3-state 토글.
+           체크박스 2-state(true/false) → 3-state 버튼 그룹(true/false/유보).
+           value: true=그렇다, false=아니다, null=유보. -->
+      <label style="margin-top:14px;">재의뢰 의향</label>
+      <div id="bpEvalRehireGroup" style="display:flex;gap:6px;margin-top:4px;">
+        <button type="button" class="bp-rehire-btn" data-val="true"
+                onclick="setBPEvalRehire(true)"
+                style="flex:1;padding:8px;border:1px solid var(--gray300);background:#fff;cursor:pointer;font-size:12px;">
+          👍 그렇다
+        </button>
+        <button type="button" class="bp-rehire-btn" data-val="false"
+                onclick="setBPEvalRehire(false)"
+                style="flex:1;padding:8px;border:1px solid var(--gray300);background:#fff;cursor:pointer;font-size:12px;">
+          👎 아니다
+        </button>
+        <button type="button" class="bp-rehire-btn" data-val="null"
+                onclick="setBPEvalRehire(null)"
+                style="flex:1;padding:8px;border:1px solid var(--gray300);background:#fff;cursor:pointer;font-size:12px;">
+          유보
+        </button>
+      </div>
 
       <label style="margin-top:10px;">코멘트</label>
       <textarea id="bpEvalComment" placeholder="평가 내용을 자유롭게 작성하세요 (선택)" style="min-height:80px;"></textarea>
@@ -9564,7 +9581,7 @@ let _bpModalState = { mode: 'create', id: null };       // create/edit modal
 let _bpDetailId = null;                                 // currently-open BP id (null => list view)
 let _bpDetailCoaches = [];                              // pinned coaches for the open BP
 let _bpDetailEvaluations = [];                          // full coach_evaluations rows for the open BP (Phase C3)
-let _bpEvalModalState = { mode: 'create', id: null, coach_directory_id: null, ratings: { overall: 0, communication: 0, expertise: 0, reliability: 0 } };
+let _bpEvalModalState = { mode: 'create', id: null, coach_directory_id: null, ratings: { overall: 0, communication: 0, expertise: 0, reliability: 0 }, rehire: null };
 let _bpCoachPickerState = { bp_id: null, q: '', results: [] };
 
 async function loadAllBusinessPlans() {
@@ -10538,6 +10555,41 @@ function setBPEvalRating(dim, n) {
   _bpEvalPaintRatingRow(dim);
 }
 
+// 평가 일원화 2단계 (2026-05-03): rehire 3-state (true/false/null) 토글.
+// coach-finder 와 동일한 UX. _bpEvalModalState.rehire 에 값 보관.
+function setBPEvalRehire(val) {
+  _bpEvalModalState.rehire = val;
+  _bpRenderRehireButtons();
+}
+
+function _bpRenderRehireButtons() {
+  const group = document.getElementById('bpEvalRehireGroup');
+  if (!group) return;
+  const cur = _bpEvalModalState && 'rehire' in _bpEvalModalState ? _bpEvalModalState.rehire : null;
+  // value 매핑: data-val="true" / "false" / "null"
+  const curKey = cur === true ? 'true' : (cur === false ? 'false' : 'null');
+  const palette = {
+    true:  { bg: 'rgba(46,158,90,.10)', border: 'var(--green)', color: 'var(--green)' },
+    false: { bg: 'rgba(217,69,69,.08)', border: 'var(--red)', color: 'var(--red)' },
+    null:  { bg: 'var(--gray100)', border: 'var(--gray500)', color: 'var(--dark)' },
+  };
+  for (const btn of group.querySelectorAll('button.bp-rehire-btn')) {
+    const k = btn.getAttribute('data-val');
+    if (k === curKey) {
+      const p = palette[k];
+      btn.style.background = p.bg;
+      btn.style.borderColor = p.border;
+      btn.style.color = p.color;
+      btn.style.fontWeight = '600';
+    } else {
+      btn.style.background = '#fff';
+      btn.style.borderColor = 'var(--gray300)';
+      btn.style.color = 'var(--gray500)';
+      btn.style.fontWeight = '400';
+    }
+  }
+}
+
 function _bpEvalPopulateCoachSelect(selectedId, lock) {
   const sel = document.getElementById('bpEvalCoachSelect');
   if (!sel) return;
@@ -10577,12 +10629,12 @@ function openBPEvalCreateModal(bpId) {
     mode: 'create',
     id: null,
     coach_directory_id: null,
-    ratings: { overall: 0, communication: 0, expertise: 0, reliability: 0 }
+    ratings: { overall: 0, communication: 0, expertise: 0, reliability: 0 },
+    rehire: null,  // 3-state: true / false / null (유보 = default)
   };
   _bpEvalSetModalTitle('create');
   _bpEvalPopulateCoachSelect(null, false);
-  const rehire = document.getElementById('bpEvalRehire');
-  if (rehire) rehire.checked = false;
+  _bpRenderRehireButtons();
   const cmt = document.getElementById('bpEvalComment');
   if (cmt) cmt.value = '';
   const errEl = document.getElementById('bpEvalModalError');
@@ -10628,8 +10680,11 @@ function openBPEvalEditModal(evalId) {
   };
   _bpEvalSetModalTitle('edit');
   _bpEvalPopulateCoachSelect(ev.coach_directory_id, true);
-  const rehire = document.getElementById('bpEvalRehire');
-  if (rehire) rehire.checked = (ev.would_rehire === true);
+  // 평가 일원화 2단계: 3-state rehire 복원. null/undefined → 유보 표시.
+  _bpEvalModalState.rehire = (ev.would_rehire === true || ev.would_rehire === false)
+    ? ev.would_rehire
+    : null;
+  _bpRenderRehireButtons();
   const cmt = document.getElementById('bpEvalComment');
   if (cmt) cmt.value = ev.comment || '';
   const errEl = document.getElementById('bpEvalModalError');
@@ -10677,7 +10732,10 @@ async function saveBPEval() {
     return (n >= 1 && n <= 5) ? n : null;
   };
 
-  const rehire = document.getElementById('bpEvalRehire');
+  // 평가 일원화 2단계: rehire 가 3-state (true/false/null) — _bpEvalModalState 에 보관.
+  const rehireValue = (_bpEvalModalState && 'rehire' in _bpEvalModalState)
+    ? _bpEvalModalState.rehire
+    : null;
   const cmt = document.getElementById('bpEvalComment');
   const commentRaw = cmt ? cmt.value : '';
   const comment = (commentRaw && commentRaw.trim().length > 0) ? commentRaw : null;
@@ -10693,7 +10751,7 @@ async function saveBPEval() {
     rating_communication: optInt(r.communication),
     rating_expertise: optInt(r.expertise),
     rating_reliability: optInt(r.reliability),
-    would_rehire: rehire ? !!rehire.checked : false,
+    would_rehire: rehireValue,  // 3-state: true/false/null (null = 유보)
     comment: comment
   };
 
