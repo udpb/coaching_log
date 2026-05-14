@@ -5876,19 +5876,47 @@ function renderTeams() {
 
 // Render the project picker (formerly the top-level team picker).
 function renderProjectPicker(grid) {
-  // Admin and PM can both create/manage projects (DB RLS enforces ownership for PM)
-  const isAdmin = currentUserRole === 'admin' || currentUserRole === 'pm';
+  // Phase D3-b: split admin / pm / "can manage". Admin is super-user;
+  // PM owns their projects (DB RLS enforces). Both can create projects.
+  const isAdmin = currentUserRole === 'admin';
+  const isPM    = currentUserRole === 'pm';
+  const canManageProjects = isAdmin || isPM;
 
   // Detect orphan logs the current user can see
   const hasOrphans = logs.some(r => !r.project_id);
+
+  // 빈 상태 메시지: coach 는 "담당 PM" 에게 문의 (admin 이 아닌 PM 이 실 운영자)
+  const emptyMsg = canManageProjects
+    ? '아직 프로젝트가 없습니다.'
+    : '배정된 프로젝트가 없습니다. 담당 PM에게 문의하세요.';
+
+  // PM 페이지 직관성: PM 이면 "내 사업 N개 · 코치 N명 · 이번 주 세션 N건" 요약 표시
+  // (admin 은 전체 보이므로 의미 없음 — coach 는 본인 배정만이라 의미 다름)
+  let pmSummary = '';
+  if (isPM && myProjects.length > 0) {
+    const activeCount = myProjects.filter(p => (p.status || 'active') === 'active').length;
+    const totalSessions = logs.filter(r => myProjects.some(p => p.id === r.project_id)).length;
+    const uniqueCoaches = new Set(
+      logs.filter(r => myProjects.some(p => p.id === r.project_id))
+          .map(r => r.coach_id || r.coach)
+          .filter(Boolean)
+    ).size;
+    pmSummary = `
+      <div class="pm-summary" style="display:flex;gap:14px;flex-wrap:wrap;margin:8px 0 4px;font-size:13px;color:var(--gray500);">
+        <span>📁 활성 사업 <strong style="color:var(--dark);">${activeCount}</strong>개</span>
+        <span>👥 코치 <strong style="color:var(--dark);">${uniqueCoaches}</strong>명</span>
+        <span>📝 누적 세션 <strong style="color:var(--dark);">${totalSessions}</strong>건</span>
+      </div>`;
+  }
 
   let html = `
     <div class="proj-picker-head" style="grid-column:1 / -1;">
       <div>
         <h2>프로젝트</h2>
         <p>프로젝트를 선택하면 해당 프로젝트의 팀·세션을 보고 새 코칭일지를 추가할 수 있습니다.</p>
+        ${pmSummary}
       </div>
-      ${isAdmin ? `<button class="btn btn-primary" onclick="openProjectCreateModal()">+ 새 프로젝트</button>` : ''}
+      ${canManageProjects ? `<button class="btn btn-primary" onclick="openProjectCreateModal()">+ 새 프로젝트</button>` : ''}
     </div>`;
 
   html += '<div class="proj-picker-grid" style="grid-column:1 / -1;">';
@@ -5897,8 +5925,8 @@ function renderProjectPicker(grid) {
     html += `
       <div class="proj-empty" style="grid-column:1 / -1;">
         <div class="proj-empty-icon">🗂️</div>
-        <p>${isAdmin ? '아직 프로젝트가 없습니다.' : '배정된 프로젝트가 없습니다. 관리자에게 문의하세요.'}</p>
-        ${isAdmin ? `<button class="btn btn-primary" style="margin-top:12px;" onclick="openProjectCreateModal()">+ 첫 프로젝트 만들기</button>` : ''}
+        <p>${emptyMsg}</p>
+        ${canManageProjects ? `<button class="btn btn-primary" style="margin-top:12px;" onclick="openProjectCreateModal()">+ 첫 프로젝트 만들기</button>` : ''}
       </div>`;
   }
 
@@ -5908,7 +5936,7 @@ function renderProjectPicker(grid) {
     const teamCount = new Set(logs.filter(r => r.project_id === p.id).map(r => r.team_name).filter(Boolean)).size;
     html += `
       <div class="proj-card" onclick="enterProject('${escAttr(p.id)}')">
-        ${isAdmin ? `<button class="proj-card-admin-btn" onclick="event.stopPropagation(); openProjectManageModal('${escAttr(p.id)}')">⚙ 관리</button>` : ''}
+        ${canManageProjects ? `<button class="proj-card-admin-btn" onclick="event.stopPropagation(); openProjectManageModal('${escAttr(p.id)}')">⚙ 관리</button>` : ''}
         <div class="proj-card-name">${escHtml(p.name)}</div>
         <div class="proj-card-desc">${escHtml(p.description || '설명 없음')}</div>
         <div class="proj-card-meta">
@@ -5933,7 +5961,7 @@ function renderProjectPicker(grid) {
       </div>`;
   }
 
-  if (isAdmin && myProjects.length > 0) {
+  if (canManageProjects && myProjects.length > 0) {
     html += `
       <div class="proj-card proj-card-new" onclick="openProjectCreateModal()">
         <div class="plus">+</div>
