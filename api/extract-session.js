@@ -176,7 +176,9 @@ module.exports = async function handler(req, res) {
         // hidden reasoning tokens before emitting the JSON answer. The
         // previous 5120 (sized for gemini-3.1-pro which had no thinking)
         // was too tight; bumping to 16384 gives ~3x headroom.
-        maxOutputTokens: 16384,
+        // 16384 → 24576: audio 모드일 때 raw_transcript 도 함께 출력하므로 헤드룸 확보.
+        // 7분 audio (~7-10k char Korean) + narrative + fields ≈ 18-20k char ≈ 9-10k tokens.
+        maxOutputTokens: 24576,
         // Force JSON output so parseJsonFromText doesn't have to deal with
         // markdown fences in the happy path.
         responseMimeType: 'application/json',
@@ -338,7 +340,7 @@ async function handleStream(res, body, apiKey, prev) {
   const parsed = parseJsonFromText(fullText);
   const normalized = parsed
     ? normalizeModelOutput(parsed, prev)
-    : { narrative_summary: '', fields: {}, low_confidence: [] };
+    : { narrative_summary: '', fields: {}, low_confidence: [], raw_transcript: '' };
   writeEvent('done', Object.assign({}, normalized, {
     raw: fullText,
     usage,
@@ -385,6 +387,8 @@ function toFieldEntry(v) {
 function normalizeModelOutput(parsed, prev) {
   const narrative = typeof parsed.narrative_summary === 'string' ? parsed.narrative_summary : '';
   const lowConf = Array.isArray(parsed.low_confidence) ? parsed.low_confidence : [];
+  // Phase #4 (2026-05-03): audio 모드일 때 Gemini 가 첫 패스에서 만드는 verbatim transcript.
+  const rawTranscript = typeof parsed.raw_transcript === 'string' ? parsed.raw_transcript : '';
 
   let srcFields;
   if (parsed.fields && typeof parsed.fields === 'object') {
@@ -430,7 +434,7 @@ function normalizeModelOutput(parsed, prev) {
     }
   }
 
-  return { narrative_summary: narrative, fields, low_confidence: lowConf };
+  return { narrative_summary: narrative, fields, low_confidence: lowConf, raw_transcript: rawTranscript };
 }
 
 function extractLatestIsoDate(s) {
@@ -449,7 +453,17 @@ function buildSystemPrompt() {
     'You are an assistant that extracts structured coaching session data from raw Speech-to-Text (STT) transcripts.',
     'The transcript is a 1:1 startup coaching session between a coach and a founder (may be in Korean, English, or mixed).',
     '',
-    'YOUR JOB has two passes:',
+    'YOUR JOB has two passes (THREE when the user attaches audio):',
+    '',
+    'PASS 0 — RAW TRANSCRIPT (raw_transcript, audio-mode only)',
+    '  IF the user-turn contains audio inline_data (not just text), you MUST first',
+    '  transcribe the audio verbatim into the top-level "raw_transcript" string.',
+    '  - Speaker labels are optional but encouraged: "코치: ..." / "창업자: ..."',
+    '  - Preserve filler words, false starts, mixed-language switches — this is the',
+    '    literal evidence trail the coach will verify or hand-edit.',
+    '  - When the input is text-only (no audio), set "raw_transcript" to "" and skip this pass.',
+    '  After producing the transcript, treat it AS IF it were the user-provided text',
+    '  for PASS 1 & 2 below.',
     '',
     'PASS 1 — NARRATIVE SUMMARY (narrative_summary)',
     '  Write an 8-15 sentence rich prose summary of the session in the dominant language of the transcript.',
@@ -497,7 +511,10 @@ function buildSystemPrompt() {
     '  1. Output a single valid JSON object — nothing else. No prose before/after, no markdown fences. The response MIME is set to application/json.',
     '  2. Do NOT invent content. If not in the transcript, use "" / 0 / [] / false with confidence ≤ 0.3.',
     '  3. Preserve the dominant language of the transcript in free-text fields.',
-    '  4. Emit keys in the schema order so partial streams are usable early (narrative_summary FIRST, then fields in schema order, then low_confidence).',
+    '  4. Emit keys in the schema order so partial streams are usable early:',
+    '     raw_transcript (if audio) → narrative_summary → fields → low_confidence.',
+    '     raw_transcript MUST appear first when audio is present so the coach can see',
+    '     it streaming in early while the rest of the analysis is still being produced.',
     '',
     'EXAMPLE (Korean session → Korean output):',
     '{',

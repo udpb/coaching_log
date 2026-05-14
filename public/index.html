@@ -6923,9 +6923,23 @@ async function runSttExtract(opts) {
     if (finalPayload && (finalPayload.fields || finalPayload.narrative_summary)) {
       if (finalPayload.narrative_summary) applyNarrativeSummary(finalPayload.narrative_summary);
       applyExtractedFields(finalPayload.fields || {}, finalPayload.low_confidence || [], false);
+      // Phase #4 (2026-05-03): audio 모드일 때 Gemini 가 verbatim transcript 도 반환.
+      //   - textarea 에 자동 채워넣어 코치가 검토/수정 가능
+      //   - lastTranscriptRaw 도 갱신 (저장 시 DB 에 raw transcript 보관 옵션이 이걸 씀)
+      //   - text-only 모드에선 audio 입력 없으므로 raw_transcript = '' → 건드리지 않음
+      if (audioMode && typeof finalPayload.raw_transcript === 'string' && finalPayload.raw_transcript.length > 10) {
+        const ta = document.getElementById('sttTranscript');
+        if (ta) ta.value = finalPayload.raw_transcript;
+        lastTranscriptRaw = finalPayload.raw_transcript;
+      }
       showSttProgress(true, 100);
       setTimeout(() => showSttProgress(false), 600);
-      setSttStatus('초안 반영 완료. 💬 아이콘으로 각 필드의 원문 근거를 확인하세요.', 'success');
+      setSttStatus(
+        audioMode
+          ? '✓ 음성 → transcript 추출 + 초안 반영 완료. 위 textarea 에 transcript 가 채워졌어요 — 수정 후 다시 분석도 가능.'
+          : '초안 반영 완료. 💬 아이콘으로 각 필드의 원문 근거를 확인하세요.',
+        'success'
+      );
     } else {
       showSttProgress(false);
       setSttStatus('응답 파싱 실패 — 잠시 후 다시 시도하세요.', 'error');
