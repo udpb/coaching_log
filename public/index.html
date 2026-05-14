@@ -3600,7 +3600,7 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
           </span>
         </div>
         <div class="bp-eval-rating-row" id="bpEvalRow_reliability" style="font-size:13px;">
-          <span style="color:var(--dark);">신뢰성</span>
+          <span style="color:var(--dark);">성실함</span>
           <span class="bp-eval-rating-input" data-dim="reliability">
             <span data-n="1" onclick="setBPEvalRating('reliability',1)">☆</span>
             <span data-n="2" onclick="setBPEvalRating('reliability',2)">☆</span>
@@ -10003,7 +10003,7 @@ function renderBPDetailBody() {
               ${_bpStarRow('종합', ev.rating_overall)}
               ${_bpStarRow('소통', ev.rating_communication)}
               ${_bpStarRow('전문성', ev.rating_expertise)}
-              ${_bpStarRow('신뢰성', ev.rating_reliability)}
+              ${_bpStarRow('성실함', ev.rating_reliability)}
             </div>
             <div style="margin-top:6px;">${rehireBadge}</div>
             ${commentHtml}
