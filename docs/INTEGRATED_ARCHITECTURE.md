@@ -81,7 +81,7 @@
 | **ud-ops** | https://ud-planner.vercel.app | PM (UDI 직원) | `C:/Users/USER/projects/ud-ops-workspace` (`udpb/ud_planner`) | Next.js 16 + Prisma + Neon Postgres + NextAuth + Gemini Primary/Claude Fallback | production ready (PRD v7.1) |
 | **coach-finder** | (Vercel URL TBD) | PM·Admin | `C:/Users/USER/underdogs-coach-finder` (`udpb/coach-finder`) | Vite+React 19 + Supabase Auth + Cloud Run python (RAG) | production ready (Phase F 완료) |
 | **coaching-log** | https://coaching-log-lemon.vercel.app | 외부 코치 + PM + Admin | `C:/Users/USER/underdogs-coaching-log` (`udpb/coaching_log`) | Vanilla HTML + Vercel Functions + Supabase + Gemini 2.5-pro/flash | production ready |
-| **underdogs-hub** | (배포 보류) | 모든 사용자 | `C:/Users/USER/underdogs-hub` (GitHub repo 미생성) | Vanilla HTML + Supabase Auth | 코드 완료, 배포 대기 |
+| **underdogs-hub** | `ud-hub.vercel.app` | 모든 사용자 | `C:/Users/USER/underdogs-hub` (GitHub repo 미생성, Vercel 직접 deploy) | Vanilla HTML + Supabase Auth | 코드 완료, URL 확정 (2026-05-03) |
 
 ### 2.3 다이어그램 ↔ 실제 매핑
 
@@ -356,4 +356,161 @@ coach-finder ProjectsPage에서 PM이 "수주 완료" 버튼을 눌러 status='w
 
 ---
 
-**문서 끝.** Option 1 시작 시 본 문서의 §4.1 매핑 표를 starting point로 사용.
+## 부록 C. "전체 점검 제대로" 체크포인트 (2026-05-03 추가)
+
+> **배경**: 2026-05-03 점검에서 `coach-finder/python-service/` (Cloud Run FastAPI 소스) 와 `coach-finder/ingest_data.py` (root 레벨 Python 스크립트) 를 누락. 원인: `client/` + `api/` 디렉터리만 보고 "Vite + Vercel Functions" 구조로 단정함. **빌드 로그의 `.vercelignore` 출력에 경로가 보였음에도** 폴더 내용을 확인 안 했음. 같은 실수를 반복하지 않기 위한 체크리스트.
+
+### C.1 앱 단위 — 점검 시 반드시 확인할 항목
+
+각 앱(coaching-log, coach-finder, underdogs-hub, ud-ops)마다 다음을 모두 본다:
+
+#### (a) 디렉터리 토폴로지
+- [ ] **repo root의 모든 디렉터리** 나열 (`ls -la`) — `src/`, `client/`, `api/` 같은 "보일 만한 것"만 보지 말고 **전부**
+- [ ] root 레벨의 **숨겨지지 않은 모든 파일** 확인 — 특히 `*.py`, `*.sh`, `Dockerfile`, `__init__.py` 같은 "이 스택에 안 어울리는" 파일
+- [ ] `.gitignore` / `.vercelignore` / `.dockerignore` — **무엇이 ignore 되는지가 곧 무엇이 존재하는지의 단서**
+- [ ] `node_modules/`, `venv/`, `dist/`, `.next/`, `__pycache__/` 같은 빌드 산출물 디렉터리는 식별만 하고 무시
+
+#### (b) 모든 패키지/의존성 매니페스트
+- [ ] `package.json` (dependencies + devDependencies + scripts 전부)
+- [ ] `pnpm-lock.yaml` / `package-lock.json` 존재 여부 (어느 매니저인지)
+- [ ] `requirements.txt` / `Pipfile` / `pyproject.toml` (Python)
+- [ ] `Dockerfile` / `docker-compose.yml`
+- [ ] `vercel.json` — buildCommand, outputDirectory, rewrites, functions 설정
+- [ ] `prisma/schema.prisma` (Prisma 사용 시)
+- [ ] `supabase/migrations/*.sql` (Supabase 사용 시) — 모든 마이그레이션 파일
+
+#### (c) 환경 변수
+- [ ] `.env.example` / `.env.local` / `.env.production` 모든 변종
+- [ ] Vercel Project 의 Production / Preview / Development 환경변수 (CLI: `vercel env ls`)
+- [ ] **차원·모델·키 등 정확히 일치해야 하는 값들의 cross-app 매칭** (예: 임베딩 차원, Supabase project ref)
+
+#### (c-2) **Supabase Dashboard 설정** (코드 밖에 사는 설정 — 점검 누락 빈번)
+- [ ] **Authentication → URL Configuration** — Site URL + Redirect URLs allow-list (모든 앱의 prod + local dev URL 등록 필요. 누락 시 비밀번호 재설정·이메일 변경·OAuth·magic link 깨짐)
+- [ ] **Authentication → Sign In / Providers** — 활성화된 provider 목록 (코드와 일치 여부)
+- [ ] **Authentication → Email** — confirm 메일 템플릿, "Confirm signup" / "Reset password" 활성화 여부
+- [ ] **Authentication → Rate Limits** — 이메일 발송 한도, OTP 한도
+- [ ] **Authentication → Attack Protection** — Captcha 활성화, leaked password 검사
+- [ ] **Database → Roles / RLS Policies** — 코드의 SQL 마이그레이션과 실제 DB 일치 여부
+- [ ] **Storage → Buckets** — public / private 설정 + RLS policy
+- [ ] **Project Settings → API → Project URL** — 코드의 SUPABASE_URL과 일치 여부
+- [ ] **Project Settings → API → service_role 키 노출 여부** (절대 클라이언트 코드 / VITE_ prefix에 들어가면 안 됨)
+
+#### (d) 외부 서비스 / 백엔드
+- [ ] Vercel Functions (`api/*.ts` **AND `api/*.py`** — Python serverless도 가능) — 모두 나열
+- [ ] **별도 호스팅 백엔드** (Cloud Run, Render, Fly, Railway 등) — repo 안에 소스가 있을 수 있음 (← 5-3 누락 사례)
+- [ ] Supabase Edge Functions (`supabase/functions/*`)
+- [ ] Cron jobs (Vercel Cron, GitHub Actions schedule 등)
+- [ ] **각 함수가 실제로 호출되는지** 검증 — repo에 파일 있어도 dead code일 수 있음 (호출 grep으로 확인)
+
+#### (e) 데이터 / 정적 자산 stale 검사
+- [ ] 큰 JSON / CSV (`>100KB`) 의 마지막 수정일 — **2주 이상 오래되었으면 stale 의심**
+- [ ] FAISS / Pinecone / pgvector 인덱스의 마지막 빌드 시점
+- [ ] DB의 `*_updated_at` MAX 와 코드 디렉터리의 mtime 비교
+
+#### (f) 배포 상태
+- [ ] 배포된 URL (production + preview)
+- [ ] 의도한 URL과 실제 URL 일치 여부 (cross-app 링크 깨짐 방지)
+- [ ] 마지막 성공한 배포 commit + 날짜
+- [ ] 마지막 실패한 배포가 있으면 에러 로그 확인
+
+### C.2 Cross-app 점검 — 반드시 모든 앱 간 조합으로 확인
+
+| 점검 항목 | 어디 vs 어디 | 어떻게 확인 |
+|---|---|---|
+| **Auth identity 동일성** | 4-앱 전부 | 같은 Supabase project ref · 같은 email = 같은 user · profiles.role 일관성 |
+| **데이터 차원·스키마 호환** | DB 컬럼 ↔ 사용 코드 | 예: `vector(1536)` ↔ 임베딩 모델 출력 dim |
+| **Cross-link URL** | A의 외부 링크 ↔ B의 실제 URL | 모든 `<a href>` / `redirectTo` / signup 안내 링크 |
+| **공유 테이블 RLS** | DB policy ↔ 모든 사용처 | 어느 한 앱에서 SELECT 안 되면 끝 |
+| **DB trigger의 타겟** | trigger 정의 ↔ 어느 앱에서 INSERT 발생 | `bp_on_won` 같은 자동 생성 트리거 |
+| **동기화 hook의 커버리지** | sync 코드 ↔ 모든 mutation 경로 | 새 API 라우트 추가 시 sync 누락 위험 |
+
+### C.3 점검 종료 기준 (Definition of Done)
+
+다음 모두 만족해야 "전체 점검 완료" 라고 말할 수 있다:
+
+1. ☐ 4개 앱 모두 §C.1의 (a)~(f) 6개 카테고리 전부 확인 완료
+2. ☐ §C.2 의 6개 cross-app 점검 항목 모두 결과 기록
+3. ☐ 발견된 문제는 본 문서의 §5 "5가지 핵심 gap" 섹션에 추가 또는 갱신
+4. ☐ 결정 필요 항목(예: 임베딩 차원 미스매치)은 사용자에게 명시적 확인 요청
+5. ☐ 점검 일자 + 점검자(누구·언제) 기록
+
+### C.4 안티 패턴 — 다시는 하지 말 것
+
+- ❌ "중요한 디렉터리만 보면 되겠지" → 모든 root-level 디렉터리·파일을 본다
+- ❌ "ignore 됐으니 신경 안 써도 됨" → ignore된 것이 곧 존재하는 것의 단서
+- ❌ "외부 호스팅이라 repo에 없겠지" → repo 안에 Cloud Run / Render / Fly 소스 있을 수 있음
+- ❌ "차원 같겠지" / "스키마 같겠지" → 명시적으로 숫자·타입 비교
+- ❌ "agent 한테 시켜야지" → 사용자 명시 요청: 직접 본다
+- ❌ "DB 마지막 업데이트 안 봐도 됨" → 정적 데이터 stale 여부는 결과 정확도에 직결
+
+---
+
+---
+
+## §6. 2026-05-03 작업 영구 기록 (Phase C2 + D1+D2+D3 + 후속 정리)
+
+### 6.1 Phase C2 (coach-finder) — Cloud Run → Vercel native 추천
+
+| 단계 | 내용 | Commit |
+|---|---|---|
+| **Step 1** | Supabase `coaches_directory.embedding` 800/800 채움 (`gemini-embedding-001`, 1536 dim Matryoshka). `tools/embed-coaches.mjs` + `verify-embeddings.mjs` 추가. RPC `search_coaches_by_embedding` self-match 1.0000 확인. | `ca93e76` |
+| **Step 2-3** | `api/_lib/recommend.ts` + `api/recommend/index.ts` + `api/recommend/stream.ts`. Home.tsx 클라이언트는 `/api/recommend(.stream)` 호출로 교체. | `ca93e76` |
+| **Step 6** | `tools/verify-recommend.mjs` local smoke test (12s, top-5 sim 0.68-0.69). | `ca93e76` |
+| **Build fix #1** | `tsconfig.json` `include` 에 `api/**/*.ts` 추가. `@google/generative-ai` devDep → deps 이동. `TaskType` enum + `outputDimensionality` 타입 단언 우회. | `3c0272f` |
+| **Build fix #2** | Node ESM strict mode 대응 — internal import 4개에 `.js` 확장자 명시. | `8610fe4` |
+| **Step 4-5** | Cloud Run / dead code / stale 일괄 삭제 — `python-service/`, `api/index.py`, `__init__.py`, `ingest_data.py`, `client/src/data/coaches*.json`, `사용자_가이드.md`, `ideas.md`, `todo.md`. `coachesFallback` import 제거 (빈 배열 fallback). `.env.example` 에서 `VITE_API_BASE_URL` 제거 + `GEMINI_API_KEY` 카테고리 추가. | `6814e76` |
+
+데이터 흐름 변화:
+- **Before**: `Home.tsx → Cloud Run FastAPI (gemini-2.5-flash + FAISS embedding-001 768d) → coaches_db.json (2개월 stale)`
+- **After**: `Home.tsx → /api/recommend (Vercel Node) → Gemini chat + embedding-001 1536d → Supabase pgvector RPC → coaches_directory (live)`
+
+### 6.2 Phase D (coaching-log) — 모바일 UX + STT 녹음 + PM 가시성 분리
+
+| 단계 | 내용 | Commit |
+|---|---|---|
+| **D1** | 모바일 헤더·탭 잘림 fix. `nav-tabs` 가로 스크롤 + `scroll-snap` + 활성탭 자동 visible. 모바일에서 lang-switch / CSV 숨김. 사용자명 ellipsis. | `f9f51b3` |
+| **D2** | STT 음성 녹음 통합 (`gemini-2.5-pro` Native Audio). `MediaRecorder` API + base64 + inline_data. 기존 textarea 붙여넣기 흐름 그대로 유지. 자동 정지 (7분 ceiling, Vercel 4.5MB body limit). `vercel.json` `functions.maxDuration: 60`. | `25f2968` |
+| **D3-a** | RLS PM 가시성 분리 — `is_admin_or_pm()` 호출을 `is_admin() OR is_pm_of_project(id)` 로 좁힘. 새 helper `is_pm_of_project(uuid)`. `project_members.role` enum: `lead_coach` 제거 + `pm` 추가 (협업 PM). `coaches_directory_history.SELECT` admin only 로 좁힘. Supabase migration `20260503_phase_d3_pm_isolation.sql` 수동 적용. | `8a2fa96` |
+| **D3-b** | 클라이언트 `isAdmin` / `isPM` / `canManageProjects` 변수 분리. PM 요약 카드 (활성 사업 / 코치 / 누적 세션). 빈 상태 메시지 "관리자에게 문의" → "담당 PM에게 문의". | `f6c81fa` |
+| **D3-c** | 코치 배정 흐름 재설계 — coach-finder `coaches_directory` 가 마스터. `linked_user_id` 즉시 사용. 미가입 검출 시 inline 초대 영역 (✉️ Magic Link 발송 + 🔗 가입 URL 복사). 검색 결과 0건일 때 coach-finder 등록 링크 안내. | `1917529` |
+
+### 6.3 권한 매트릭스 (D3 적용 후 확정)
+
+| 권한 | admin | PM | coach |
+|---|---|---|---|
+| 모든 프로젝트 SELECT | ✓ | ✗ | ✗ |
+| 본인 PM 프로젝트 SELECT (created_by) | ✓ | ✓ | ✗ |
+| 프로젝트 멤버 (project_members) SELECT | ✓ | ✓ (본인 프로젝트만) | ✗ |
+| 본인 멤버인 프로젝트 SELECT | ✓ | ✓ | ✓ |
+| coaching_logs INSERT 본인 | ✓ | ✓ | ✓ |
+| 새 프로젝트 INSERT | ✓ | ✓ | ✗ |
+| 프로젝트 UPDATE/DELETE | ✓ (전체) | ✓ (created_by 만) | ✗ |
+| project_members INSERT (코치 배정) | ✓ | ✓ (본인 프로젝트) | ✗ |
+| coaches_directory 편집 | ✓ | ✗ (read only) | ✓ (본인 row만) |
+| profiles role 변경 | ✓ | ✗ | ✗ |
+| coaches_directory_history (audit) | ✓ | ✗ | ✗ |
+
+### 6.4 점검 누락 → 발견 → 학습 사항 (부록 C 보강)
+
+이번 작업으로 발견 + 부록 C 에 영구 반영:
+- (a) 디렉터리 토폴로지 — repo root 의 **모든** 디렉터리·파일 확인 (python-service 누락 사례)
+- (b) `tsconfig.json` 의 `include` 가 실제 빌드 대상을 모두 포함하는지 (Vercel 별도 typecheck)
+- (c-2) **Supabase Dashboard 설정** — URL Config / providers / email / RLS / storage 등 코드 밖 설정 점검
+- (d) `api/` 안에 `.py` 파일도 가능 + 함수 실제 호출 여부 grep
+- (e) JSON·CSV stale mtime 검사
+- (f) ESM strict (`"type": "module"`) 환경에서 internal import `.js` 확장자 강제
+- (g) npm package 가 devDeps 가 아닌 deps 에 들어가야 runtime require 가능 (Vercel functions)
+
+### 6.5 사용자 후속 (코드 외부)
+
+| 항목 | 상태 |
+|---|---|
+| Vercel coach-finder env: `VITE_FIREBASE_*` 6개 + `VITE_API_BASE_URL` 제거 | 사용자 작업 |
+| `.env.local` 에서 `VITE_API_BASE_URL` 직접 삭제 | 사용자 작업 |
+| GCP Console `underdogs-ai-backend` Cloud Run 비활성화 (선택) | 사용자 작업 |
+| Supabase URL Config redirect URLs 에 `ud-hub.vercel.app/*` `**` 추가 | 사용자 작업 (Hub 배포 시) |
+| Hub 배포 (vercel deploy --prod) | 사용자 작업 |
+
+---
+
+**문서 끝.** Option 1 시작 시 본 문서의 §4.1 매핑 표를 starting point로 사용. 점검 작업 시 부록 C 체크리스트 사용. 작업 영구 기록은 §6 에 단계별 추가.
