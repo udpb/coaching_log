@@ -199,14 +199,21 @@ CREATE POLICY "business_plans_select"
 
 -- ─────────────────────────────────────────────────────────────
 -- 8. RLS — business_plan_coaches
---    PM 본인 BP 의 멤버만 / coach 본인이 코치인 row 만
+--    PM 본인 BP 의 멤버 / coach 본인이 후보로 올라간 row
+--    NOTE: phase5b 의 실제 컬럼은 `coach_directory_id` (coaches_directory.id
+--    참조) — auth.users.id 와 직접 비교 불가. coaches_directory.linked_user_id
+--    를 거쳐 join 해야 함.
 -- ─────────────────────────────────────────────────────────────
 DROP POLICY IF EXISTS "bp_coaches_select" ON public.business_plan_coaches;
 CREATE POLICY "bp_coaches_select"
   ON public.business_plan_coaches FOR SELECT
   USING (
     public.is_admin()
-    OR coach_id = auth.uid()
+    OR EXISTS (
+      SELECT 1 FROM public.coaches_directory cd
+       WHERE cd.id = business_plan_coaches.coach_directory_id
+         AND cd.linked_user_id = auth.uid()
+    )
     OR EXISTS (
       SELECT 1 FROM public.business_plans bp
        WHERE bp.id = business_plan_coaches.business_plan_id
