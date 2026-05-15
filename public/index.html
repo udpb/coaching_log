@@ -7870,21 +7870,30 @@ async function loadMyInfoProfile() {
   }
   const { data, error } = await supabaseClient
     .from('coaches_directory')
-    .select('name, email, phone, organization, position, intro, category, tier, expertise, industries, regions, photo_url')
+    .select('name, email, phone, organization, position, intro, category, tier, status, expertise, industries, regions, photo_url')
     .eq('id', cdId)
     .maybeSingle();
   if (error || !data) {
     host.innerHTML = `<p style="color:var(--red);">조회 실패: ${error?.message || '데이터 없음'}</p>`;
     return;
   }
-  const tierLabel = data.tier === 1 ? '베테랑코치' : data.tier === 2 ? 'UD코치' : '외부풀';
+  // Phase G 정리: tier 의미 = 베테랑/UD/외부풀. "Tier" 단어 노출 X.
+  // Phase H: status='inactive' → "휴식 중" 표시.
+  const tierNum = Number(data.tier);
+  const tierLabel = tierNum === 1 ? '베테랑코치' : tierNum === 2 ? 'UD코치' : tierNum === 3 ? '외부풀' : '미지정';
+  const isActive = data.status !== 'inactive';
+  const statusBadge = isActive
+    ? '<span style="display:inline-block; padding:2px 8px; background:var(--green-bg); color:var(--green); font-size:11px;">활동 중</span>'
+    : '<span style="display:inline-block; padding:2px 8px; background:var(--yellow-bg); color:var(--yellow); font-size:11px;">⏸ 휴식 중</span>';
   const expertise = (data.expertise || []).map(e => `<span style="display:inline-block; padding:2px 8px; background:var(--gray100); font-size:11px; margin:2px;">${escapeHtml(e)}</span>`).join(' ') || '—';
   host.innerHTML = `
     <div style="background:var(--orange-bg); border:1px solid rgba(232,84,26,0.2); padding:12px 16px; margin-bottom:16px; font-size:12px;">
       💡 프로필 정보는 admin 이 관리합니다. 잘못된 정보가 있으면 admin 에게 문의해주세요.
+      ${!isActive ? '<br>⚠ 현재 <strong>휴식 중</strong> 으로 분류되어 새 사업 추천에서 제외되고 있습니다. 활동 재개를 원하시면 admin 에게 알려주세요.' : ''}
     </div>
     <div style="display:grid; grid-template-columns:1fr 2fr; gap:12px 24px;">
       <div style="color:var(--gray500); font-size:12px;">이름</div><div style="font-weight:600;">${escapeHtml(data.name || '—')}</div>
+      <div style="color:var(--gray500); font-size:12px;">활동 상태</div><div>${statusBadge}</div>
       <div style="color:var(--gray500); font-size:12px;">유형</div><div>${tierLabel} · ${escapeHtml(data.category || '—')}</div>
       <div style="color:var(--gray500); font-size:12px;">소속</div><div>${escapeHtml(data.organization || '—')} · ${escapeHtml(data.position || '—')}</div>
       <div style="color:var(--gray500); font-size:12px;">이메일</div><div style="font-family:monospace;">${escapeHtml(data.email || '—')}</div>
