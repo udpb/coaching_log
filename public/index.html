@@ -3071,11 +3071,10 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
       <button class="nav-tab" data-view="form" data-i18n="nav_record">Record</button>
       <button class="nav-tab" data-view="list" data-i18n="nav_list">List</button>
       <button class="nav-tab" data-view="dashboard" data-i18n="nav_dashboard">대시보드</button>
-      <!-- Phase G2-A (2026-05-15): 코치 "내 정보" 허브 — 계약정보·내사업·일지요약·프로필 -->
-      <button class="nav-tab" data-view="myinfo" id="navMyInfo" data-i18n="nav_myinfo">내 정보</button>
       <button class="nav-tab" data-view="coaches" id="navCoaches" style="display:none;" data-i18n="nav_coaches">코치 디렉토리</button>
       <button class="nav-tab" data-view="plans" id="navPlans" style="display:none;" data-i18n="nav_plans">사업기획</button>
       <button class="nav-tab" data-view="users" id="navUsers" style="display:none;" data-i18n="nav_users">사용자 관리</button>
+      <!-- Phase G2-A "내 정보" 는 nav 가운데 끼우지 않고 header-right 의 사용자 이름 옆에 배치 (2026-05-15) -->
     </nav>
     <div class="header-right">
       <div class="lang-switch">
@@ -3090,7 +3089,10 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
       <a href="https://ud-hub.vercel.app/" class="hub-link" id="hubLink" title="허브로 돌아가기">↩ Hub</a>
       <div class="auth-user" id="authUserInfo" style="display:none">
         <span id="authUserRole" class="auth-role-badge" style="display:none;"></span>
-        <span id="authUserName"></span>
+        <!-- Phase G2-A (2026-05-15): 사용자 이름 클릭 시 "내 정보" 로 이동 (밑줄·hover 로 클릭 가능 표시) -->
+        <span id="authUserName" onclick="switchView('myinfo')"
+              style="cursor:pointer; text-decoration:underline; text-decoration-color:rgba(255,255,255,0.3); text-underline-offset:3px;"
+              title="내 정보 보기"></span>
         <button onclick="handleLogout()" data-i18n="signOut">Sign Out</button>
       </div>
     </div>
@@ -3444,8 +3446,10 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
   </div>
 </div>
 
-<!-- View 6: My Info Hub (Phase G2-A, 2026-05-15) — 코치 본인 정보 허브 -->
-<div class="view" id="viewMyInfo">
+<!-- View 6: My Info Hub (Phase G2-A, 2026-05-15) — 코치 본인 정보 허브
+     id 주의: switchView 가 'view' + capitalize(name) 으로 찾으므로
+     name='myinfo' → 'viewMyinfo' (소문자 i). 대문자 I 쓰면 null 에러. -->
+<div class="view" id="viewMyinfo">
   <div class="container">
     <h2 style="margin-bottom:8px;">내 정보</h2>
     <p style="color:var(--gray500); font-size:13px; margin-bottom:24px;">
