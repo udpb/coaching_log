@@ -3071,6 +3071,8 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
       <button class="nav-tab" data-view="form" data-i18n="nav_record">Record</button>
       <button class="nav-tab" data-view="list" data-i18n="nav_list">List</button>
       <button class="nav-tab" data-view="dashboard" data-i18n="nav_dashboard">대시보드</button>
+      <!-- Phase G2-A (2026-05-15): 코치 "내 정보" 허브 — 계약정보·내사업·일지요약·프로필 -->
+      <button class="nav-tab" data-view="myinfo" id="navMyInfo" data-i18n="nav_myinfo">내 정보</button>
       <button class="nav-tab" data-view="coaches" id="navCoaches" style="display:none;" data-i18n="nav_coaches">코치 디렉토리</button>
       <button class="nav-tab" data-view="plans" id="navPlans" style="display:none;" data-i18n="nav_plans">사업기획</button>
       <button class="nav-tab" data-view="users" id="navUsers" style="display:none;" data-i18n="nav_users">사용자 관리</button>
@@ -3438,6 +3440,149 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
     </button>
     <div id="detailContent">
       <!-- Rendered by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- View 6: My Info Hub (Phase G2-A, 2026-05-15) — 코치 본인 정보 허브 -->
+<div class="view" id="viewMyInfo">
+  <div class="container">
+    <h2 style="margin-bottom:8px;">내 정보</h2>
+    <p style="color:var(--gray500); font-size:13px; margin-bottom:24px;">
+      계약 정보·참여 사업·일지 요약·프로필을 한 곳에서 관리합니다.
+      입력한 계약 정보는 PM 이 계약서 생성 시 자동으로 채워집니다.
+    </p>
+
+    <!-- 서브탭 -->
+    <div class="nav-tabs" style="margin-bottom:20px; border-bottom:1px solid var(--gray200); display:flex; gap:0;">
+      <button class="myinfo-tab active" data-myinfo-tab="contract"
+              onclick="switchMyInfoTab('contract')"
+              style="background:none; border:none; padding:10px 16px; cursor:pointer; font-size:13px; font-weight:500; border-bottom:2px solid var(--orange);">
+        계약 정보
+      </button>
+      <button class="myinfo-tab" data-myinfo-tab="projects"
+              onclick="switchMyInfoTab('projects')"
+              style="background:none; border:none; padding:10px 16px; cursor:pointer; font-size:13px; color:var(--gray500); border-bottom:2px solid transparent;">
+        내 참여 사업
+      </button>
+      <button class="myinfo-tab" data-myinfo-tab="logs"
+              onclick="switchMyInfoTab('logs')"
+              style="background:none; border:none; padding:10px 16px; cursor:pointer; font-size:13px; color:var(--gray500); border-bottom:2px solid transparent;">
+        내 일지 요약
+      </button>
+      <button class="myinfo-tab" data-myinfo-tab="profile"
+              onclick="switchMyInfoTab('profile')"
+              style="background:none; border:none; padding:10px 16px; cursor:pointer; font-size:13px; color:var(--gray500); border-bottom:2px solid transparent;">
+        프로필
+      </button>
+    </div>
+
+    <!-- Tab content containers -->
+    <div id="myInfoTabContract" class="myinfo-content">
+      <div id="myInfoContractLoading" style="text-align:center; padding:40px; color:var(--gray400);">불러오는 중…</div>
+      <div id="myInfoContractContent" style="display:none;">
+        <div style="background:var(--orange-bg); border:1px solid rgba(232,84,26,0.2); padding:12px 16px; margin-bottom:16px; font-size:12px; color:var(--dark2);">
+          💡 여기 입력한 정보는 PM 이 계약서를 만들 때 자동으로 채워집니다. 한 번만 등록하면 다음번부터 PM 모달이 거의 비어있지 않습니다.
+        </div>
+        <div style="display:grid; gap:16px;">
+          <div>
+            <label style="display:block; font-size:12px; font-weight:600; color:var(--gray500); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">
+              주소 <span style="color:var(--red);">*</span>
+            </label>
+            <input type="text" id="myInfoAddress" placeholder="예: 서울특별시 종로구 돈화문로 88-1, 2층"
+                   style="width:100%; padding:10px 12px; border:1px solid var(--gray300); font-size:13px;">
+          </div>
+
+          <div style="background:var(--gray100); padding:12px 16px;">
+            <p style="font-size:12px; font-weight:600; margin-bottom:10px;">지급 계좌 (계약서 제3조)</p>
+            <div style="display:grid; grid-template-columns:1fr 2fr 1fr; gap:8px;">
+              <div>
+                <label style="display:block; font-size:11px; color:var(--gray500); margin-bottom:4px;">은행명</label>
+                <input type="text" id="myInfoBank" placeholder="국민" style="width:100%; padding:8px 10px; border:1px solid var(--gray300); font-size:13px;">
+              </div>
+              <div>
+                <label style="display:block; font-size:11px; color:var(--gray500); margin-bottom:4px;">계좌번호</label>
+                <input type="text" id="myInfoAccount" placeholder="000-00-0000-000"
+                       style="width:100%; padding:8px 10px; border:1px solid var(--gray300); font-size:13px; font-family:monospace;">
+              </div>
+              <div>
+                <label style="display:block; font-size:11px; color:var(--gray500); margin-bottom:4px;">예금주</label>
+                <input type="text" id="myInfoHolder" placeholder="홍길동" style="width:100%; padding:8px 10px; border:1px solid var(--gray300); font-size:13px;">
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label style="display:block; font-size:12px; font-weight:600; color:var(--gray500); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">
+              원천세 구분
+            </label>
+            <div style="display:flex; gap:8px;">
+              <button id="myInfoTax3" onclick="setMyInfoTax('business_3_3')"
+                      style="flex:1; padding:10px; border:1px solid var(--gray300); background:white; cursor:pointer; font-size:12px;">
+                사업소득 3.3%
+              </button>
+              <button id="myInfoTax8" onclick="setMyInfoTax('other_8_8')"
+                      style="flex:1; padding:10px; border:1px solid var(--gray300); background:white; cursor:pointer; font-size:12px;">
+                기타소득 8.8%
+              </button>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:8px; justify-content:flex-end; padding-top:8px; border-top:1px solid var(--gray200);">
+            <button class="btn btn-primary" onclick="saveMyInfoContract()" id="myInfoSaveBtn">
+              저장
+            </button>
+          </div>
+
+          <p id="myInfoUpdatedAt" style="font-size:11px; color:var(--gray400); text-align:right;"></p>
+        </div>
+      </div>
+    </div>
+
+    <div id="myInfoTabProjects" class="myinfo-content" style="display:none;">
+      <div id="myInfoProjectsContent">
+        <div style="text-align:center; padding:40px; color:var(--gray400);">불러오는 중…</div>
+      </div>
+    </div>
+
+    <div id="myInfoTabLogs" class="myinfo-content" style="display:none;">
+      <div id="myInfoLogsContent">
+        <div style="text-align:center; padding:40px; color:var(--gray400);">불러오는 중…</div>
+      </div>
+    </div>
+
+    <div id="myInfoTabProfile" class="myinfo-content" style="display:none;">
+      <div id="myInfoProfileContent">
+        <div style="text-align:center; padding:40px; color:var(--gray400);">불러오는 중…</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Phase G2-B: 신규 코치 온보딩 환영 모달 (profiles.onboarded_at == null 일 때 1회만) -->
+<div class="rpt-modal-overlay" id="onboardingModal" style="display:none;">
+  <div class="rpt-modal" style="max-width:480px;">
+    <h2 style="margin-bottom:8px;">👋 환영합니다!</h2>
+    <p style="font-size:13px; color:var(--gray500); margin-bottom:20px; line-height:1.6;">
+      Underdogs 코칭 시스템에 가입되셨습니다. 다음 두 가지를 안내드릴게요:
+    </p>
+    <div style="display:grid; gap:12px; margin-bottom:24px;">
+      <div style="padding:12px 16px; background:var(--orange-bg); border-left:3px solid var(--orange);">
+        <p style="font-size:13px; font-weight:600; margin-bottom:4px;">1. 내 정보 등록 (1분)</p>
+        <p style="font-size:12px; color:var(--gray500);">
+          주소·계좌·원천세 구분을 등록해두시면 PM 이 계약서를 만들 때 자동으로 채워집니다.
+        </p>
+      </div>
+      <div style="padding:12px 16px; background:var(--gray100); border-left:3px solid var(--gray400);">
+        <p style="font-size:13px; font-weight:600; margin-bottom:4px;">2. 코칭 일지 작성</p>
+        <p style="font-size:12px; color:var(--gray500);">
+          담당 사업 선택 → Record 탭에서 일지 작성 (텍스트 또는 STT 녹음).
+        </p>
+      </div>
+    </div>
+    <div style="display:flex; gap:8px; justify-content:flex-end;">
+      <button class="btn btn-ghost" onclick="dismissOnboarding()">나중에</button>
+      <button class="btn btn-primary" onclick="startOnboarding()">내 정보 등록하기 →</button>
     </div>
   </div>
 </div>
@@ -5377,7 +5522,8 @@ function downloadCsv() {
 // Set of valid view names — used both for switchView and for URL hash parsing.
 // Keep in sync with the `data-view` values on the nav tabs.
 const VALID_VIEWS = new Set([
-  'teams', 'form', 'list', 'dashboard', 'coaches', 'users', 'plans', 'detail'
+  'teams', 'form', 'list', 'dashboard', 'coaches', 'users', 'plans', 'detail',
+  'myinfo' // Phase G2-A: 코치 "내 정보" 허브
 ]);
 
 function switchView(name, opts) {
@@ -5410,6 +5556,14 @@ function switchView(name, opts) {
   if (name === 'coaches') renderCoachDirectory();
   if (name === 'users') renderUsersView();
   if (name === 'plans') renderBPView();
+  if (name === 'myinfo') renderMyInfo();  // Phase G2-A
+
+  // Phase G2-B: 신규 코치 첫 진입 시 환영 모달 자동 노출 (한 번만).
+  //   onboarded_at == null 이면 모달 띄움. teams/myinfo 페이지에서 가장 자연스러움.
+  //   (form/list 같이 작업 중심 페이지에선 방해되지 않게 보류)
+  if ((name === 'teams' || name === 'myinfo') && currentUserRole === 'coach') {
+    maybeShowOnboardingModal();
+  }
 
   // Sync URL hash so the active tab is bookmarkable / refresh-stable / back-
   // button-friendly. Use replaceState by default (no history pollution); pass
@@ -7460,6 +7614,344 @@ function renderList() {
 function setFilter(team) {
   listFilter = team;
   renderList();
+}
+
+// ============================================================
+// ============================================================
+// View 6: My Info Hub (Phase G2-A, 2026-05-15)
+//   코치 본인 정보 한 곳: 계약정보 / 내참여사업 / 일지요약 / 프로필.
+//   admin/PM 이 접근해도 자기 정보 (linked_user_id = auth.uid()) 가 있으면
+//   똑같이 동작 — 굳이 막지 않음.
+// ============================================================
+let myInfoCurrentTab = 'contract';
+let myInfoContractRow = null;    // 최근 fetch 결과 (낙관적 UI)
+let myInfoCoachDirId = null;     // 본인 coaches_directory.id (uuid)
+let myInfoTaxType = null;        // 'business_3_3' | 'other_8_8' | null
+
+async function renderMyInfo() {
+  // 첫 진입 시 contract 탭 자동 로드. 다른 탭은 클릭 시 lazy load.
+  switchMyInfoTab(myInfoCurrentTab || 'contract', /*force*/ true);
+}
+
+function switchMyInfoTab(tab, force) {
+  if (!force && tab === myInfoCurrentTab) return;
+  myInfoCurrentTab = tab;
+  // 탭 버튼 active 스타일
+  document.querySelectorAll('.myinfo-tab').forEach(btn => {
+    const isActive = btn.dataset.myinfoTab === tab;
+    btn.style.borderBottom = isActive ? '2px solid var(--orange)' : '2px solid transparent';
+    btn.style.color = isActive ? 'var(--dark)' : 'var(--gray500)';
+    btn.classList.toggle('active', isActive);
+  });
+  // 컨텐츠 영역 토글
+  ['contract', 'projects', 'logs', 'profile'].forEach(t => {
+    const el = document.getElementById('myInfoTab' + t.charAt(0).toUpperCase() + t.slice(1));
+    if (el) el.style.display = t === tab ? 'block' : 'none';
+  });
+  if (tab === 'contract') loadMyInfoContract();
+  if (tab === 'projects') loadMyInfoProjects();
+  if (tab === 'logs') loadMyInfoLogs();
+  if (tab === 'profile') loadMyInfoProfile();
+}
+
+async function resolveMyCoachDirId() {
+  if (myInfoCoachDirId) return myInfoCoachDirId;
+  const { data: { user } } = await supabaseClient.auth.getUser();
+  if (!user) return null;
+  const { data, error } = await supabaseClient
+    .from('coaches_directory')
+    .select('id')
+    .eq('linked_user_id', user.id)
+    .maybeSingle();
+  if (error || !data) return null;
+  myInfoCoachDirId = data.id;
+  return data.id;
+}
+
+async function loadMyInfoContract() {
+  const loading = document.getElementById('myInfoContractLoading');
+  const content = document.getElementById('myInfoContractContent');
+  if (loading) loading.style.display = 'block';
+  if (content) content.style.display = 'none';
+
+  const cdId = await resolveMyCoachDirId();
+  if (!cdId) {
+    if (loading) loading.innerHTML = '<p style="color:var(--red);">코치 계정과 연결된 정보를 찾을 수 없습니다. admin 에게 문의해주세요.</p>';
+    return;
+  }
+
+  const { data, error } = await supabaseClient
+    .from('coach_contract_info')
+    .select('coach_directory_id, address, bank_name, account_number, account_holder, tax_type, updated_at')
+    .eq('coach_directory_id', cdId)
+    .maybeSingle();
+
+  myInfoContractRow = data || null;
+  // 폼 채움
+  document.getElementById('myInfoAddress').value = data?.address || '';
+  document.getElementById('myInfoBank').value = data?.bank_name || '';
+  document.getElementById('myInfoAccount').value = data?.account_number || '';
+  document.getElementById('myInfoHolder').value = data?.account_holder || '';
+  myInfoTaxType = data?.tax_type || null;
+  updateMyInfoTaxButtons();
+
+  const updatedAtEl = document.getElementById('myInfoUpdatedAt');
+  if (data?.updated_at && updatedAtEl) {
+    const d = new Date(data.updated_at);
+    updatedAtEl.textContent = `최근 수정: ${d.toLocaleString('ko-KR')}`;
+  } else if (updatedAtEl) {
+    updatedAtEl.textContent = '아직 등록되지 않음 — 위 폼을 작성하고 저장해주세요.';
+  }
+
+  if (loading) loading.style.display = 'none';
+  if (content) content.style.display = 'block';
+
+  if (error && error.code !== 'PGRST116') {
+    console.warn('[myInfo] contract fetch error:', error.message);
+  }
+}
+
+function setMyInfoTax(type) {
+  myInfoTaxType = type;
+  updateMyInfoTaxButtons();
+}
+
+function updateMyInfoTaxButtons() {
+  const btn3 = document.getElementById('myInfoTax3');
+  const btn8 = document.getElementById('myInfoTax8');
+  if (!btn3 || !btn8) return;
+  const active = 'background:var(--orange-bg); border-color:var(--orange); color:var(--orange); font-weight:600;';
+  const inactive = 'background:white; border-color:var(--gray300); color:var(--dark);';
+  btn3.style.cssText = 'flex:1; padding:10px; border:1px solid; cursor:pointer; font-size:12px;' +
+    (myInfoTaxType === 'business_3_3' ? active : inactive);
+  btn8.style.cssText = 'flex:1; padding:10px; border:1px solid; cursor:pointer; font-size:12px;' +
+    (myInfoTaxType === 'other_8_8' ? active : inactive);
+}
+
+async function saveMyInfoContract() {
+  const address = document.getElementById('myInfoAddress').value.trim();
+  if (!address) {
+    showToast('주소는 필수입니다.');
+    return;
+  }
+  const cdId = await resolveMyCoachDirId();
+  if (!cdId) {
+    showToast('코치 계정 연결을 찾을 수 없습니다.');
+    return;
+  }
+  const btn = document.getElementById('myInfoSaveBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '저장 중…'; }
+
+  const payload = {
+    coach_directory_id: cdId,
+    address: address || null,
+    bank_name: document.getElementById('myInfoBank').value.trim() || null,
+    account_number: document.getElementById('myInfoAccount').value.trim() || null,
+    account_holder: document.getElementById('myInfoHolder').value.trim() || null,
+    tax_type: myInfoTaxType,
+  };
+  const { error } = await supabaseClient
+    .from('coach_contract_info')
+    .upsert(payload, { onConflict: 'coach_directory_id' });
+
+  if (btn) { btn.disabled = false; btn.textContent = '저장'; }
+  if (error) {
+    showToast('저장 실패: ' + error.message);
+    return;
+  }
+  showToast('✓ 저장되었습니다');
+  // 온보딩 트리거 — 첫 저장 시 onboarded_at 마킹
+  void markOnboardedIfFirst();
+  // 갱신 시각 다시 표시
+  void loadMyInfoContract();
+}
+
+async function loadMyInfoProjects() {
+  const host = document.getElementById('myInfoProjectsContent');
+  if (!host) return;
+  host.innerHTML = '<div style="text-align:center; padding:40px; color:var(--gray400);">불러오는 중…</div>';
+
+  const { data: { user } } = await supabaseClient.auth.getUser();
+  if (!user) {
+    host.innerHTML = '<p style="color:var(--gray500);">로그인이 필요합니다.</p>';
+    return;
+  }
+
+  // project_members 통해 본인 참여 사업 조회 (RLS 가 자동 필터)
+  const { data, error } = await supabaseClient
+    .from('project_members')
+    .select('role, joined_at, project:project_id(id, name, description, status, target_start_date, target_end_date)')
+    .eq('user_id', user.id)
+    .order('joined_at', { ascending: false });
+
+  if (error) {
+    host.innerHTML = `<p style="color:var(--red);">조회 실패: ${error.message}</p>`;
+    return;
+  }
+  if (!data || data.length === 0) {
+    host.innerHTML = '<p style="color:var(--gray500); padding:24px; text-align:center;">아직 배정된 사업이 없습니다.</p>';
+    return;
+  }
+  const rows = data.map(r => {
+    const p = r.project || {};
+    const period = [p.target_start_date, p.target_end_date].filter(Boolean).join(' ~ ') || '—';
+    const statusBadge = p.status === 'active' ? '<span style="background:var(--green-bg); color:var(--green); padding:2px 8px; font-size:11px;">진행 중</span>'
+                     : p.status === 'completed' ? '<span style="background:var(--gray100); color:var(--gray500); padding:2px 8px; font-size:11px;">완료</span>'
+                     : '<span style="background:var(--yellow-bg); color:var(--yellow); padding:2px 8px; font-size:11px;">기획</span>';
+    return `
+      <div style="border:1px solid var(--gray200); padding:16px; margin-bottom:8px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
+          <p style="font-size:14px; font-weight:600;">${escapeHtml(p.name || '—')}</p>
+          ${statusBadge}
+        </div>
+        <p style="font-size:12px; color:var(--gray500); margin-bottom:4px;">${escapeHtml(p.description || '')}</p>
+        <p style="font-size:11px; color:var(--gray400); font-family:monospace;">${period}</p>
+      </div>`;
+  }).join('');
+  host.innerHTML = `<p style="font-size:12px; color:var(--gray500); margin-bottom:12px;">총 ${data.length}개 사업</p>` + rows;
+}
+
+async function loadMyInfoLogs() {
+  const host = document.getElementById('myInfoLogsContent');
+  if (!host) return;
+  host.innerHTML = '<div style="text-align:center; padding:40px; color:var(--gray400);">불러오는 중…</div>';
+
+  const { data: { user } } = await supabaseClient.auth.getUser();
+  if (!user) {
+    host.innerHTML = '<p style="color:var(--gray500);">로그인이 필요합니다.</p>';
+    return;
+  }
+  // coaching_logs 본인 작성분 (RLS author_id = auth.uid())
+  const { data, error } = await supabaseClient
+    .from('coaching_logs')
+    .select('id, team_name, session_date, created_at, project_id')
+    .eq('author_id', user.id)
+    .order('session_date', { ascending: false })
+    .limit(50);
+  if (error) {
+    host.innerHTML = `<p style="color:var(--red);">조회 실패: ${error.message}</p>`;
+    return;
+  }
+  if (!data || data.length === 0) {
+    host.innerHTML = '<p style="color:var(--gray500); padding:24px; text-align:center;">아직 작성한 일지가 없습니다.<br>Record 탭에서 일지를 작성해주세요.</p>';
+    return;
+  }
+  const grouped = {};
+  for (const log of data) {
+    const key = (log.session_date || '').slice(0, 7);
+    grouped[key] = (grouped[key] || 0) + 1;
+  }
+  const monthlyHtml = Object.entries(grouped).map(([m, n]) => `
+    <div style="display:inline-block; margin:0 8px 8px 0; padding:6px 12px; background:var(--orange-bg); font-size:12px;">
+      <strong>${m || '—'}</strong>: ${n}건
+    </div>`).join('');
+  const recent = data.slice(0, 10).map(log => `
+    <div style="padding:10px 12px; border-bottom:1px solid var(--gray200); font-size:13px;">
+      <span style="font-family:monospace; color:var(--gray500); margin-right:8px;">${log.session_date || '—'}</span>
+      <span>${escapeHtml(log.team_name || '—')}</span>
+    </div>`).join('');
+  host.innerHTML = `
+    <p style="font-size:12px; color:var(--gray500); margin-bottom:12px;">총 ${data.length}건 (최근 50건 기준)</p>
+    <p style="font-size:11px; font-weight:600; color:var(--gray500); margin-bottom:8px;">월별 분포</p>
+    <div style="margin-bottom:20px;">${monthlyHtml}</div>
+    <p style="font-size:11px; font-weight:600; color:var(--gray500); margin-bottom:8px;">최근 10건</p>
+    <div style="border:1px solid var(--gray200);">${recent}</div>`;
+}
+
+async function loadMyInfoProfile() {
+  const host = document.getElementById('myInfoProfileContent');
+  if (!host) return;
+  host.innerHTML = '<div style="text-align:center; padding:40px; color:var(--gray400);">불러오는 중…</div>';
+
+  const cdId = await resolveMyCoachDirId();
+  if (!cdId) {
+    host.innerHTML = '<p style="color:var(--gray500);">코치 계정과 연결된 프로필이 없습니다. admin 에게 문의해주세요.</p>';
+    return;
+  }
+  const { data, error } = await supabaseClient
+    .from('coaches_directory')
+    .select('name, email, phone, organization, position, intro, category, tier, expertise, industries, regions, photo_url')
+    .eq('id', cdId)
+    .maybeSingle();
+  if (error || !data) {
+    host.innerHTML = `<p style="color:var(--red);">조회 실패: ${error?.message || '데이터 없음'}</p>`;
+    return;
+  }
+  const tierLabel = data.tier === 1 ? '베테랑코치' : data.tier === 2 ? 'UD코치' : '외부풀';
+  const expertise = (data.expertise || []).map(e => `<span style="display:inline-block; padding:2px 8px; background:var(--gray100); font-size:11px; margin:2px;">${escapeHtml(e)}</span>`).join(' ') || '—';
+  host.innerHTML = `
+    <div style="background:var(--orange-bg); border:1px solid rgba(232,84,26,0.2); padding:12px 16px; margin-bottom:16px; font-size:12px;">
+      💡 프로필 정보는 admin 이 관리합니다. 잘못된 정보가 있으면 admin 에게 문의해주세요.
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 2fr; gap:12px 24px;">
+      <div style="color:var(--gray500); font-size:12px;">이름</div><div style="font-weight:600;">${escapeHtml(data.name || '—')}</div>
+      <div style="color:var(--gray500); font-size:12px;">유형</div><div>${tierLabel} · ${escapeHtml(data.category || '—')}</div>
+      <div style="color:var(--gray500); font-size:12px;">소속</div><div>${escapeHtml(data.organization || '—')} · ${escapeHtml(data.position || '—')}</div>
+      <div style="color:var(--gray500); font-size:12px;">이메일</div><div style="font-family:monospace;">${escapeHtml(data.email || '—')}</div>
+      <div style="color:var(--gray500); font-size:12px;">전화</div><div style="font-family:monospace;">${escapeHtml(data.phone || '—')}</div>
+      <div style="color:var(--gray500); font-size:12px;">소개</div><div style="line-height:1.6;">${escapeHtml(data.intro || '—')}</div>
+      <div style="color:var(--gray500); font-size:12px;">전문분야</div><div>${expertise}</div>
+    </div>`;
+}
+
+// 간단한 HTML escape (XSS 방지)
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s).replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
+}
+
+// ─── Phase G2-B: 신규 코치 온보딩 환영 모달 ───
+let onboardingChecked = false;
+
+async function maybeShowOnboardingModal() {
+  if (onboardingChecked) return;
+  onboardingChecked = true;
+  try {
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) return;
+    const { data, error } = await supabaseClient
+      .from('profiles')
+      .select('onboarded_at')
+      .eq('id', user.id)
+      .maybeSingle();
+    if (error || !data) return;
+    if (data.onboarded_at == null) {
+      const m = document.getElementById('onboardingModal');
+      if (m) m.style.display = 'flex';
+    }
+  } catch (e) {
+    console.warn('[onboarding] check failed:', e?.message || e);
+  }
+}
+
+function dismissOnboarding() {
+  const m = document.getElementById('onboardingModal');
+  if (m) m.style.display = 'none';
+  // 이번 세션 동안만 안 보이게. 새 로그인 시 다시 보임 (등록 안 했으니).
+}
+
+async function startOnboarding() {
+  const m = document.getElementById('onboardingModal');
+  if (m) m.style.display = 'none';
+  switchView('myinfo');
+}
+
+async function markOnboardedIfFirst() {
+  try {
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) return;
+    const { data } = await supabaseClient
+      .from('profiles')
+      .select('onboarded_at')
+      .eq('id', user.id)
+      .maybeSingle();
+    if (data && data.onboarded_at == null) {
+      await supabaseClient
+        .from('profiles')
+        .update({ onboarded_at: new Date().toISOString() })
+        .eq('id', user.id);
+    }
+  } catch (_) { /* 비치명적 */ }
 }
 
 // ============================================================
