@@ -3457,26 +3457,26 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
       입력한 계약 정보는 PM 이 계약서 생성 시 자동으로 채워집니다.
     </p>
 
-    <!-- 서브탭 -->
-    <div class="nav-tabs" style="margin-bottom:20px; border-bottom:1px solid var(--gray200); display:flex; gap:0;">
+    <!-- 서브탭 — class="nav-tabs" 제거 (어두운 배경 상속 회피). 흰 배경 기반. -->
+    <div style="margin-bottom:20px; border-bottom:1px solid var(--gray200); display:flex; gap:0; background:transparent; padding:0;">
       <button class="myinfo-tab active" data-myinfo-tab="contract"
               onclick="switchMyInfoTab('contract')"
-              style="background:none; border:none; padding:10px 16px; cursor:pointer; font-size:13px; font-weight:500; border-bottom:2px solid var(--orange);">
+              style="background:none; border:none; padding:10px 16px; cursor:pointer; font-size:13px; font-weight:600; color:var(--dark); border-bottom:2px solid var(--orange);">
         계약 정보
       </button>
       <button class="myinfo-tab" data-myinfo-tab="projects"
               onclick="switchMyInfoTab('projects')"
-              style="background:none; border:none; padding:10px 16px; cursor:pointer; font-size:13px; color:var(--gray500); border-bottom:2px solid transparent;">
+              style="background:none; border:none; padding:10px 16px; cursor:pointer; font-size:13px; color:var(--dark2); border-bottom:2px solid transparent;">
         내 참여 사업
       </button>
       <button class="myinfo-tab" data-myinfo-tab="logs"
               onclick="switchMyInfoTab('logs')"
-              style="background:none; border:none; padding:10px 16px; cursor:pointer; font-size:13px; color:var(--gray500); border-bottom:2px solid transparent;">
+              style="background:none; border:none; padding:10px 16px; cursor:pointer; font-size:13px; color:var(--dark2); border-bottom:2px solid transparent;">
         내 일지 요약
       </button>
       <button class="myinfo-tab" data-myinfo-tab="profile"
               onclick="switchMyInfoTab('profile')"
-              style="background:none; border:none; padding:10px 16px; cursor:pointer; font-size:13px; color:var(--gray500); border-bottom:2px solid transparent;">
+              style="background:none; border:none; padding:10px 16px; cursor:pointer; font-size:13px; color:var(--dark2); border-bottom:2px solid transparent;">
         프로필
       </button>
     </div>
@@ -7675,11 +7675,12 @@ async function renderMyInfo() {
 function switchMyInfoTab(tab, force) {
   if (!force && tab === myInfoCurrentTab) return;
   myInfoCurrentTab = tab;
-  // 탭 버튼 active 스타일
+  // 탭 버튼 active 스타일 (흰 배경 기준 — active 진한 검정 + bold, 비활성 dark2)
   document.querySelectorAll('.myinfo-tab').forEach(btn => {
     const isActive = btn.dataset.myinfoTab === tab;
     btn.style.borderBottom = isActive ? '2px solid var(--orange)' : '2px solid transparent';
-    btn.style.color = isActive ? 'var(--dark)' : 'var(--gray500)';
+    btn.style.color = isActive ? 'var(--dark)' : 'var(--dark2)';
+    btn.style.fontWeight = isActive ? '600' : '500';
     btn.classList.toggle('active', isActive);
   });
   // 컨텐츠 영역 토글
@@ -7897,6 +7898,11 @@ async function loadMyInfoLogs() {
     <div style="border:1px solid var(--gray200);">${recent}</div>`;
 }
 
+// 모드: 'view' (기본) | 'edit'
+let _myInfoProfileMode = 'view';
+let _myInfoProfileData = null;
+let _myInfoProfileCdId = null;
+
 async function loadMyInfoProfile() {
   const host = document.getElementById('myInfoProfileContent');
   if (!host) return;
@@ -7907,6 +7913,7 @@ async function loadMyInfoProfile() {
     host.innerHTML = '<p style="color:var(--gray500);">코치 계정과 연결된 프로필이 없습니다. admin 에게 문의해주세요.</p>';
     return;
   }
+  _myInfoProfileCdId = cdId;
   const { data, error } = await supabaseClient
     .from('coaches_directory')
     .select('name, email, phone, organization, position, intro, category, tier, status, expertise, industries, regions, photo_url')
@@ -7916,30 +7923,172 @@ async function loadMyInfoProfile() {
     host.innerHTML = `<p style="color:var(--red);">조회 실패: ${error?.message || '데이터 없음'}</p>`;
     return;
   }
-  // Phase G 정리: tier 의미 = 베테랑/UD/외부풀. "Tier" 단어 노출 X.
-  // Phase H: status='inactive' → "휴식 중" 표시.
+  _myInfoProfileData = data;
+  renderMyInfoProfile();
+}
+
+function renderMyInfoProfile() {
+  const host = document.getElementById('myInfoProfileContent');
+  const data = _myInfoProfileData;
+  if (!host || !data) return;
   const tierNum = Number(data.tier);
   const tierLabel = tierNum === 1 ? '베테랑코치' : tierNum === 2 ? 'UD코치' : tierNum === 3 ? '외부풀' : '미지정';
   const isActive = data.status !== 'inactive';
   const statusBadge = isActive
     ? '<span style="display:inline-block; padding:2px 8px; background:var(--green-bg); color:var(--green); font-size:11px;">활동 중</span>'
     : '<span style="display:inline-block; padding:2px 8px; background:var(--yellow-bg); color:var(--yellow); font-size:11px;">⏸ 휴식 중</span>';
-  const expertise = (data.expertise || []).map(e => `<span style="display:inline-block; padding:2px 8px; background:var(--gray100); font-size:11px; margin:2px;">${escapeHtml(e)}</span>`).join(' ') || '—';
-  host.innerHTML = `
-    <div style="background:var(--orange-bg); border:1px solid rgba(232,84,26,0.2); padding:12px 16px; margin-bottom:16px; font-size:12px;">
-      💡 프로필 정보는 admin 이 관리합니다. 잘못된 정보가 있으면 admin 에게 문의해주세요.
-      ${!isActive ? '<br>⚠ 현재 <strong>휴식 중</strong> 으로 분류되어 새 사업 추천에서 제외되고 있습니다. 활동 재개를 원하시면 admin 에게 알려주세요.' : ''}
-    </div>
-    <div style="display:grid; grid-template-columns:1fr 2fr; gap:12px 24px;">
-      <div style="color:var(--gray500); font-size:12px;">이름</div><div style="font-weight:600;">${escapeHtml(data.name || '—')}</div>
-      <div style="color:var(--gray500); font-size:12px;">활동 상태</div><div>${statusBadge}</div>
-      <div style="color:var(--gray500); font-size:12px;">유형</div><div>${tierLabel} · ${escapeHtml(data.category || '—')}</div>
-      <div style="color:var(--gray500); font-size:12px;">소속</div><div>${escapeHtml(data.organization || '—')} · ${escapeHtml(data.position || '—')}</div>
-      <div style="color:var(--gray500); font-size:12px;">이메일</div><div style="font-family:monospace;">${escapeHtml(data.email || '—')}</div>
-      <div style="color:var(--gray500); font-size:12px;">전화</div><div style="font-family:monospace;">${escapeHtml(data.phone || '—')}</div>
-      <div style="color:var(--gray500); font-size:12px;">소개</div><div style="line-height:1.6;">${escapeHtml(data.intro || '—')}</div>
-      <div style="color:var(--gray500); font-size:12px;">전문분야</div><div>${expertise}</div>
-    </div>`;
+  const expertiseArr = data.expertise || [];
+  const industriesArr = data.industries || [];
+  const regionsArr = data.regions || [];
+
+  if (_myInfoProfileMode === 'view') {
+    const expertiseChips = expertiseArr.map(e =>
+      `<span style="display:inline-block; padding:2px 8px; background:var(--gray100); font-size:11px; margin:2px;">${escapeHtml(e)}</span>`
+    ).join(' ') || '—';
+    const industriesChips = industriesArr.map(e =>
+      `<span style="display:inline-block; padding:2px 8px; background:var(--gray100); font-size:11px; margin:2px;">${escapeHtml(e)}</span>`
+    ).join(' ') || '—';
+    const regionsChips = regionsArr.map(e =>
+      `<span style="display:inline-block; padding:2px 8px; background:var(--gray100); font-size:11px; margin:2px;">${escapeHtml(e)}</span>`
+    ).join(' ') || '—';
+    host.innerHTML = `
+      <div style="background:var(--orange-bg); border:1px solid rgba(232,84,26,0.2); padding:12px 16px; margin-bottom:16px; font-size:12px; display:flex; justify-content:space-between; align-items:center; gap:8px;">
+        <div>
+          💡 일부 정보는 본인이 직접 수정할 수 있습니다. 이름·유형·활동상태 는 admin 관리.
+          ${!isActive ? '<br>⚠ 현재 <strong>휴식 중</strong> — 활동 재개는 admin 에게 요청.' : ''}
+        </div>
+        <button onclick="enterMyInfoProfileEdit()" class="btn btn-primary" style="flex-shrink:0;">
+          ✎ 프로필 수정
+        </button>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 2fr; gap:12px 24px;">
+        <div style="color:var(--gray500); font-size:12px;">이름</div><div style="font-weight:600;">${escapeHtml(data.name || '—')}</div>
+        <div style="color:var(--gray500); font-size:12px;">활동 상태</div><div>${statusBadge}</div>
+        <div style="color:var(--gray500); font-size:12px;">유형</div><div>${tierLabel} · ${escapeHtml(data.category || '—')}</div>
+        <div style="color:var(--gray500); font-size:12px;">소속</div><div>${escapeHtml(data.organization || '—')} · ${escapeHtml(data.position || '—')}</div>
+        <div style="color:var(--gray500); font-size:12px;">이메일</div><div style="font-family:monospace;">${escapeHtml(data.email || '—')}</div>
+        <div style="color:var(--gray500); font-size:12px;">전화</div><div style="font-family:monospace;">${escapeHtml(data.phone || '—')}</div>
+        <div style="color:var(--gray500); font-size:12px;">소개</div><div style="line-height:1.6;">${escapeHtml(data.intro || '—')}</div>
+        <div style="color:var(--gray500); font-size:12px;">전문분야</div><div>${expertiseChips}</div>
+        <div style="color:var(--gray500); font-size:12px;">업종</div><div>${industriesChips}</div>
+        <div style="color:var(--gray500); font-size:12px;">지역</div><div>${regionsChips}</div>
+      </div>`;
+  } else {
+    // edit 모드
+    host.innerHTML = `
+      <div style="background:#EFF6FF; border:1px solid rgba(59,130,246,0.2); padding:12px 16px; margin-bottom:16px; font-size:12px;">
+        ✎ 수정 가능: 소속·직위·전화·소개·전문분야·업종·지역. <br>
+        이름·유형(베테랑/UD/외부풀)·활동상태 는 변경 불가 (admin 만).
+      </div>
+      <div style="display:grid; gap:14px;">
+        <div>
+          <label style="font-size:11px; color:var(--gray500); font-weight:600; text-transform:uppercase; display:block; margin-bottom:4px;">이름 (변경 불가)</label>
+          <input type="text" value="${escapeAttr(data.name || '')}" disabled
+                 style="width:100%; padding:8px 10px; border:1px solid var(--gray200); background:var(--gray100); font-size:13px; color:var(--gray500);">
+        </div>
+        <div style="display:grid; grid-template-columns:2fr 1fr; gap:10px;">
+          <div>
+            <label style="font-size:11px; color:var(--gray500); font-weight:600; text-transform:uppercase; display:block; margin-bottom:4px;">소속</label>
+            <input id="profEditOrg" type="text" value="${escapeAttr(data.organization || '')}"
+                   style="width:100%; padding:8px 10px; border:1px solid var(--gray300); font-size:13px;">
+          </div>
+          <div>
+            <label style="font-size:11px; color:var(--gray500); font-weight:600; text-transform:uppercase; display:block; margin-bottom:4px;">직위</label>
+            <input id="profEditPos" type="text" value="${escapeAttr(data.position || '')}"
+                   style="width:100%; padding:8px 10px; border:1px solid var(--gray300); font-size:13px;">
+          </div>
+        </div>
+        <div>
+          <label style="font-size:11px; color:var(--gray500); font-weight:600; text-transform:uppercase; display:block; margin-bottom:4px;">전화</label>
+          <input id="profEditPhone" type="text" value="${escapeAttr(data.phone || '')}" placeholder="010-1234-5678"
+                 style="width:100%; padding:8px 10px; border:1px solid var(--gray300); font-size:13px; font-family:monospace;">
+        </div>
+        <div>
+          <label style="font-size:11px; color:var(--gray500); font-weight:600; text-transform:uppercase; display:block; margin-bottom:4px;">소개</label>
+          <textarea id="profEditIntro" rows="3" maxlength="500"
+                    style="width:100%; padding:8px 10px; border:1px solid var(--gray300); font-size:13px; resize:vertical; font-family:inherit;">${escapeHtml(data.intro || '')}</textarea>
+          <p style="font-size:10px; color:var(--gray400); text-align:right; margin-top:2px;">최대 500자</p>
+        </div>
+        <div>
+          <label style="font-size:11px; color:var(--gray500); font-weight:600; text-transform:uppercase; display:block; margin-bottom:4px;">전문분야 (콤마 구분)</label>
+          <input id="profEditExpertise" type="text" value="${escapeAttr(expertiseArr.join(', '))}"
+                 placeholder="BM/가설검증, IR/피칭, 마케팅"
+                 style="width:100%; padding:8px 10px; border:1px solid var(--gray300); font-size:13px;">
+        </div>
+        <div>
+          <label style="font-size:11px; color:var(--gray500); font-weight:600; text-transform:uppercase; display:block; margin-bottom:4px;">업종 (콤마 구분)</label>
+          <input id="profEditIndustries" type="text" value="${escapeAttr(industriesArr.join(', '))}"
+                 placeholder="교육, IT/소프트웨어"
+                 style="width:100%; padding:8px 10px; border:1px solid var(--gray300); font-size:13px;">
+        </div>
+        <div>
+          <label style="font-size:11px; color:var(--gray500); font-weight:600; text-transform:uppercase; display:block; margin-bottom:4px;">코칭 가능 지역 (콤마 구분)</label>
+          <input id="profEditRegions" type="text" value="${escapeAttr(regionsArr.join(', '))}"
+                 placeholder="서울, 경기, 부산"
+                 style="width:100%; padding:8px 10px; border:1px solid var(--gray300); font-size:13px;">
+        </div>
+        <div id="profEditStatus" style="font-size:12px; color:var(--gray500); min-height:18px;"></div>
+        <div style="display:flex; gap:8px; justify-content:flex-end;">
+          <button onclick="cancelMyInfoProfileEdit()" class="btn btn-ghost">취소</button>
+          <button onclick="saveMyInfoProfile()" class="btn btn-primary" id="profSaveBtn">저장</button>
+        </div>
+      </div>`;
+  }
+}
+
+function enterMyInfoProfileEdit() {
+  _myInfoProfileMode = 'edit';
+  renderMyInfoProfile();
+}
+function cancelMyInfoProfileEdit() {
+  _myInfoProfileMode = 'view';
+  renderMyInfoProfile();
+}
+
+async function saveMyInfoProfile() {
+  const cdId = _myInfoProfileCdId;
+  if (!cdId) return;
+  const statusEl = document.getElementById('profEditStatus');
+  const btn = document.getElementById('profSaveBtn');
+  const splitCsv = (s) => (s || '').split(/[,;]/).map(x => x.trim()).filter(Boolean);
+  const patch = {
+    organization: document.getElementById('profEditOrg').value.trim() || null,
+    position: document.getElementById('profEditPos').value.trim() || null,
+    phone: document.getElementById('profEditPhone').value.trim() || null,
+    intro: document.getElementById('profEditIntro').value.trim() || null,
+    expertise: splitCsv(document.getElementById('profEditExpertise').value),
+    industries: splitCsv(document.getElementById('profEditIndustries').value),
+    regions: splitCsv(document.getElementById('profEditRegions').value),
+  };
+  if (statusEl) { statusEl.style.color = ''; statusEl.textContent = '저장 중…'; }
+  if (btn) btn.disabled = true;
+  try {
+    const { error } = await supabaseClient
+      .from('coaches_directory')
+      .update(patch)
+      .eq('id', cdId);
+    if (error) throw error;
+    // 로컬 데이터 갱신
+    Object.assign(_myInfoProfileData, patch);
+    _myInfoProfileMode = 'view';
+    renderMyInfoProfile();
+    showToast('✓ 프로필이 저장되었습니다.');
+  } catch (e) {
+    const msg = String(e?.message || e);
+    if (statusEl) {
+      statusEl.style.color = 'var(--red)';
+      statusEl.textContent = '✗ 저장 실패: ' + msg + ' (RLS 거부 가능성 — admin 에게 문의)';
+    }
+    // eslint-disable-next-line no-console
+    console.error('[profile save]', e);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+// HTML attribute escape (for input value="...")
+function escapeAttr(s) {
+  return escapeHtml(s);
 }
 
 // 간단한 HTML escape (XSS 방지)
