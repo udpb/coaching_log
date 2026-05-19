@@ -5961,6 +5961,14 @@ function _updateInviteSection() {
 // ✉️ Magic Link 초대 — Supabase Auth signInWithOtp.
 // 코치가 메일의 링크 클릭 시 자동 가입 + handle_new_user → autolink trigger
 // → coaches_directory.linked_user_id 자동 채움 → PM 이 다시 와서 배정 가능.
+//
+// 2026-05-15 — 에러 핸들링 강화. 발송 실패 흔한 원인:
+//   1) Supabase 무료 플랜 rate limit (시간당 3-4건)
+//   2) Supabase Dashboard → Auth → URL Configuration 의 Redirect URLs 에
+//      현재 도메인 미등록
+//   3) Auth → Providers → Email 비활성화 또는 Magic Link 옵션 OFF
+//   4) SMTP 미설정 (기본 발송기 매우 제한적)
+// 발송 실패 시 자동으로 "URL 복사" 흐름 안내.
 async function sendInviteMagicLink() {
   const sel = _memberSearchSelected;
   const statusEl = document.getElementById('projMemberInviteStatus');
@@ -5968,9 +5976,12 @@ async function sendInviteMagicLink() {
     if (statusEl) statusEl.textContent = '코치를 먼저 선택하세요.';
     return;
   }
-  if (statusEl) statusEl.textContent = '발송 중…';
+  if (statusEl) {
+    statusEl.style.color = '';
+    statusEl.textContent = '발송 중…';
+  }
   try {
-    const { error } = await supabaseClient.auth.signInWithOtp({
+    const { data, error } = await supabaseClient.auth.signInWithOtp({
       email: sel.email,
       options: {
         emailRedirectTo: window.location.origin + '/#teams',
@@ -5978,9 +5989,33 @@ async function sendInviteMagicLink() {
       },
     });
     if (error) throw error;
-    if (statusEl) statusEl.textContent = '✓ 발송 완료. 코치 가입 후 재배정.';
+    // eslint-disable-next-line no-console
+    console.info('[invite] signInWithOtp ok for', sel.email, data);
+    if (statusEl) {
+      statusEl.style.color = 'var(--green)';
+      statusEl.textContent = '✓ 발송됨. 스팸함도 확인 요청. 못 받으면 옆 "🔗 URL 복사" 사용.';
+    }
   } catch (e) {
-    if (statusEl) statusEl.textContent = '발송 실패: ' + (e.message || e);
+    const msg = String(e?.message || e || 'unknown');
+    // eslint-disable-next-line no-console
+    console.error('[invite] signInWithOtp failed:', e);
+    let hint = '';
+    if (/rate limit|too many/i.test(msg)) {
+      hint = ' (Supabase 무료 플랜 시간당 한도 초과. 잠시 후 다시.)';
+    } else if (/redirect.*url|allowed/i.test(msg)) {
+      hint = ' (Supabase Dashboard → Auth → URL Configuration 에 ' +
+             window.location.origin + ' 등록 필요.)';
+    } else if (/email.*disabled|provider.*disabled/i.test(msg)) {
+      hint = ' (Supabase Dashboard → Auth → Providers → Email 활성화 필요.)';
+    } else if (/smtp|email.*server/i.test(msg)) {
+      hint = ' (SMTP 미설정. Dashboard → Auth → Email Templates 확인.)';
+    } else {
+      hint = ' (대신 옆 "🔗 URL 복사" 로 카톡 등에 직접 전달 가능.)';
+    }
+    if (statusEl) {
+      statusEl.style.color = 'var(--red)';
+      statusEl.textContent = '✗ ' + msg + hint;
+    }
   }
 }
 
