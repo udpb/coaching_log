@@ -3497,8 +3497,36 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
                    style="width:100%; padding:10px 12px; border:1px solid var(--gray300); font-size:13px;">
           </div>
 
+          <!-- 사업자 여부 토글 (Phase L) -->
           <div style="background:var(--gray100); padding:12px 16px;">
-            <p style="font-size:12px; font-weight:600; margin-bottom:10px;">지급 계좌 (계약서 제3조)</p>
+            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; font-weight:600;">
+              <input type="checkbox" id="myInfoIsBusiness" onchange="onMyInfoBusinessToggle()"
+                     style="width:16px; height:16px; cursor:pointer;">
+              사업자등록증 보유 · 사업자 계좌로 받기
+            </label>
+            <p style="font-size:11px; color:var(--gray500); margin:6px 0 0 24px;">
+              개인 코치는 체크 해제 상태로 두세요. 체크 시 사업자등록번호·상호 입력란이 나타나며, 원천세는 사업소득 3.3% 권장입니다.
+            </p>
+            <div id="myInfoBusinessFields" style="display:none; margin-top:12px; padding-top:12px; border-top:1px dashed var(--gray300);">
+              <div style="display:grid; grid-template-columns:2fr 3fr; gap:8px;">
+                <div>
+                  <label style="display:block; font-size:11px; color:var(--gray500); margin-bottom:4px;">사업자등록번호</label>
+                  <input type="text" id="myInfoBusinessNumber" placeholder="123-45-67890"
+                         style="width:100%; padding:8px 10px; border:1px solid var(--gray300); font-size:13px; font-family:monospace;">
+                </div>
+                <div>
+                  <label style="display:block; font-size:11px; color:var(--gray500); margin-bottom:4px;">상호 (사업자명)</label>
+                  <input type="text" id="myInfoBusinessName" placeholder="유디임팩트"
+                         style="width:100%; padding:8px 10px; border:1px solid var(--gray300); font-size:13px;">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="background:var(--gray100); padding:12px 16px;">
+            <p style="font-size:12px; font-weight:600; margin-bottom:10px;">
+              <span id="myInfoAccountLabel">지급 계좌</span> (계약서 제3조)
+            </p>
             <div style="display:grid; grid-template-columns:1fr 2fr 1fr; gap:8px;">
               <div>
                 <label style="display:block; font-size:11px; color:var(--gray500); margin-bottom:4px;">은행명</label>
@@ -3514,6 +3542,9 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
                 <input type="text" id="myInfoHolder" placeholder="홍길동" style="width:100%; padding:8px 10px; border:1px solid var(--gray300); font-size:13px;">
               </div>
             </div>
+            <p id="myInfoBusinessHint" style="display:none; font-size:11px; color:var(--gray500); margin:8px 0 0;">
+              💡 사업자 계좌의 경우 예금주는 보통 상호와 동일합니다.
+            </p>
           </div>
 
           <div>
@@ -7722,7 +7753,7 @@ async function loadMyInfoContract() {
 
   const { data, error } = await supabaseClient
     .from('coach_contract_info')
-    .select('coach_directory_id, address, bank_name, account_number, account_holder, tax_type, updated_at')
+    .select('coach_directory_id, address, bank_name, account_number, account_holder, tax_type, is_business, business_number, business_name, updated_at')
     .eq('coach_directory_id', cdId)
     .maybeSingle();
 
@@ -7732,6 +7763,15 @@ async function loadMyInfoContract() {
   document.getElementById('myInfoBank').value = data?.bank_name || '';
   document.getElementById('myInfoAccount').value = data?.account_number || '';
   document.getElementById('myInfoHolder').value = data?.account_holder || '';
+  // Phase L — 사업자 정보
+  const isBiz = !!data?.is_business;
+  const bizChk = document.getElementById('myInfoIsBusiness');
+  if (bizChk) bizChk.checked = isBiz;
+  const bizNumEl = document.getElementById('myInfoBusinessNumber');
+  const bizNameEl = document.getElementById('myInfoBusinessName');
+  if (bizNumEl) bizNumEl.value = data?.business_number || '';
+  if (bizNameEl) bizNameEl.value = data?.business_name || '';
+  onMyInfoBusinessToggle();
   myInfoTaxType = data?.tax_type || null;
   updateMyInfoTaxButtons();
 
@@ -7754,6 +7794,24 @@ async function loadMyInfoContract() {
 function setMyInfoTax(type) {
   myInfoTaxType = type;
   updateMyInfoTaxButtons();
+}
+
+// Phase L — 사업자 토글 ON/OFF 시 입력란 노출 + 라벨/안내 갱신 + 원천세 권장값 자동 선택
+function onMyInfoBusinessToggle() {
+  const chk = document.getElementById('myInfoIsBusiness');
+  const fields = document.getElementById('myInfoBusinessFields');
+  const label = document.getElementById('myInfoAccountLabel');
+  const hint = document.getElementById('myInfoBusinessHint');
+  if (!chk) return;
+  const on = chk.checked;
+  if (fields) fields.style.display = on ? 'block' : 'none';
+  if (label) label.textContent = on ? '지급 계좌 (사업자)' : '지급 계좌';
+  if (hint) hint.style.display = on ? 'block' : 'none';
+  // 처음 켜졌고 세금 미선택이면 사업소득 3.3% 권장
+  if (on && !myInfoTaxType) {
+    myInfoTaxType = 'business_3_3';
+    updateMyInfoTaxButtons();
+  }
 }
 
 function updateMyInfoTaxButtons() {
@@ -7782,6 +7840,25 @@ async function saveMyInfoContract() {
   const btn = document.getElementById('myInfoSaveBtn');
   if (btn) { btn.disabled = true; btn.textContent = '저장 중…'; }
 
+  // Phase L — 사업자 정보 수집·검증
+  const isBiz = !!document.getElementById('myInfoIsBusiness')?.checked;
+  const bizNumber = document.getElementById('myInfoBusinessNumber')?.value.trim() || null;
+  const bizName = document.getElementById('myInfoBusinessName')?.value.trim() || null;
+  if (isBiz) {
+    if (!bizNumber) {
+      showToast('사업자등록번호를 입력해주세요.');
+      return;
+    }
+    if (!/^[0-9\-]{10,15}$/.test(bizNumber)) {
+      showToast('사업자등록번호 형식이 올바르지 않습니다. (예: 123-45-67890)');
+      return;
+    }
+    if (!bizName) {
+      showToast('상호(사업자명)를 입력해주세요.');
+      return;
+    }
+  }
+
   const payload = {
     coach_directory_id: cdId,
     address: address || null,
@@ -7789,6 +7866,9 @@ async function saveMyInfoContract() {
     account_number: document.getElementById('myInfoAccount').value.trim() || null,
     account_holder: document.getElementById('myInfoHolder').value.trim() || null,
     tax_type: myInfoTaxType,
+    is_business: isBiz,
+    business_number: isBiz ? bizNumber : null,
+    business_name: isBiz ? bizName : null,
   };
   const { error } = await supabaseClient
     .from('coach_contract_info')
