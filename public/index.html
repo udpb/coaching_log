@@ -7,6 +7,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;1,700&display=swap" rel="stylesheet">
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<!-- Phase L (2026-05-20): 코치 본인 계약서 미리보기·다운로드용 라이브러리 (UMD 글로벌 노출) -->
+<script src="https://cdn.jsdelivr.net/npm/pizzip@3.2.0/dist/pizzip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docxtemplater@3.68.7/build/docxtemplater.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
 <style>
 :root {
   --orange: #E8541A;
@@ -3570,6 +3574,21 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
           </div>
 
           <p id="myInfoUpdatedAt" style="font-size:11px; color:var(--gray400); text-align:right;"></p>
+        </div>
+
+        <!-- Phase L (2026-05-20): 본인 계약서 미리보기 -->
+        <div id="myInfoContractPreview" style="margin-top:24px; padding-top:20px; border-top:1px solid var(--gray200);">
+          <h3 style="font-size:14px; font-weight:600; color:var(--dark); margin:0 0 6px;">📄 내 계약서 미리보기</h3>
+          <p style="font-size:12px; color:var(--gray500); margin:0 0 12px; line-height:1.6;">
+            내가 참여 중인 사업의 계약서 초안을 다운로드해 검토해볼 수 있습니다.
+            계약 금액·기간·계좌 등 위 정보가 자동으로 채워지며,
+            실제 계약서는 <strong>PM 이 발송하는 것</strong>이 정본입니다.
+          </p>
+          <div id="myInfoContractPreviewList" style="display:grid; gap:8px;">
+            <div style="font-size:12px; color:var(--gray400); padding:12px; background:var(--gray100); text-align:center;">
+              계약 정보 먼저 저장 후 새로고침해주세요.
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -7789,6 +7808,8 @@ async function loadMyInfoContract() {
   if (error && error.code !== 'PGRST116') {
     console.warn('[myInfo] contract fetch error:', error.message);
   }
+  // Phase L — 계약 정보 로드 직후 미리보기 목록도 갱신
+  void loadMyContractPreviewList();
 }
 
 function setMyInfoTax(type) {
@@ -7884,6 +7905,159 @@ async function saveMyInfoContract() {
   void markOnboardedIfFirst();
   // 갱신 시각 다시 표시
   void loadMyInfoContract();
+  // 계약서 미리보기 목록도 새로고침
+  void loadMyContractPreviewList();
+}
+
+// ─── Phase L (2026-05-20) — 본인 계약서 미리보기/다운로드 ───────────────────
+//
+// PM 이 발송하는 정본과 동일한 docx 템플릿(/templates/coach-contract*.docx)을
+// 코치 본인 정보 + 참여 사업 정보로 채워서 다운로드.
+// 실제 발송은 PM 책임. 이 기능은 "검토 용도" 라는 점을 안내.
+
+async function loadMyContractPreviewList() {
+  const host = document.getElementById('myInfoContractPreviewList');
+  if (!host) return;
+  // 계약 정보(myInfoContractRow) 가 없으면 안내만
+  if (!myInfoContractRow || !myInfoContractRow.address) {
+    host.innerHTML =
+      '<div style="font-size:12px; color:var(--gray400); padding:12px; background:var(--gray100); text-align:center;">' +
+      '계약 정보(주소 등) 먼저 저장하면 미리보기가 활성화됩니다.</div>';
+    return;
+  }
+  const { data: { user } } = await supabaseClient.auth.getUser();
+  if (!user) return;
+
+  // 내가 참여한 사업 목록 (계약금액은 coaching-log 에 없으므로 PM 발송본에서 확인 안내)
+  const { data, error } = await supabaseClient
+    .from('project_members')
+    .select('joined_at, project:project_id(id, name, target_start_date, target_end_date, status)')
+    .eq('user_id', user.id)
+    .order('joined_at', { ascending: false });
+
+  if (error) {
+    host.innerHTML = `<p style="font-size:12px; color:var(--red); padding:12px;">조회 실패: ${error.message}</p>`;
+    return;
+  }
+  const rows = (data || []).map((m) => m.project).filter(Boolean);
+  if (!rows.length) {
+    host.innerHTML =
+      '<div style="font-size:12px; color:var(--gray400); padding:12px; background:var(--gray100); text-align:center;">아직 참여 중인 사업이 없습니다.</div>';
+    return;
+  }
+
+  const html = rows.map((p) => {
+    const period = p.target_start_date && p.target_end_date
+      ? `${p.target_start_date} ~ ${p.target_end_date}`
+      : '기간 미확정';
+    return `
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 14px; background:var(--gray100); border-left:3px solid var(--orange);">
+        <div style="flex:1; min-width:0;">
+          <div style="font-size:13px; font-weight:600; color:var(--dark); margin-bottom:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+            ${escapeHtml(p.name)}
+          </div>
+          <div style="font-size:11px; color:var(--gray500);">
+            ${period} · 계약금액은 PM 발송본 참조
+          </div>
+        </div>
+        <button onclick="downloadMyContract('${p.id}', '${escapeHtml(p.name).replace(/'/g, "\\'")}', '${p.target_start_date || ''}', '${p.target_end_date || ''}')"
+                style="padding:7px 12px; font-size:12px; font-weight:500; color:white; background:var(--orange); border:none; cursor:pointer; flex-shrink:0;">
+          미리보기 다운로드
+        </button>
+      </div>`;
+  }).join('');
+  host.innerHTML = html;
+}
+
+function escapeHtml(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// 한국어 날짜 포맷 (YYYY-MM-DD → YYYY년 M월 D일)
+function _fmtKDate(iso) {
+  if (!iso) return '____';
+  const m = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return iso;
+  return `${m[1]}년 ${parseInt(m[2], 10)}월 ${parseInt(m[3], 10)}일`;
+}
+
+async function downloadMyContract(projectId, projectName, startDate, endDate) {
+  if (!window.PizZip || !window.docxtemplater || !window.saveAs) {
+    showToast('라이브러리 로드 실패 — 새로고침 후 다시 시도해주세요.');
+    return;
+  }
+  if (!myInfoContractRow) {
+    showToast('계약 정보를 먼저 저장해주세요.');
+    return;
+  }
+  // 본인 이름 — myInfoCoachDirId 통해 coaches_directory 에서
+  let coachName = '';
+  const { data: cdRow } = await supabaseClient
+    .from('coaches_directory')
+    .select('name')
+    .eq('id', myInfoCoachDirId)
+    .maybeSingle();
+  coachName = cdRow?.name || '';
+
+  // 계약금액은 coaching-log 의 projects 스키마에 per-coach 컬럼 없음
+  // → PM 발송본 참조 안내 + placeholder "____" 로 두기
+  const proj = { id: projectId, name: projectName, target_start_date: startDate, target_end_date: endDate };
+  const amount = 0;
+
+  // 템플릿 선택
+  const isBiz = !!myInfoContractRow.is_business;
+  const templateUrl = isBiz
+    ? '/templates/coach-contract-business.docx'
+    : '/templates/coach-contract.docx';
+  const res = await fetch(templateUrl);
+  if (!res.ok) {
+    showToast('계약서 템플릿 fetch 실패 (' + res.status + ')');
+    return;
+  }
+  const ab = await res.arrayBuffer();
+  const zip = new window.PizZip(ab);
+  const Doc = window.docxtemplater;
+  const doc = new Doc(zip, { paragraphLoop: true, linebreaks: true });
+
+  const today = new Date().toISOString().slice(0, 10);
+  doc.render({
+    program_name: proj.name || '',
+    coach_name: coachName,
+    amount: amount > 0 ? amount.toLocaleString('ko-KR') : '____',
+    start_date: _fmtKDate(proj.target_start_date),
+    end_date: _fmtKDate(proj.target_end_date),
+    contract_date: _fmtKDate(today),
+    payment_weeks: '4',
+    bank_name: myInfoContractRow.bank_name || '',
+    account_number: myInfoContractRow.account_number || '',
+    account_holder:
+      myInfoContractRow.account_holder ||
+      (isBiz ? myInfoContractRow.business_name : coachName) || '',
+    coach_address: myInfoContractRow.address || '',
+    coach_phone: '',  // 코치 본인 미리보기 — 전화 직접 채우지 않음 (PM 모달에서 입력)
+    coach_email: '',
+    resident_number: '',  // 주민번호는 미리보기에선 비워둠
+    is_business: isBiz ? '사업자' : '개인',
+    business_name: myInfoContractRow.business_name || '',
+    business_number: myInfoContractRow.business_number || '',
+    business_label: isBiz && myInfoContractRow.business_name
+      ? `${myInfoContractRow.business_name}${myInfoContractRow.business_number ? ` (${myInfoContractRow.business_number})` : ''}`
+      : '',
+  });
+
+  const out = doc.getZip().generate({
+    type: 'blob',
+    mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    compression: 'DEFLATE',
+  });
+  const safeProj = (proj.name || 'project').replace(/[\\/:*?"<>|]/g, '_').slice(0, 40);
+  const safeName = (coachName || 'coach').replace(/[\\/:*?"<>|]/g, '_').slice(0, 20);
+  window.saveAs(out, `[미리보기]${safeProj}_${safeName}_용역계약서_${today}.docx`);
+  showToast('✓ 미리보기 다운로드 완료');
 }
 
 async function loadMyInfoProjects() {
