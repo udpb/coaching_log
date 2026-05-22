@@ -3613,14 +3613,18 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
   </div>
 </div>
 
-<!-- Phase G2-B: 신규 코치 온보딩 환영 모달 (profiles.onboarded_at == null 일 때 1회만) -->
-<div class="rpt-modal-overlay" id="onboardingModal" style="display:none;">
-  <div class="rpt-modal" style="max-width:480px;">
+<!-- Phase G2-C (2026-05-22): 신규 코치 강제 온보딩 모달.
+     onboarded_at == null 인 코치는 myinfo 외 모든 view 진입 차단.
+     "나중에" 버튼 제거 — 프로필 등록 완료 후에만 다른 기능 사용 가능. -->
+<div class="rpt-modal-overlay" id="onboardingModal" style="display:none;"
+     onclick="event.stopPropagation()">
+  <div class="rpt-modal" style="max-width:480px;" onclick="event.stopPropagation()">
     <h2 style="margin-bottom:8px;">👋 환영합니다!</h2>
     <p style="font-size:13px; color:var(--gray500); margin-bottom:20px; line-height:1.6;">
-      Underdogs 코칭 시스템에 가입되셨습니다. 다음 두 가지를 안내드릴게요:
+      Underdogs 코칭 시스템에 가입되셨습니다. <br>
+      <strong style="color:var(--orange);">먼저 내 정보를 등록</strong>하셔야 코칭 일지 작성·사업 참여 등 모든 기능을 사용하실 수 있습니다.
     </p>
-    <div style="display:grid; gap:12px; margin-bottom:24px;">
+    <div style="display:grid; gap:12px; margin-bottom:20px;">
       <div style="padding:12px 16px; background:var(--orange-bg); border-left:3px solid var(--orange);">
         <p style="font-size:13px; font-weight:600; margin-bottom:4px;">1. 내 정보 등록 (1분)</p>
         <p style="font-size:12px; color:var(--gray500);">
@@ -3634,8 +3638,12 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
         </p>
       </div>
     </div>
+    <div style="padding:10px 14px; background:#FEF0F0; border-left:3px solid var(--red); margin-bottom:16px; border-radius:0 4px 4px 0;">
+      <p style="font-size:11px; color:var(--dark); line-height:1.5;">
+        ⚠ <strong>등록 전까지 다른 메뉴 접근이 제한</strong>됩니다. 모달은 등록 완료 시 자동으로 사라집니다.
+      </p>
+    </div>
     <div style="display:flex; gap:8px; justify-content:flex-end;">
-      <button class="btn btn-ghost" onclick="dismissOnboarding()">나중에</button>
       <button class="btn btn-primary" onclick="startOnboarding()">내 정보 등록하기 →</button>
     </div>
   </div>
@@ -5016,6 +5024,17 @@ async function loadCurrentUserRole() {
       if (!error && data && data.role) {
         currentUserRole = data.role;
         renderRoleBadge();
+        // Phase G2-C (2026-05-22): 코치라면 온보딩 상태도 같이 확인.
+        //   void — switchView 와 race 가능하지만 늦어도 첫 view 진입 직후엔
+        //   플래그가 정해져 다음 switchView 부터 차단 동작.
+        if (currentUserRole === 'coach') {
+          void fetchCoachOnboardingStatus().then(() => {
+            if (coachNeedsOnboarding === true) {
+              // 어디에 있든 강제로 myinfo 로 보내고 모달 표시
+              try { switchView('myinfo'); } catch (_) { /* DOM 미준비 — 무시 */ }
+            }
+          });
+        }
         return;
       }
       if (error) {
@@ -5581,6 +5600,14 @@ const VALID_VIEWS = new Set([
 ]);
 
 function switchView(name, opts) {
+  // Phase G2-C (2026-05-22): 신규 코치 강제 온보딩 게이트.
+  //   coachNeedsOnboarding === true 이면 myinfo 외 모든 view 진입 차단.
+  //   onboarded_at 마킹 (markOnboardedIfFirst) 되면 플래그 해제 → 정상 흐름.
+  if (coachNeedsOnboarding === true && name !== 'myinfo') {
+    showToast('먼저 "내 정보 > 계약 정보" 를 등록해주세요.');
+    name = 'myinfo';
+  }
+
   // Phase 4-B gate: new-session recording only makes sense inside a real
   // project. Bounce to the project picker if no project is selected (or only
   // the virtual orphan project is selected, since you can't ADD to that).
@@ -5612,10 +5639,9 @@ function switchView(name, opts) {
   if (name === 'plans') renderBPView();
   if (name === 'myinfo') renderMyInfo();  // Phase G2-A
 
-  // Phase G2-B: 신규 코치 첫 진입 시 환영 모달 자동 노출 (한 번만).
-  //   onboarded_at == null 이면 모달 띄움. teams/myinfo 페이지에서 가장 자연스러움.
-  //   (form/list 같이 작업 중심 페이지에선 방해되지 않게 보류)
-  if ((name === 'teams' || name === 'myinfo') && currentUserRole === 'coach') {
+  // Phase G2-C (2026-05-22): 미완료 코치는 myinfo 에 도착했을 때 모달 강제 표시.
+  //   (switchView 도입부에서 다른 view 진입 시도는 이미 myinfo 로 redirect 되었음)
+  if (name === 'myinfo' && coachNeedsOnboarding === true) {
     maybeShowOnboardingModal();
   }
 
@@ -8352,41 +8378,45 @@ function escapeHtml(s) {
 }
 
 // ─── Phase G2-B: 신규 코치 온보딩 환영 모달 ───
-let onboardingChecked = false;
+// Phase G2-C (2026-05-22) — 강제 온보딩 상태 관리.
+//   coachNeedsOnboarding: null = 미확인, true = 강제 차단, false = 완료/해당없음
+//   loadCurrentUserRole() 직후 fetchCoachOnboardingStatus() 가 채워줌.
+//   switchView() 가 매 호출마다 이 플래그 검사 → myinfo 외 차단.
+let coachNeedsOnboarding = null;
 
-async function maybeShowOnboardingModal() {
-  if (onboardingChecked) return;
-  onboardingChecked = true;
+async function fetchCoachOnboardingStatus() {
   try {
     const { data: { user } } = await supabaseClient.auth.getUser();
-    if (!user) return;
+    if (!user) { coachNeedsOnboarding = false; return; }
     const { data, error } = await supabaseClient
       .from('profiles')
-      .select('onboarded_at')
+      .select('onboarded_at, role')
       .eq('id', user.id)
       .maybeSingle();
-    if (error || !data) return;
-    if (data.onboarded_at == null) {
-      const m = document.getElementById('onboardingModal');
-      if (m) m.style.display = 'flex';
-    }
+    if (error || !data) { coachNeedsOnboarding = false; return; }
+    // 코치만 강제. admin/pm 은 해당 없음.
+    coachNeedsOnboarding = (data.role === 'coach' && data.onboarded_at == null);
   } catch (e) {
-    console.warn('[onboarding] check failed:', e?.message || e);
+    console.warn('[onboarding] status check failed:', e?.message || e);
+    coachNeedsOnboarding = false;
   }
 }
 
-function dismissOnboarding() {
+// 모달 노출 — switchView 가 myinfo 진입 시 호출
+function maybeShowOnboardingModal() {
+  if (!coachNeedsOnboarding) return;
   const m = document.getElementById('onboardingModal');
-  if (m) m.style.display = 'none';
-  // 이번 세션 동안만 안 보이게. 새 로그인 시 다시 보임 (등록 안 했으니).
+  if (m) m.style.display = 'flex';
 }
 
+// "내 정보 등록하기 →" 버튼 — 모달 닫고 myinfo > 계약 정보 탭으로
 async function startOnboarding() {
   const m = document.getElementById('onboardingModal');
   if (m) m.style.display = 'none';
   switchView('myinfo');
 }
 
+// 계약 정보 저장 성공 시 호출 → onboarded_at 마킹 + 플래그 해제 + 모달 강제 숨김
 async function markOnboardedIfFirst() {
   try {
     const { data: { user } } = await supabaseClient.auth.getUser();
@@ -8402,6 +8432,10 @@ async function markOnboardedIfFirst() {
         .update({ onboarded_at: new Date().toISOString() })
         .eq('id', user.id);
     }
+    // 플래그 해제 → 다른 view 진입 허용
+    coachNeedsOnboarding = false;
+    const m = document.getElementById('onboardingModal');
+    if (m) m.style.display = 'none';
   } catch (_) { /* 비치명적 */ }
 }
 
