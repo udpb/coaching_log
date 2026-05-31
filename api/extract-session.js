@@ -89,13 +89,56 @@ async function callWithFallback(body, apiKey, isStream) {
   return { response, modelUsed };
 }
 
+// Supabase public project URL (same value as public/index.html:5106).
+// URL is public; the anon key must come from env (SUPABASE_ANON_KEY).
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://zwvrtxxgctyyctirntzj.supabase.co';
+// anon key is public (same as public/index.html SUPABASE_KEY); env overrides if set.
+const SUPABASE_ANON = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp3dnJ0eHhnY3R5eWN0aXJudHpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwNTYzNTQsImV4cCI6MjA5MTYzMjM1NH0.VGjjnvR12xBZ68GN1cXIFwqU_1tWLff3fWkOIselb1g';
+
+// Verify the caller's Supabase login JWT via the Auth REST endpoint.
+// Returns true only on a valid, non-expired access token. fail-closed:
+// missing header → false; missing anon key → caller handled as 503 below.
+async function verifyAuth(req) {
+  const authHeader = req.headers['authorization'] || '';
+  const match = /^Bearer\s+(.+)$/i.exec(authHeader);
+  if (!match) return false;
+  const jwt = match[1].trim();
+  if (!jwt) return false;
+
+  const anon = SUPABASE_ANON;
+  if (!anon) return false; // fail-closed; caller maps to 503 (auth not configured)
+
+  try {
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: { Authorization: `Bearer ${jwt}`, apikey: anon }
+    });
+    return r.ok; // 200 = valid token, 401 = invalid/expired
+  } catch (_) {
+    return false;
+  }
+}
+
 module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // CORS — allowlist of known app origins (no wildcard). same-origin requests
+  // don't send an Origin header / don't preflight, so this won't break them.
+  const allow = [
+    'https://coaching-log-lemon.vercel.app',
+    'http://localhost:3000',
+    'http://localhost:5173'
+  ];
+  if (process.env.APP_ORIGIN) allow.push(process.env.APP_ORIGIN);
+  const origin = req.headers.origin;
+  if (allow.includes(origin)) res.setHeader('Access-Control-Allow-Origin', origin);
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST')    return res.status(405).json({ error: 'Method not allowed' });
+
+  // Auth gate — reject unauthenticated/invalid callers before any Gemini cost.
+  if (!(await verifyAuth(req))) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
 
   let apiKey = (process.env.GEMINI_API_KEY || '').trim().replace(/^"|"$/g, '').replace(/^'|'$/g, '').trim();
   if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY not configured on server' });
