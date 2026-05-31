@@ -7,25 +7,24 @@
 
 ## 📍 현재 상태 (2026-06-01)
 
-**Phase:** 운영 인프라 부트스트랩(ADR-001) 완료 → **P0 보안 수정 진행 중**. ✅ SEC1 완료·검증(ADR-002). 커밋 전 상태.
+**Phase:** 운영 인프라(ADR-001) + P0/P1 보안·정리 완료 → **배포 라이브** (SEC1 무인증 401 프로덕션 검증). SEC1·SEC2·D1·DOCS·CLEAN 커밋·푸시 완료.
 
 ```
-✅ 완료 (메인 검증):
-  SEC1  api/extract-session.js JWT 인증(401/503) + CORS allowlist + 클라 토큰  (ADR-002)
+✅ 완료·배포 (메인 검증):
+  SEC1  extract-session JWT 인증(401) + CORS allowlist + 클라 토큰 + anon 공개 폴백  (ADR-002) — 라이브 401 확인
   SEC2  coach_applications 페이로드 상한 마이그레이션 (phase_r, NOT VALID×10)  (ADR-003)
-        ⚠️ DB 적용 = 사용자 `supabase db push`
-  D1    공유 coaches_directory 계약 drift 해소 — ud-ops supabase-source.ts 4컬럼 parity + 계약 포인터
-        (계약 문서 §5 D-1 해소. ⚠️ Prisma 매핑·CI 일치검사 미완)
+  D1    공유 coaches_directory 계약 drift 해소 (ud-ops 4컬럼 parity + 계약 포인터)
+  DOCS  README/HANDOVER 정정(모델명·extract-session·마이그레이션29) + 死 GEMINI_KEY 제거
+  CLEAN 레거시 로컬 스택 제거 (server.js·lib/*·死 deps, 로컬서빙 npx serve)
 
-다음 (대기 — 결정/확인 필요):
-  DOCS1 README/HANDOVER 정정(모델명·api/match-coaches.js·마이그레이션 수) + 死 GEMINI_KEY 제거  [저위험]
-  (D)   레거시 server.js·lib/* 제거  [파일 삭제 — 사용자 확인 권장]
+다음 (대기 — 결정/대형):
   H1    public/index.html 모듈화 착수 (renderBPDetailBody 940줄부터)  [대형]
-  CI    coaches_directory 3사본 일치 검사 (재발 방지)  [크로스레포 방식 결정 필요]
-  ADR-004 후 — coach_applications captcha anti-spam (provider 결정 필요)
+  CI    coaches_directory 3사본 일치 검사 (재발 방지)  [크로스레포 방식 결정]
+  ADR-004 — coach_applications captcha anti-spam (provider 결정 필요)
+  데이터: coaching_logs 114건 적재 확인(최근 5/14·저사용). 로그인 happy-path 실사용 확인 권장.
 ```
 
-**⚠️ 사용자 액션 (배포 전 필수)**: Vercel 에 **`SUPABASE_ANON_KEY`** 설정(index.html:5107 anon 키와 동일값). 미설정 시 extract 전부 503. 서버+클라 **동시 배포**.
+**⚠️ 남은 사용자 액션**: SEC2 마이그레이션 **DB 적용**만 — Supabase SQL Editor 에서 `20260601_phase_r_*.sql` 실행(권장) 또는 `supabase db push`. (Vercel anon 키는 코드 폴백으로 해결 — 불필요.)
 
 **최근 ADR:** [ADR-002](docs/decisions/002-extract-session-auth.md) Accepted.
 **최근 Journey:** [2026-06-01 #2](docs/journey/2026-06-01-p0-security-fixes.md).
