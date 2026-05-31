@@ -28,6 +28,7 @@
 |------|------|-----------|
 | [2026-06-01](./2026-06-01-audit-and-governance-bootstrap.md) | 심층 감사 + 운영 인프라 부트스트랩 (ADR-001) | Opus 4.8 (1M) |
 | [2026-06-01 #2](./2026-06-01-p0-security-fixes.md) | P0 보안 1차 — SEC1 extract-session 인증 (ADR-002) | Opus 4.8 (1M) |
+| [2026-06-01 #3](./2026-06-01-migration-drift-phase-j.md) | 마이그레이션 드리프트 — Phase J(coach_applications) 실DB 미적용 발견 | Opus 4.8 (1M) |
 
 ## 왜 Journey 인가
 - ADR = 무엇을·왜. Journey = 어떻게·뭘 틀렸나. 둘 다 필요.

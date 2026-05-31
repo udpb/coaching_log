@@ -24,7 +24,13 @@
   데이터: coaching_logs 114건 적재 확인(최근 5/14·저사용). 로그인 happy-path 실사용 확인 권장.
 ```
 
-**⚠️ 남은 사용자 액션**: SEC2 마이그레이션 **DB 적용**만 — Supabase SQL Editor 에서 `20260601_phase_r_*.sql` 실행(권장) 또는 `supabase db push`. (Vercel anon 키는 코드 폴백으로 해결 — 불필요.)
+**⚠️ 마이그레이션 드리프트 발견 (2026-06-01 · Journey #3)**: 실DB에 **Phase J(`coach_applications`) 미적용** — coach-finder `/register`·`/applications` 기능 프로덕션 비동작. (Phase L 은 적용됨 = coach_contract_info 컬럼.) 다른 13개 테이블 정상.
+
+**⚠️ 남은 사용자 액션** (사용자 결정 A: 기능 살림): Supabase SQL Editor(프로젝트 `zwvrtxxgctyyctirntzj`)에서 **순서대로**:
+  1. `supabase/migrations/20260515_phase_j_coach_applications.sql` (coach_applications 생성 — 의존성 coaches_directory·is_admin()·auth.users 모두 존재)
+  2. `supabase/migrations/20260601_phase_r_coach_applications_hardening.sql` (SEC2 페이로드 상한 — 이제 테이블 있으니 적용 가능)
+  3. (앱이 여전히 404 면) `NOTIFY pgrst, 'reload schema';`
+  (Vercel anon 키는 코드 폴백으로 해결됨 — 불필요.)
 
 **최근 ADR:** [ADR-002](docs/decisions/002-extract-session-auth.md) Accepted.
 **최근 Journey:** [2026-06-01 #2](docs/journey/2026-06-01-p0-security-fixes.md).
