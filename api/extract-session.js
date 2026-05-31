@@ -26,7 +26,6 @@
 //   event: done
 //   data: { narrative_summary, fields, low_confidence, raw, usage }
 
-const GEMINI_KEY   = '';   // resolved at request time from env
 // PRIMARY model — env override allowed. Don't use bare 'gemini-3.1-pro' (404
 // in v1beta); preview IDs need a dated suffix.
 const PRIMARY_MODEL  = process.env.GEMINI_CHAT_MODEL || 'gemini-2.5-pro';

@@ -1,6 +1,6 @@
 # underdogs. Coaching Log
 
-Startup coach's 1:1 session tracker — built around the idea that coaches should spend their time on **coaching**, not on re-typing what was just discussed. Paste an STT transcript, let Gemini 3.1 Pro extract the structured fields, review, save.
+Startup coach's 1:1 session tracker — built around the idea that coaches should spend their time on **coaching**, not on re-typing what was just discussed. Paste an STT transcript, let Gemini 2.5 Pro (PRIMARY) / 2.5 Flash (FALLBACK) extract the structured fields, review, save.
 
 Live: [coaching-log-lemon.vercel.app](https://coaching-log-lemon.vercel.app)
 Auto-deployed from `main` via Vercel ↔ GitHub integration (`udpb/coaching_log` → `udpb-5673's projects/coaching-log`).
@@ -10,7 +10,7 @@ Auto-deployed from `main` via Vercel ↔ GitHub integration (`udpb/coaching_log`
 ## Stack
 
 - **Frontend** — single-file vanilla HTML/CSS/JS (`public/index.html`)
-- **API** — Vercel serverless function (`api/extract-session.js`) → Google Gemini 3.1 Pro (STT extraction) + `api/match-coaches.js` → Gemini Embeddings (semantic coach search)
+- **API** — Vercel serverless function (`api/extract-session.js`) → Google Gemini 2.5 Pro (PRIMARY) / 2.5 Flash (FALLBACK) (STT extraction) + `api/extract-session.js` → Gemini Embeddings (semantic coach search)
 - **DB + Auth** — Supabase (Postgres + Row Level Security + Auth)
 - **Fonts** — Pretendard (KR body) + Poppins (brand italic logo)
 - **Reports** — browser print → PDF / [docx](https://github.com/dolanmiu/docx) v8 (lazy-loaded)
@@ -36,9 +36,9 @@ No build step. No framework.
 
 ```
 api/
-  extract-session.js        Serverless function — Gemini 3.1 Pro proxy,
+  extract-session.js        Serverless function — Gemini 2.5 Pro (PRIMARY) / 2.5 Flash (FALLBACK) proxy,
                             SSE streaming, JSON-mode output, repair on truncation
-  match-coaches.js          Serverless function — Gemini embeddings + Supabase
+  extract-session.js        Serverless function — Gemini embeddings + Supabase
                             pgvector RPC for PM-facing coach recommendation
 public/
   index.html                The whole app (HTML + inline CSS + inline JS)

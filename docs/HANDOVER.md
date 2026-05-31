@@ -87,7 +87,7 @@
 - **목적**: 코치/PM/admin이 코칭 세션을 기록·관리·리포트.
 - **저장소**: `C:\Users\USER\underdogs-coaching-log` (GitHub: `udpb/coaching_log`)
 - **메인 파일**: `public/index.html` (단일 파일 vanilla, 10638줄)
-- **API**: `api/extract-session.js` (Vercel serverless, Gemini 3.1 Pro로 STT 전사본을 18개 구조화 필드로 추출)
+- **API**: `api/extract-session.js` (Vercel serverless, Gemini 2.5 Pro (PRIMARY) / 2.5 Flash (FALLBACK)로 STT 전사본을 18개 구조화 필드로 추출)
 - **Supabase 사용**: 모든 테이블 (RLS로 권한 격리)
 - **주요 화면 (탭)**:
   1. **프로젝트** (Teams) — 프로젝트별 팀/세션 카드 그리드
@@ -336,7 +336,7 @@ CREATE TRIGGER bp_on_won
 
 1. **로그인** (coaching-log) → 첫 페인트 시 audit-fix 적용된 `loadCurrentUserRole`이 ~500ms 안에 role 결정 (`profiles.role` 조회).
 2. **프로젝트 선택** — 자신이 멤버인 프로젝트만 picker에 노출 (`projects` RLS).
-3. **기록** 탭 → STT 전사본 붙여넣기 → "초안 생성" → Gemini 3.1 Pro가 18개 필드 + 내러티브 자동 채움.
+3. **기록** 탭 → STT 전사본 붙여넣기 → "초안 생성" → Gemini 2.5 Pro (PRIMARY) / 2.5 Flash (FALLBACK)가 18개 필드 + 내러티브 자동 채움.
 4. **검토 + 저장** — 자신감 < 0.7 필드는 ⚠ 표시.
 5. **목록**에서 자기 세션 다시 찾기 / 편집 가능 (own row).
 6. **대시보드** — 자기 팀 메트릭 트렌드 시각화.
@@ -594,7 +594,7 @@ git clone https://github.com/udpb/underdogs-hub.git   # (생성된 후)
 
 | # | 주장 | 검증 위치 | 결과 |
 |---|---|---|---|
-| 1 | 12개 마이그레이션 파일 존재 | `ls supabase/migrations/*.sql` | ✅ 12개 확인 |
+| 1 | 29개 마이그레이션 파일 존재 | `ls supabase/migrations/*.sql` | ✅ 29개 확인 |
 | 2 | `profiles.role` CHECK는 admin/pm/coach | `20260427_phase5a_pm_role.sql` line 22 | ✅ |
 | 3 | `udpb@udimpact.ai` → admin (handle_new_user) | `20260427_phase5a_pm_role.sql` line 43 | ✅ |
 | 4 | 도메인 매칭 → pm | `20260427_phase5a_pm_role.sql` line 44 | ✅ `*@udimpact.ai`/`*@underdogs.co.kr` |
@@ -635,7 +635,7 @@ git clone https://github.com/udpb/underdogs-hub.git   # (생성된 후)
 - **Firebase 프로젝트** (사진 호스팅만): `gen-lang-client-0293778787` (Coach AI 라벨)
 - **Cloud Run AI 백엔드** (RAG 추천): `https://underdogs-ai-backend-103534218514.asia-northeast3.run.app` (별도 운영 — coach-finder의 `VITE_API_BASE_URL`)
 - **AI 모델**:
-  - Gemini 3.1 Pro (STT 추출, coaching-log)
+  - Gemini 2.5 Pro (PRIMARY) / 2.5 Flash (FALLBACK) (STT 추출, coaching-log)
   - Gemini Embeddings (코치 풀 임베딩, Phase 4-E)
 
 ---
@@ -682,7 +682,7 @@ underdogs-coaching-log/
 ├── public/
 │   └── index.html                # 메인 SPA (vanilla, ~10638줄)
 ├── api/
-│   └── extract-session.js        # Gemini 3.1 Pro STT 추출 (Vercel func)
+│   └── extract-session.js        # Gemini 2.5 Pro (PRIMARY) / 2.5 Flash (FALLBACK) STT 추출 (Vercel func)
 ├── supabase/
 │   └── migrations/               # 12개 SQL 파일 (시간순)
 ├── docs/
