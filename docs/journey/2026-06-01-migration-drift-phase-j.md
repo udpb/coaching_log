@@ -33,7 +33,7 @@
 ## 적용 결과 (2026-06-01)
 
 - ✅ 사용자가 SQL Editor 에서 `20260515_phase_j_*.sql` 실행 → "Success". 메인이 service-role 로 `coach_applications` 테이블+핵심 컬럼 생성 검증(0행, PostgREST 인식). → /register·/applications 동작.
-- ⏳ `20260601_phase_r_*.sql`(SEC2 페이로드 상한)은 후속 1건(테이블 생겼으니 이제 적용 가능).
+- ✅ `20260601_phase_r_*.sql`(SEC2 페이로드 상한) 적용·검증 완료 — 행동 검증(name 150자·expertise 40개 INSERT 거부, 테이블 0행 유지). 드리프트 완전 해소.
 
 ## 변경된 파일
 

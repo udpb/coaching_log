@@ -26,7 +26,7 @@
 
 **마이그레이션 드리프트 (2026-06-01 · Journey #3) — 해소 중**: Phase J(`coach_applications`) 가 실DB 미적용이었음(coach-finder `/register`·`/applications` 비동작 원인). Phase L 은 적용돼 있었음(coach_contract_info 컬럼).
 - ✅ **Phase J 적용·검증 완료** (2026-06-01) — `20260515_phase_j_*.sql` 실행 성공, service-role 로 coach_applications 테이블+컬럼 생성 확인. PostgREST 인식됨 → /register 동작.
-- ⏳ **남은 사용자 액션 1건**: SQL Editor 에서 `supabase/migrations/20260601_phase_r_coach_applications_hardening.sql` 실행(SEC2 페이로드 상한 — 이제 테이블 있으니 적용됨). 검증: `select conname from pg_constraint where conrelid='public.coach_applications'::regclass and conname like '%_chk';` → 10개.
+- ✅ **phase_r (SEC2 페이로드 상한) 적용·검증 완료** (2026-06-01) — `20260601_phase_r_*.sql` 실행. 행동 검증: name 150자·expertise 40개 INSERT 가 각각 `name_len_chk`·`expertise_card_chk` 로 거부됨(테이블 0행 유지). **드리프트 완전 해소.**
 
 **최근 ADR:** [ADR-002](docs/decisions/002-extract-session-auth.md) Accepted.
 **최근 Journey:** [2026-06-01 #2](docs/journey/2026-06-01-p0-security-fixes.md).
