@@ -30,6 +30,11 @@
 - 적용 순서: ① `20260515_phase_j_coach_applications.sql` → ② `20260601_phase_r_coach_applications_hardening.sql`. (둘 다 SQL Editor, 프로젝트 zwvrtxxgctyyctirntzj.)
 - 적용 후 PostgREST 스키마 캐시 자동 reload(필요 시 `NOTIFY pgrst, 'reload schema';`) → 앱에서 coach_applications 인식.
 
+## 적용 결과 (2026-06-01)
+
+- ✅ 사용자가 SQL Editor 에서 `20260515_phase_j_*.sql` 실행 → "Success". 메인이 service-role 로 `coach_applications` 테이블+핵심 컬럼 생성 검증(0행, PostgREST 인식). → /register·/applications 동작.
+- ⏳ `20260601_phase_r_*.sql`(SEC2 페이로드 상한)은 후속 1건(테이블 생겼으니 이제 적용 가능).
+
 ## 변경된 파일
 
 - 신규: 본 Journey. (마이그레이션 SQL 변경 없음 — 적용은 사용자 SQL Editor.)
