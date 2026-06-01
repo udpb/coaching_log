@@ -1,7 +1,14 @@
 # HANDOFF — 세션 핸드오버 (라이브 문서 · coaching-log)
 
 > **갱신 룰:** 매 세션 끝, 메인 세션이 전체 덮어쓰기. Git 으로 히스토리 추적.
-> **읽는 순서:** 본 파일 → [CLAUDE.md](CLAUDE.md) → [AGENTS.md](AGENTS.md) → [docs/glossary.md](docs/glossary.md) → [docs/AUDIT-2026-06-01.md](docs/AUDIT-2026-06-01.md)
+> **읽는 순서:** 본 파일 → [CLAUDE.md](CLAUDE.md) → [AGENTS.md](AGENTS.md) → [docs/glossary.md](docs/glossary.md) → [docs/AUDIT-2026-06-01-verification.md](docs/AUDIT-2026-06-01-verification.md) → [docs/AUDIT-2026-06-01.md](docs/AUDIT-2026-06-01.md)
+
+---
+
+> ⚠️ **2026-06-01 독립 재검증(v2):** [docs/AUDIT-2026-06-01-verification.md](docs/AUDIT-2026-06-01-verification.md). 이전 "완료" 보고를 코드와 대조해 정정.
+> - coaching-log 자체는 양호하나 **위험한 死 DDL `getCreateTableSQL()`**(`index.html:5159-5197`, `USING(true)` 반환) 즉시 삭제 + **`.or()` 필터 인젝션**(`index.html:11403`) 정정 필요.
+> - "死 GEMINI_KEY 제거"는 **실재 안 했던 항목**(오탐). "평가 Gap 3 = 다른 스키마"는 **틀림**(단일 스키마) → glossary:66 정정.
+> - 문서 drift 잔존: `README.md:41,79`(없는 `match-coaches`·`lib/`·`server.js`) · `ARCHITECTURE.md` "Gemini 3.1 Pro".
 
 ---
 
