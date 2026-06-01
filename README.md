@@ -54,8 +54,6 @@ supabase/
     20260424_phase4e_pgvector_rag.sql
     20260427_phase5a_pm_role.sql
     20260428_phase5b_business_plans.sql
-lib/, data/, server.js      Legacy local-dev server + CSV backup scripts.
-                            Not used in the Vercel deployment.
 vercel.json                 Static + /api routing
 ```
 
@@ -76,7 +74,7 @@ vercel.json                 Static + /api routing
 
 - Get a key (free tier available) at [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
 - In Vercel: Project → Settings → Environment Variables → add `GEMINI_API_KEY` (Production)
-- Also add `SUPABASE_SERVICE_ROLE` if you want `/api/match-coaches` to bypass RLS server-side
+- Also add `SUPABASE_SERVICE_ROLE` (server-only) — used by `/api/extract-session` to bypass RLS for server-side reads
 
 ### 3. Client-side Supabase credentials
 
@@ -134,7 +132,7 @@ Long transcripts can push output past `max_tokens`. The API-side parser detects 
 
 ## Development
 
-There is a `server.js` in the repo for local CSV-based dev, but the production deployment runs entirely off Vercel + Supabase. Recommend using `vercel dev` for local iteration so the `/api/*` functions work the same as in production.
+The production deployment runs entirely off Vercel + Supabase. Use `vercel dev` for local iteration so the `/api/*` functions work the same as in production. (The legacy local-CSV `server.js`/`lib/` stack has been removed.)
 
 ```bash
 npm install

@@ -20,8 +20,8 @@
 |------|------|--------|
 | `docs/INTEGRATED_ARCHITECTURE.md` | 4앱 통합 + Gap 1~5 | ✅ 양호 (핵심 참조) |
 | `docs/ARCHITECTURE.md` | 단일 앱 아키텍처 (AWS 포터블 의도) | ✅ 양호 |
-| `docs/HANDOVER.md` | 인수인계 | 🟡 일부 stale — "Gemini 3.1 Pro"(코드 `gemini-2.5-pro`) · "12 마이그레이션"(실제 28) |
-| `README.md` | 개요 | 🟡 stale — `api/match-coaches.js` 참조(존재 안 함, 실제는 `extract-session.js`) · 모델명 |
+| `docs/HANDOVER.md` | 인수인계 | 🟡 일부 stale — 파일트리에 `lib/server.js` 잔재 (모델명·README 류는 ARCHITECTURE/README 에서 정정 완료 2026-06-01) |
+| `README.md` | 개요 | ✅ 정정됨(2026-06-01) — `match-coaches`→`extract-session`, `lib/server.js` 트리/dev 안내 제거 |
 | `supabase/migrations/*.sql` (28) | **스키마 SoT** | ✅ 권위 |
 
 ## 데드/제거 대상 (감사)
@@ -30,8 +30,8 @@
 |------|------|
 | `server.js` · `lib/csv-manager.js` · `lib/backup.js` | ❌ Vercel 死 (로컬 파일기반 프로토타입). node-cron 백업 안 돎 |
 | `package.json` express/cors/node-cron/dotenv | 위 死코드 전용 의존성 |
-| `api/extract-session.js:29` `GEMINI_KEY=''` | 死 상수 |
-| `public/index.html:5194` `"Allow all access"` | 死 DDL 문자열 (phase4a 가 DROP) |
+| ~~`api/extract-session.js:29` `GEMINI_KEY=''`~~ | ⚠️ 오탐 — 실재하지 않음 (재검증 v2). 제거 대상 아님 |
+| ~~`public/index.html` `getCreateTableSQL()` 死 DDL~~ | ✅ **제거됨 2026-06-01** (`fa5e06d`) |
 
 ## 주요 구조 리스크 (감사)
 

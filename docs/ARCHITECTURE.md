@@ -155,7 +155,7 @@ PM: business_plans.status = 'awarded'
        ↓
 프로젝트 진입 → 팀 추가 → 세션 기록
        ↓
-STT transcript paste → Gemini 3.1 Pro
+STT transcript paste → Gemini 2.5 Pro (gemini-2.5-pro)
        ↓
 narrative + 18 structured fields + evidence + last_done_rate auto
        ↓
@@ -389,7 +389,7 @@ coach_evaluations  📋 (Phase B에서 도입)
 | Auth | Supabase Auth (이메일/비밀번호 + GitHub OAuth) |
 | Storage | Supabase Storage (`coach-photos` public bucket) |
 | Serverless | Vercel (`api/extract-session.js`) |
-| AI 모델 | Google Gemini 3.1 Pro (chat) · gemini-embedding-001 (1536-dim) |
+| AI 모델 | Google Gemini 2.5 Pro (chat, `gemini-2.5-pro`) · gemini-embedding-001 (1536-dim) |
 | 폰트 | Pretendard (한국어) + Poppins (브랜드 italic) |
 | 리포트 PDF | 브라우저 print + `@media print` CSS |
 | 리포트 Word | docx@8.5 (UMD CDN, lazy-load) |
@@ -402,7 +402,7 @@ coach_evaluations  📋 (Phase B에서 도입)
 | 일자 | 결정 | 이유 |
 |---|---|---|
 | 2026-04-15 | Vanilla HTML 단일 파일 | 빠른 반복 + 외부 의존 최소 |
-| 2026-04-21 | Anthropic Claude → Google Gemini 3.1 Pro | 비용·결제 카드 부담 제거 + 한국어 multilingual 우수 |
+| 2026-04-21 | Anthropic Claude → Google Gemini (현 `gemini-2.5-pro`) | 비용·결제 카드 부담 제거 + 한국어 multilingual 우수 |
 | 2026-04-23 | OpenAI 임베딩 → Gemini gemini-embedding-001 | 무료 tier + Document/Query 구분 (RAG 정확도 ↑) |
 | 2026-04-23 | 코치 디렉토리 = Supabase 단일 master | coach-finder의 JSON은 seed 용도로만, 향후 deprecate |
 | 2026-04-24 | RAG 검색 알고리즘 owner = Supabase RPC (option b) | 두 앱이 동등하게 호출, 로직 중복 X |
