@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>coaching-log — Product Requirements v2.0</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --accent:#F05519;
+    --accent-2:#FBD6C8;
+    --accent-soft:#FDEBE3;
+    --ink:#373938;
+    --soft-ink:#4B4D4C;
+    --muted:#878888;
+    --line:#D9D9D9;
+    --paper:#FFFFFF;
+    --bg:#FAFAFA;
+    --radius:6px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    font-family:'Pretendard',system-ui,-apple-system,sans-serif;
+    color:var(--ink);
+    background:var(--bg);
+    line-height:1.65;
+    word-break:keep-all;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono,.en{font-family:'Poppins','Pretendard',sans-serif;}
+  code,.code{
+    font-family:ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace;
+    font-size:.86em;
+    background:#F2F2F2;
+    padding:1px 6px;
+    border-radius:3px;
+    color:var(--soft-ink);
+    word-break:break-all;
+  }
+  a{color:var(--accent);text-decoration:none;}
+  a:hover{text-decoration:underline;}
+
+  .wrap{max-width:1100px;margin:0 auto;padding:0 28px;}
+
+  /* ---------- HERO ---------- */
+  header.hero{
+    background:var(--paper);
+    border-bottom:1px solid var(--line);
+    padding:40px 0 36px;
+  }
+  .brandbar{display:flex;align-items:center;gap:14px;margin-bottom:30px;}
+  .brandbar svg{height:30px;width:auto;display:block;}
+  .brandbar .sep{width:1px;height:24px;background:var(--line);}
+  .brandbar .kit{font-size:12px;color:var(--muted);letter-spacing:.04em;}
+  .hero h1{
+    font-family:'Poppins',sans-serif;
+    font-weight:700;
+    font-size:46px;
+    margin:0 0 4px;
+    letter-spacing:-.01em;
+    color:var(--ink);
+  }
+  .hero h1 .dot{color:var(--accent);}
+  .hero .tagline{
+    font-size:19px;
+    color:var(--soft-ink);
+    max-width:640px;
+    margin:0 0 22px;
+    font-weight:500;
+  }
+  .badges{display:flex;flex-wrap:wrap;gap:8px;}
+  .badge{
+    font-size:12.5px;
+    padding:4px 11px;
+    border:1px solid var(--line);
+    border-radius:100px;
+    color:var(--soft-ink);
+    background:var(--paper);
+  }
+  .badge.accent{background:var(--accent-soft);border-color:var(--accent-2);color:#B23B12;}
+  .badge .mono{font-weight:600;}
+
+  /* ---------- NAV ---------- */
+  nav.toc{
+    position:sticky;top:0;z-index:50;
+    background:rgba(255,255,255,.93);
+    backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line);
+  }
+  nav.toc .wrap{display:flex;flex-wrap:wrap;gap:2px;padding-top:10px;padding-bottom:10px;}
+  nav.toc a{
+    font-size:13px;color:var(--soft-ink);
+    padding:5px 11px;border-radius:4px;white-space:nowrap;
+  }
+  nav.toc a:hover{background:var(--accent-soft);color:#B23B12;text-decoration:none;}
+
+  /* ---------- SECTION ---------- */
+  section{padding:46px 0 8px;}
+  .sec-head{display:flex;align-items:baseline;gap:12px;margin-bottom:6px;}
+  .sec-num{font-family:'Poppins',sans-serif;font-weight:700;color:var(--accent);font-size:15px;}
+  h2{font-size:27px;margin:0;font-weight:700;letter-spacing:-.01em;}
+  .sec-sub{color:var(--muted);font-size:15px;margin:2px 0 26px;}
+  h3{font-size:18px;margin:34px 0 14px;font-weight:600;}
+  p{margin:0 0 14px;color:var(--soft-ink);}
+
+  .hr{height:1px;background:var(--line);border:0;margin:8px 0 0;}
+
+  /* ---------- TABLE ---------- */
+  table{border-collapse:collapse;width:100%;font-size:14px;margin:6px 0 18px;}
+  th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top;}
+  th{background:#F5F5F5;font-weight:600;color:var(--ink);font-size:13px;}
+  td{color:var(--soft-ink);}
+  tr.hi td{background:var(--accent-soft);}
+  td .code,th .code{white-space:nowrap;}
+  .chk{color:var(--accent);font-weight:700;}
+  .no{color:var(--muted);}
+
+  /* ---------- FLOW (vertical) ---------- */
+  .flow{margin:18px 0 8px;}
+  .node{
+    background:var(--paper);
+    border:1.5px solid var(--line);
+    border-radius:var(--radius);
+    padding:13px 16px;
+    position:relative;
+  }
+  .node .nlabel{font-weight:600;font-size:14.5px;color:var(--ink);display:flex;align-items:center;gap:8px;}
+  .node .ndesc{font-size:13px;color:var(--muted);margin-top:3px;}
+  .node.start{border-color:var(--accent);background:var(--accent-soft);}
+  .node.start .nlabel{color:#B23B12;}
+  .node.key{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
+  .node .tag{
+    font-size:10.5px;font-weight:700;letter-spacing:.04em;
+    background:var(--accent);color:#fff;padding:2px 7px;border-radius:3px;
+    text-transform:uppercase;font-family:'Poppins',sans-serif;
+  }
+  .node .tag.soft{background:#EDEDED;color:var(--soft-ink);}
+  .arrow{
+    display:flex;flex-direction:column;align-items:center;
+    color:var(--accent);margin:0;padding:6px 0;
+  }
+  .arrow .line{width:2px;height:14px;background:var(--accent);}
+  .arrow .head{font-size:13px;line-height:.6;margin-top:-2px;}
+  .arrow .note{font-size:11.5px;color:var(--muted);margin-top:4px;text-align:center;max-width:480px;}
+
+  /* branch (2-mode) */
+  .branch{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:6px 0;}
+  .branch .node{margin:0;}
+  .branch .mlabel{font-family:'Poppins',sans-serif;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:5px;}
+
+  /* pass list inside a node */
+  .passes{display:grid;gap:8px;margin-top:10px;}
+  .pass{display:flex;gap:11px;align-items:flex-start;background:#FCFCFC;border:1px solid var(--line);border-radius:4px;padding:9px 12px;}
+  .pass .pno{
+    font-family:'Poppins',sans-serif;font-weight:700;font-size:12px;
+    background:var(--ink);color:#fff;border-radius:3px;padding:2px 8px;white-space:nowrap;margin-top:1px;
+  }
+  .pass.p2 .pno{background:var(--accent);}
+  .pass .pbody b{color:var(--ink);font-size:13.5px;}
+  .pass .pbody span{display:block;font-size:12.5px;color:var(--muted);}
+
+  /* ---------- PIPELINE (horizontal) ---------- */
+  .pipe{
+    display:flex;align-items:stretch;gap:0;overflow-x:auto;
+    padding:10px 2px 16px;margin:8px 0;
+  }
+  .pstep{
+    flex:1 0 0;min-width:140px;
+    border:1.5px solid var(--line);border-radius:var(--radius);
+    background:var(--paper);padding:12px 13px;position:relative;
+  }
+  .pstep.accent{border-color:var(--accent);background:var(--accent-soft);}
+  .pstep .pi{font-size:18px;}
+  .pstep .pt{font-weight:600;font-size:13.5px;margin:4px 0 2px;color:var(--ink);}
+  .pstep .pd{font-size:11.5px;color:var(--muted);line-height:1.45;}
+  .pstep .pn{font-family:'Poppins';font-size:10px;font-weight:700;color:var(--muted);}
+  .parrow{
+    flex:0 0 26px;display:flex;align-items:center;justify-content:center;
+    color:var(--accent);font-size:18px;font-weight:700;
+  }
+
+  /* ---------- CARD GRID ---------- */
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin:10px 0;}
+  .card{border:1px solid var(--line);border-radius:var(--radius);background:var(--paper);padding:18px;}
+  .card.star{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
+  .card .chead{display:flex;align-items:center;gap:9px;margin-bottom:8px;}
+  .card .cicon{font-size:20px;}
+  .card .ctitle{font-weight:600;font-size:16px;}
+  .card .cstar{font-size:11px;font-weight:700;color:var(--accent);font-family:'Poppins';letter-spacing:.03em;}
+  .card .cdesc{font-size:13px;color:var(--soft-ink);margin-bottom:12px;}
+  .csteps{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+  .csteps .cs{font-size:11.5px;background:#F4F4F4;border:1px solid var(--line);border-radius:100px;padding:2px 9px;color:var(--soft-ink);}
+  .csteps .csa{color:var(--accent);font-weight:700;}
+  .card .ctbl{font-size:12px;color:var(--muted);margin-top:10px;border-top:1px dashed var(--line);padding-top:8px;}
+  .card .ctbl .code{font-size:11px;}
+
+  /* ---------- METRIC CHIPS ---------- */
+  .metrics{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;margin:14px 0;}
+  .metric{border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:4px;padding:12px 14px;background:var(--paper);}
+  .metric .mname{font-family:'Poppins';font-weight:600;font-size:13px;color:var(--accent);}
+  .metric .mdesc{font-size:12.5px;color:var(--soft-ink);margin-top:3px;}
+
+  /* ---------- CALLOUT ---------- */
+  .callout{
+    border:1px solid var(--accent-2);background:var(--accent-soft);
+    border-radius:var(--radius);padding:13px 16px;margin:14px 0;font-size:13.5px;color:#8a3415;
+  }
+  .callout b{color:#B23B12;}
+  .note-box{
+    border:1px solid var(--line);background:#F8F8F8;
+    border-radius:var(--radius);padding:13px 16px;margin:14px 0;font-size:13px;color:var(--soft-ink);
+  }
+
+  /* role views */
+  .viewchips{display:flex;flex-wrap:wrap;gap:5px;}
+  .vchip{font-size:11.5px;border:1px solid var(--line);border-radius:3px;padding:1px 7px;color:var(--soft-ink);background:#fff;}
+  .vchip.acc{border-color:var(--accent-2);background:var(--accent-soft);color:#B23B12;}
+
+  /* footer */
+  footer{margin-top:48px;border-top:1px solid var(--line);background:var(--paper);padding:28px 0 44px;}
+  footer .wrap{font-size:13px;color:var(--muted);}
+  footer b{color:var(--soft-ink);}
+
+  @media (max-width:720px){
+    .hero h1{font-size:34px;}
+    .branch{grid-template-columns:1fr;}
+    .pipe{flex-direction:column;}
+    .parrow{flex:0 0 22px;transform:rotate(90deg);}
+    .wrap{padding:0 18px;}
+  }
+  @media print{
+    nav.toc{position:static;}
+    body{background:#fff;}
+    section{break-inside:avoid;}
+    .card,.node,.pstep{break-inside:avoid;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ====================== HERO ====================== -->
+<header class="hero">
+  <div class="wrap">
+    <div class="brandbar">
+      <svg viewBox="0 0 651.4 108.57" aria-label="UNDERDOGS" role="img">
+        <path d="M558.94,65.83h24c0,3.22.69,5.17,4.6,5.17,2.98,0,4.7-1.26,5-2.98.41-2.3-1.45-3.45-9.01-4.25-16.02-1.61-22.95-5.29-20.54-18.96,2.53-14.36,17.1-21.13,33.18-21.13,16.99,0,25.99,5.28,24.57,20.56h-23.54c-.12-2.65-1.11-4.82-4.32-4.82s-4.6,1.38-4.91,3.1c-.43,2.41,2.01,3.56,7.35,3.9,18.49,1.95,25.61,5.86,23.32,18.84-2.82,15.97-15.99,21.94-33.67,21.94s-28.17-7.24-26.03-21.37"/>
+        <path d="M36.2,85.47h26.33l10.59-60.06h-26.33l-5.93,33.61c-1.08,6.12-3.55,8.78-8.61,8.78-4.11,0-5.41-2.66-4.55-7.51l6.15-34.88H7.53L.51,65.15c-2.56,14.54,4.69,22.05,16.16,22.05,10.31,0,16.5-4.27,21.13-10.85l-1.61,9.12Z"/>
+        <path d="M126.29,23.68c-10.22,0-17.62,5.08-22.25,11.54l1.73-9.81h-26.33l-10.59,60.06h26.33l5.93-33.62c1.08-6.12,3.68-8.76,8.54-8.76,4.28,0,5.47,2.65,4.62,7.5l-6.15,34.89h26.33l7.05-39.97c2.53-14.32-3.93-21.82-15.21-21.82"/>
+        <path d="M259.2,64.68c-1.03,2.36-3.2,6.35-8.53,6.35-4.79,0-8.03-4.07-7.66-10.05h41.22l.98-5.54c3.83-21.71-10.28-31.76-27.89-31.76-18.87,0-35.57,11.78-39.1,31.76-3.55,20.1,8.23,31.77,27.89,31.77s33.12-8.42,37.42-22.52h-24.33ZM255.5,39.85c5.02,0,7.93,4.28,7.17,9.23h-17.46c1.72-5.86,5.95-9.23,10.29-9.23"/>
+        <path d="M454.74,23.68c-19.52,0-36.72,11.78-40.25,31.76-3.55,20.1,8.71,31.76,29.05,31.76s36.7-11.66,40.25-31.76c3.52-19.98-9.53-31.76-29.05-31.76M457.22,55.44c-1.4,7.91-4.82,12.7-10.33,12.7s-7.24-4.79-5.84-12.7c1.52-8.63,4.82-12.7,10.32-12.7s7.2,5.03,5.85,12.7"/>
+        <path d="M319.4,36.93l2.03-11.52h-26.34l-10.59,60.06h26.34l4.78-27.14c1.22-6.9,8.61-11.04,21.65-10.12l4.32-24.51c-8.74-.34-16.51,3.22-22.2,13.23"/>
+        <path d="M534.6,25.41l-1.26,7.14c-2.34-5.64-7.16-8.87-16.33-8.87-12.96,0-25.83,9.24-29.3,28.87-3.5,19.84,6.38,28.87,19.35,28.87,9.17,0,15.67-4.28,19.43-10.02l-1.48,8.42c-.84,4.73-3.34,9.7-11.15,9.7-4.54,0-5.99-1.95-6.48-4.05h-26.33c-.89,15.08,8.06,23.1,29.44,23.1,23.93,0,37.51-9.8,40.73-28.05l9.71-55.11h-26.33ZM530.62,52.9c-1.11,6.33-4.37,10.16-9.88,10.16s-7.4-3.84-6.29-10.16c1.22-6.9,4.37-10.16,9.88-10.16s7.38,4.02,6.29,10.16"/>
+        <path d="M623.9,73.45c0-7.56,5.66-13.75,13.53-13.75s13.98,6.19,13.98,13.75-5.88,13.75-13.98,13.75-13.53-6.07-13.53-13.75"/>
+        <path d="M197.07,0l-5.9,33.45c-2.3-6.2-7.18-9.76-16.54-9.76-13.23,0-26.5,10.17-30.3,31.76-3.85,21.82,6.11,31.76,19.34,31.76,9.36,0,16.05-4.71,19.97-11.02l-1.64,9.29h26.33L223.41,0h-26.33ZM188.16,55.44c-1.4,7.91-4.82,12.7-10.33,12.7s-7.24-4.79-5.84-12.7c1.52-8.63,4.82-12.7,10.32-12.7s7.2,5.03,5.85,12.7"/>
+        <path d="M393.34,0l-5.9,33.45c-2.3-6.2-7.18-9.76-16.54-9.76-13.23,0-26.5,10.17-30.3,31.76-3.85,21.82,6.11,31.76,19.34,31.76,9.36,0,16.05-4.71,19.97-11.02l-1.64,9.29h26.33L419.67,0h-26.33ZM384.43,55.44c-1.4,7.91-4.82,12.7-10.33,12.7s-7.24-4.79-5.84-12.7c1.52-8.63,4.82-12.7,10.32-12.7s7.2,5.03,5.85,12.7"/>
+      </svg>
+      <div class="sep"></div>
+      <span class="kit">UD&nbsp;IMPACT · Product Requirements</span>
+    </div>
+
+    <h1>coaching<span class="dot">·</span>log</h1>
+    <p class="tagline">언더독스 코치가 창업팀 코칭 세션을 <b>기록하고(STT&rarr;AI 구조화)</b>, 그 성과를 팀별 타임라인으로 <b>추적</b>하는 도구.</p>
+    <div class="badges">
+      <span class="badge accent"><span class="mono">PRD v2.0</span></span>
+      <span class="badge">2026-06-04 · 현행 코드 기준</span>
+      <span class="badge">소유 · 언더독스 / UD&nbsp;IMPACT</span>
+      <span class="badge">주 사용자 · <b>코치</b></span>
+      <span class="badge">빌드 없는 단일 <span class="code">index.html</span></span>
+    </div>
+  </div>
+</header>
+
+<!-- ====================== TOC ====================== -->
+<nav class="toc">
+  <div class="wrap">
+    <a href="#boundary">① 4앱 경계</a>
+    <a href="#roles">② 역할 · 가시성</a>
+    <a href="#journey">③ 코치 핵심 여정 ★</a>
+    <a href="#myinfo">④ myinfo</a>
+    <a href="#pm">⑤ PM 사업→수주→평가</a>
+    <a href="#pipeline">⑥ 추출 파이프라인 ★</a>
+    <a href="#features">⑦ 핵심 기능</a>
+    <a href="#data">⑧ 데이터 모델</a>
+    <a href="#stack">⑨ 기술 · 보안</a>
+    <a href="#limits">⑩ 한계 · 백로그</a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+<!-- ====================== 1. 4앱 경계 ====================== -->
+<section id="boundary">
+  <div class="sec-head"><span class="sec-num">01</span><h2>제품 경계 — 4앱 + 1공유 Supabase</h2></div>
+  <p class="sec-sub">언더독스는 4개 앱이 하나의 Supabase(<span class="code">coaches_directory</span> 마스터)를 공유한다. coaching-log 는 그중 코치의 기록·추적을 담당한다.</p>
+
+  <table>
+    <thead><tr><th style="width:24%">앱</th><th style="width:16%">페르소나</th><th>책임</th></tr></thead>
+    <tbody>
+      <tr class="hi">
+        <td><b>coaching-log</b><br><span class="code">본 제품</span></td>
+        <td>코치</td>
+        <td>코칭 일지(STT&rarr;AI)·성과 추적·코치 본인 정보 자가관리·BP/평가/코치배정(admin·pm)·<b>수주(won) 트리거 발동 지점</b></td>
+      </tr>
+      <tr><td>coach-finder</td><td>PM · admin</td><td>코치 검색·AI 매칭·사업 기획·계약·예산</td></tr>
+      <tr><td>underdogs-hub</td><td>전체</td><td>4앱 진입</td></tr>
+      <tr><td>ud-ops</td><td>admin</td><td>DB · embedding · 인프라 · 제안서</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <b>수주 트리거가 여기서 발동된다.</b> PM 이 사업기획(business_plan)을 <b>수주(won)</b> 처리하면 DB 트리거가
+    <span class="code">projects</span> 를 만들고 accepted 코치를 <span class="code">project_members</span> 로 흘려보낸다 →
+    그 순간부터 코치는 <b>teams 홈에서 팀을 보고 세션 기록을 시작</b>한다. (아래 ⑤·⑥ 참조)
+  </div>
+
+  <p style="font-size:13px;color:var(--muted)">
+    <b>안 하는 것</b> — 코치 검색/RAG 추천(&rarr;coach-finder) · 자가등록 신청 폼(&rarr;coach-finder <span class="code">/register</span>) · RFP/커리큘럼/제안서(&rarr;ud-ops).
+    ⚠️ 평가 작성은 coach-finder 와 같은 <span class="code">coach_evaluations</span> 를 써서 <b>중복</b>(INTEGRATED_ARCHITECTURE Gap 3).
+  </p>
+</section>
+<hr class="hr">
+
+<!-- ====================== 2. 역할 ====================== -->
+<section id="roles">
+  <div class="sec-head"><span class="sec-num">02</span><h2>역할 모델 &amp; 가시성</h2></div>
+  <p class="sec-sub"><span class="code">profiles.role</span> = <b>admin / pm / coach</b>. 가입 시 DB 트리거 <span class="code">handle_new_user()</span> 가 도메인별 자동 부여 — 특정 계정&rarr;admin, <span class="code">@udimpact.ai</span>·<span class="code">@underdogs.co.kr</span>&rarr;pm, 그 외&rarr;coach.</p>
+
+  <table>
+    <thead><tr><th style="width:14%">역할</th><th style="width:42%">보이는 뷰 <span style="font-weight:400;color:var(--muted)">(switchView 탭)</span></th><th>데이터 범위</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><b>coach</b></td>
+        <td><div class="viewchips">
+          <span class="vchip acc">teams</span><span class="vchip acc">form</span><span class="vchip acc">list</span><span class="vchip acc">dashboard</span><span class="vchip acc">myinfo</span>
+        </div></td>
+        <td>본인 세션 + <b>멤버 프로젝트</b>만. 본인 코치 row UPDATE. <b>자기 평가 조회 불가</b></td>
+      </tr>
+      <tr>
+        <td><b>pm</b></td>
+        <td><div class="viewchips">
+          <span class="vchip">teams</span><span class="vchip">form</span><span class="vchip">list</span><span class="vchip">dashboard</span><span class="vchip">myinfo</span>
+          <span class="vchip acc">+coaches</span><span class="vchip acc">+plans</span>
+        </div></td>
+        <td>본인 created_by BP/projects 수정 · coaching_logs 읽기 · 코치 디렉터리 read-only · 평가 작성</td>
+      </tr>
+      <tr>
+        <td><b>admin</b></td>
+        <td><div class="viewchips">
+          <span class="vchip">teams</span><span class="vchip">form</span><span class="vchip">list</span><span class="vchip">dashboard</span><span class="vchip">myinfo</span><span class="vchip">coaches</span><span class="vchip">plans</span>
+          <span class="vchip acc">+users</span>
+        </div></td>
+        <td><b>전부</b> + 역할 변경 · 코치 편집 · 평가 삭제</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="note-box">
+    화면 = <span class="code">switchView()</span> 단일 라우터 + URL 해시(딥링크 / 뒤로가기 지원).
+    역할 미확정 시 admin·pm 탭을 숨기고 <b>coach 로 폴백</b>(보수적).
+  </div>
+</section>
+<hr class="hr">
+
+<!-- ====================== 3. 코치 핵심 여정 ====================== -->
+<section id="journey">
+  <div class="sec-head"><span class="sec-num">03</span><h2>코치 핵심 여정 ★ &mdash; "세션 기록 → 성과 추적"</h2></div>
+  <p class="sec-sub">제품의 북극성 플로우. 코치가 말(또는 녹음)로 5분만 입력하면 AI 가 구조화 일지로 정리하고, 회차가 쌓이며 "이 팀이 나아지고 있나"가 한눈에 보인다.</p>
+
+  <div class="flow">
+
+    <div class="node start">
+      <div class="nlabel">🔐 로그인 (코치)</div>
+      <div class="ndesc">신규 코치는 <b>강제 온보딩</b> — 계약정보(myinfo · contract)를 입력해야 진입 가능</div>
+    </div>
+    <div class="arrow"><div class="line"></div><div class="head">▼</div></div>
+
+    <div class="node">
+      <div class="nlabel">🏠 <span>teams 홈</span></div>
+      <div class="ndesc">현재 프로젝트의 팀 카드 — 단계 · 세션 수 · 최근 날짜</div>
+    </div>
+    <div class="arrow"><div class="line"></div><div class="head">▼</div><div class="note">코칭 후, 말한 내용을 입력</div></div>
+
+    <div class="node key">
+      <div class="nlabel">📝 <span>form — 세션 기록</span> <span class="tag">입력 2모드</span></div>
+      <div class="ndesc">"STT 원문으로 초안 만들기" 패널</div>
+      <div class="branch" style="margin-top:12px;">
+        <div class="node">
+          <div class="mlabel">MODE A</div>
+          <div class="nlabel" style="font-size:13.5px;">📋 STT transcript 붙여넣기</div>
+          <div class="ndesc">≥ 50자. 외부 STT 도구 결과 paste (legacy)</div>
+        </div>
+        <div class="node">
+          <div class="mlabel">MODE B</div>
+          <div class="nlabel" style="font-size:13.5px;">🎙️ 음성 녹음</div>
+          <div class="ndesc">MediaRecorder · webm/opus · mp4/aac · ~7분 / 4MB</div>
+        </div>
+      </div>
+    </div>
+    <div class="arrow"><div class="line"></div><div class="head">▼</div><div class="note"><span class="code">POST /api/extract-session</span> · SSE 스트리밍</div></div>
+
+    <div class="node key">
+      <div class="nlabel">🤖 <span>Gemini 3-pass 추출</span> <span class="tag">AI 코어</span></div>
+      <div class="ndesc"><span class="code">gemini-2.5-pro</span> (주) → <span class="code">gemini-2.5-flash</span> (폴백)</div>
+      <div class="passes">
+        <div class="pass"><span class="pno">PASS 0</span><div class="pbody"><b>verbatim 전사</b><span>음성 모드일 때 원문 받아쓰기 (raw_transcript)</span></div></div>
+        <div class="pass"><span class="pno">PASS 1</span><div class="pbody"><b>narrative 요약</b><span>8~15문장 — 코치의 기억을 서술형으로</span></div></div>
+        <div class="pass p2"><span class="pno">PASS 2</span><div class="pbody"><b>구조화 22필드</b><span>각 필드 = <span class="code">{ value, evidence, confidence }</span></span></div></div>
+      </div>
+    </div>
+    <div class="arrow"><div class="line"></div><div class="head">▼</div><div class="note">delta 마다 폼 실시간 채움 + 진행바 · <b>낮은 신뢰도 필드 하이라이트</b></div></div>
+
+    <div class="node">
+      <div class="nlabel">✅ 검토 · 수정 → 저장</div>
+      <div class="ndesc"><span class="code">coaching_logs</span> — 22필드 + narrative + evidence(jsonb) + (옵트인) 원본 transcript + metrics + coach_id + project_id</div>
+    </div>
+    <div class="arrow"><div class="line"></div><div class="head">▼</div></div>
+
+    <div class="node key">
+      <div class="nlabel">📊 <span>dashboard — 성과 추적</span> <span class="tag">팀별 타임라인</span></div>
+      <div class="ndesc">평균 이행률 · 에너지 추이 · 반복 blocker 경고 · 약속↔이행 히스토리 · 근본이슈 변화 · metrics 시계열 차트</div>
+      <div class="metrics" style="margin-top:12px;">
+        <div class="metric"><div class="mname">last_done_rate</div><div class="mdesc">이행률 = 이행/약속 자동 산출</div></div>
+        <div class="metric"><div class="mname">evidence</div><div class="mdesc">필드별 근거(추출 출처)</div></div>
+        <div class="metric"><div class="mname">energy</div><div class="mdesc">팀 에너지 1–5 추이(+delta)</div></div>
+        <div class="metric"><div class="mname">metrics</div><div class="mdesc">자유 지표 시계열</div></div>
+      </div>
+    </div>
+    <div class="arrow"><div class="line"></div><div class="head">▼</div></div>
+
+    <div class="node start">
+      <div class="nlabel">🔁 회차 누적 → "이 팀이 나아지고 있나" 가시화 → 리포트 생성</div>
+      <div class="ndesc">이전 세션 <span class="code">next_action</span> → 이번 <span class="code">last_commitment</span> 승계로 약속↔이행이 자동 연결</div>
+    </div>
+
+  </div>
+</section>
+<hr class="hr">
+
+<!-- ====================== 3.2 myinfo ====================== -->
+<section id="myinfo">
+  <div class="sec-head"><span class="sec-num">04</span><h2>코치 본인 정보 관리 — myinfo (4탭)</h2></div>
+  <p class="sec-sub">코치가 자기 계약·프로필을 직접 관리. 첫 contract 저장이 <b>온보딩 완료 마킹</b>이 된다.</p>
+
+  <div class="cards">
+    <div class="card">
+      <div class="chead"><span class="cicon">📄</span><span class="ctitle">contract</span></div>
+      <div class="cdesc">계약정보 — 주소 · 계좌 · 원천세 · 사업자</div>
+      <div class="csteps"><span class="cs csa">첫 저장 = 온보딩 완료</span></div>
+      <div class="ctbl">→ <span class="code">coach_contract_info</span> (민감정보 별도 테이블 · RLS 세분화)</div>
+    </div>
+    <div class="card">
+      <div class="chead"><span class="cicon">📁</span><span class="ctitle">projects</span></div>
+      <div class="cdesc">내가 참여한 사업 목록</div>
+      <div class="ctbl">→ <span class="code">project_members</span> 기준</div>
+    </div>
+    <div class="card">
+      <div class="chead"><span class="cicon">🗂️</span><span class="ctitle">logs</span></div>
+      <div class="cdesc">내 세션 기록 모아보기</div>
+      <div class="ctbl">→ 본인 <span class="code">coaching_logs</span></div>
+    </div>
+    <div class="card">
+      <div class="chead"><span class="cicon">👤</span><span class="ctitle">profile</span></div>
+      <div class="cdesc">프로필 자가편집 — 소속 · 직위 · 전화 · 소개 · 전문분야</div>
+      <div class="csteps"><span class="cs">🔒 이름 · 유형 · 상태는 admin 전용</span></div>
+      <div class="ctbl">RLS <span class="code">linked_user_id = auth.uid()</span></div>
+    </div>
+  </div>
+</section>
+<hr class="hr">
+
+<!-- ====================== 3.3 PM ====================== -->
+<section id="pm">
+  <div class="sec-head"><span class="sec-num">05</span><h2>PM / admin 여정 — 사업기획 → 수주(트리거) → 평가</h2></div>
+  <p class="sec-sub">PM 이 사업을 기획·수주하면 코치가 자동으로 흘러 들어온다. coaching-log 와 coach-finder 를 잇는 핵심 연결고리.</p>
+
+  <div class="flow">
+    <div class="node start">
+      <div class="nlabel">🗒️ plans — 사업기획</div>
+      <div class="ndesc"><span class="code">business_plans</span> 생성 (admin / pm) · 상태 draft → proposed → won / lost / cancelled</div>
+    </div>
+    <div class="arrow"><div class="line"></div><div class="head">▼</div><div class="note">코치 핀 — <span class="code">business_plan_coaches</span> 후보 등록 (candidate → accepted)</div></div>
+
+    <div class="node key">
+      <div class="nlabel">🏆 수주 처리 <span class="tag">status = 'won'</span></div>
+      <div class="ndesc">BP "수주 처리" 클릭</div>
+    </div>
+    <div class="arrow"><div class="line"></div><div class="head">▼</div><div class="note">DB 트리거 <span class="code">bp_on_won</span> 발동 (자동)</div></div>
+
+    <div class="node">
+      <div class="nlabel">⚙️ 자동 생성 (트리거)</div>
+      <div class="ndesc">
+        ① <span class="code">projects</span> 생성 &nbsp;·&nbsp;
+        ② BP 에 project_id 역기입 &nbsp;·&nbsp;
+        ③ accepted 코치를 <b><span class="code">project_members</span> 등록</b>
+      </div>
+    </div>
+    <div class="arrow"><div class="line"></div><div class="head">▼</div><div class="note">= 코치가 teams 홈에서 이 팀을 보게 됨 → <b>세션 기록 시작</b> (③ 여정으로 합류)</div></div>
+
+    <div class="node">
+      <div class="nlabel">⭐ 평가 — BP 상세에서 5축 작성 (admin / pm)</div>
+      <div class="ndesc">종합 + 소통 + 전문성 + 성실함 (각 1–5) + 재계약의향(3-state) + 코멘트 → <span class="code">coach_evaluations</span></div>
+    </div>
+    <div class="arrow"><div class="line"></div><div class="head">▼</div></div>
+    <div class="node start">
+      <div class="nlabel">🙈 코치 본인은 자기 평가 조회 불가 (RLS · 솔직성 보장)</div>
+    </div>
+  </div>
+</section>
+<hr class="hr">
+
+<!-- ====================== 6. 파이프라인 ====================== -->
+<section id="pipeline">
+  <div class="sec-head"><span class="sec-num">06</span><h2>세션 기록 파이프라인 ★ &mdash; 입력에서 저장까지</h2></div>
+  <p class="sec-sub">위 여정의 ⓒore 단계(form → extract → save)를 가로 흐름으로 펼친 것. 핸들러는 <span class="code">api/extract-session.js</span> 단 하나(maxDuration 60s).</p>
+
+  <div class="pipe">
+    <div class="pstep">
+      <div class="pn">INPUT</div><div class="pi">📥</div>
+      <div class="pt">입력 2모드</div>
+      <div class="pd">텍스트 STT(≥50자) 또는 음성 녹음(webm/opus · mp4/aac)</div>
+    </div>
+    <div class="parrow">→</div>
+    <div class="pstep">
+      <div class="pn">TRANSPORT</div><div class="pi">📡</div>
+      <div class="pt">JWT 게이트 + SSE</div>
+      <div class="pd">Gemini 호출 전 401 차단 · CORS allowlist · 토큰 스트리밍</div>
+    </div>
+    <div class="parrow">→</div>
+    <div class="pstep accent">
+      <div class="pn">AI · 3-PASS</div><div class="pi">🤖</div>
+      <div class="pt">Gemini 추출</div>
+      <div class="pd">PASS0 전사 → PASS1 narrative → PASS2 구조화 22필드</div>
+    </div>
+    <div class="parrow">→</div>
+    <div class="pstep">
+      <div class="pn">RESILIENCE</div><div class="pi">🩹</div>
+      <div class="pt">잘림 복구</div>
+      <div class="pd">잘린 JSON 자동 복구(괄호/따옴표 닫기) · SSE delta 재조립</div>
+    </div>
+    <div class="parrow">→</div>
+    <div class="pstep">
+      <div class="pn">NORMALIZE</div><div class="pi">🧮</div>
+      <div class="pt">정규화 · 자동 계산</div>
+      <div class="pd">canonical 매핑 · next_action 승계 · last_done_rate 산출</div>
+    </div>
+    <div class="parrow">→</div>
+    <div class="pstep accent">
+      <div class="pn">STORE</div><div class="pi">💾</div>
+      <div class="pt">저장</div>
+      <div class="pd"><span class="code" style="font-size:10px">coaching_logs</span> 22필드 + narrative + evidence + metrics</div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <b>폴백 전략</b> — 429 / 5xx 시 재시도 후 <span class="code">gemini-2.5-pro</span> → <span class="code">gemini-2.5-flash</span> 로 자동 전환.
+    클라이언트는 delta 마다 폼을 채우고 <b>낮은 신뢰도(confidence) 필드를 하이라이트</b>해 코치가 검토하게 한다.
+  </div>
+</section>
+<hr class="hr">
+
+<!-- ====================== 7. 기능 카드 ====================== -->
+<section id="features">
+  <div class="sec-head"><span class="sec-num">07</span><h2>핵심 기능</h2></div>
+  <p class="sec-sub">각 카드 = 기능 + 그 안의 프로세스 단계.</p>
+
+  <div class="cards">
+
+    <div class="card star">
+      <div class="chead"><span class="cicon">📝</span><span class="ctitle">세션 기록</span><span class="cstar">★ 핵심</span></div>
+      <div class="cdesc">코칭 후 말/녹음 → AI 구조화 일지. 입력 2모드 → 서버 3-pass 추출 → 실시간 폼.</div>
+      <div class="csteps">
+        <span class="cs">입력</span><span class="csa">→</span><span class="cs">extract-session</span><span class="csa">→</span><span class="cs">3-pass</span><span class="csa">→</span><span class="cs">폼 채움</span><span class="csa">→</span><span class="cs">저장</span>
+      </div>
+      <div class="ctbl">저장 → <span class="code">coaching_logs</span></div>
+    </div>
+
+    <div class="card star">
+      <div class="chead"><span class="cicon">📊</span><span class="ctitle">성과 추적</span><span class="cstar">★ 핵심</span></div>
+      <div class="cdesc">팀별 타임라인 + KPI. 평균 이행률 · 에너지 추이 · 반복 blocker(최근 3회 동일 시 경고).</div>
+      <div class="csteps">
+        <span class="cs">타임라인</span><span class="csa">·</span><span class="cs">metrics 차트</span><span class="csa">·</span><span class="cs">약속↔이행</span><span class="csa">·</span><span class="cs">narrative arc</span><span class="csa">·</span><span class="cs">리포트</span>
+      </div>
+      <div class="ctbl">지표 → <span class="code">last_done_rate · energy · metrics</span></div>
+    </div>
+
+    <div class="card">
+      <div class="chead"><span class="cicon">🗂️</span><span class="ctitle">사업 / 프로젝트 관리</span></div>
+      <div class="cdesc">admin · pm. BP 수주(won) → 트리거 <span class="code">bp_on_won</span> 으로 projects + members 자동 생성.</div>
+      <div class="csteps">
+        <span class="cs">draft</span><span class="csa">→</span><span class="cs">proposed</span><span class="csa">→</span><span class="cs">won</span><span class="csa">⚙</span><span class="cs">projects</span>
+      </div>
+      <div class="ctbl">미귀속 과거 로그 = 가상 "orphan" 프로젝트</div>
+    </div>
+
+    <div class="card">
+      <div class="chead"><span class="cicon">📇</span><span class="ctitle">코치 디렉터리</span></div>
+      <div class="cdesc">읽기 = admin/pm(필터·검색·300장 캡). admin 쓰기 = 새 코치·CSV import·편집. 사진 = Storage <span class="code">coach-photos</span>.</div>
+      <div class="csteps">
+        <span class="cs">read(admin/pm)</span><span class="csa">·</span><span class="cs">자동연결 트리거</span><span class="csa">·</span><span class="cs">"로그인 연결됨" 배지</span>
+      </div>
+      <div class="ctbl"><span class="code">autolink_coach_on_profile()</span> — 가입 이메일 = 코치 row 자동 link</div>
+    </div>
+
+    <div class="card">
+      <div class="chead"><span class="cicon">⭐</span><span class="ctitle">코치 평가 (5축)</span></div>
+      <div class="cdesc">BP 상세에서 admin/pm 작성. 종합+소통+전문성+성실함(1–5) + 재계약의향 + 코멘트.</div>
+      <div class="csteps">
+        <span class="cs">편집 admin전체</span><span class="csa">·</span><span class="cs">pm 본인것</span><span class="csa">·</span><span class="cs">삭제 admin</span><span class="csa">·</span><span class="cs">코치 SELECT 불가</span>
+      </div>
+      <div class="ctbl">→ <span class="code">coach_evaluations</span> · ⚠️ coach-finder 와 중복(Gap 3)</div>
+    </div>
+
+    <div class="card">
+      <div class="chead"><span class="cicon">✋</span><span class="ctitle">코치 자가등록 신청</span></div>
+      <div class="cdesc">신청 폼은 <b>coach-finder <span class="code">/register</span></b>. coaching-log 는 DB 측만 — 승인 UI 없음.</div>
+      <div class="csteps">
+        <span class="cs">anon INSERT(pending)</span><span class="csa">→</span><span class="cs">admin 승인 RPC</span><span class="csa">→</span><span class="cs">디렉터리 등록</span>
+      </div>
+      <div class="ctbl"><span class="code">approve_coach_application</span> / 거절 RPC · → <span class="code">coach_applications</span></div>
+    </div>
+
+  </div>
+</section>
+<hr class="hr">
+
+<!-- ====================== 8. 데이터 모델 ====================== -->
+<section id="data">
+  <div class="sec-head"><span class="sec-num">08</span><h2>데이터 모델 (제품 관점)</h2></div>
+  <p class="sec-sub"><span class="code">coaching_logs</span> 가 중심. 본 레포가 공유 Supabase 스키마의 SoT(<span class="code">supabase/migrations/</span>).</p>
+
+  <table>
+    <thead><tr><th style="width:30%">테이블</th><th>역할</th></tr></thead>
+    <tbody>
+      <tr class="hi"><td><span class="code">coaching_logs</span></td><td><b>세션 기록 원본.</b> 22 구조화 필드 + narrative + evidence + transcript + metrics + coach_id + project_id</td></tr>
+      <tr><td><span class="code">profiles</span></td><td>사용자 + role + onboarded_at (가입 트리거 자동)</td></tr>
+      <tr><td><span class="code">projects</span> / <span class="code">project_members</span></td><td>코칭 engagement + 멤버 (<b>가시성 키</b>)</td></tr>
+      <tr><td><span class="code">business_plans</span> / <span class="code">business_plan_coaches</span></td><td>PM 사업기획 + 후보 코치</td></tr>
+      <tr><td><span class="code">coaches_directory</span></td><td><b>공유 코치 마스터</b> (~800명 · embedding 1536 · linked_user_id)</td></tr>
+      <tr><td><span class="code">coach_evaluations</span></td><td>5축 평가</td></tr>
+      <tr><td><span class="code">coach_contract_info</span></td><td>계약 민감정보(주소·계좌·원천세) — 별도 테이블로 RLS 세분화</td></tr>
+      <tr><td><span class="code">coach_applications</span></td><td>자가등록 신청 (anon INSERT → admin 승인 RPC)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>RLS 가시성 — 역할별</h3>
+  <div class="note-box" style="margin-top:0;">
+    SECURITY DEFINER 헬퍼 <span class="code">is_admin()</span> · <span class="code">is_pm()</span> · <span class="code">is_admin_or_pm()</span> · <span class="code">is_project_member()</span> 등으로 재귀 회피.
+  </div>
+  <table>
+    <thead><tr><th style="width:14%">역할</th><th>읽기 / 쓰기 범위</th></tr></thead>
+    <tbody>
+      <tr><td><b>admin</b></td><td>전부</td></tr>
+      <tr><td><b>pm</b></td><td>본인 created_by BP/projects UPDATE · coaching_logs 읽기 · 코치 read-only · 평가 작성</td></tr>
+      <tr class="hi"><td><b>coach</b></td><td>본인 로그 + 멤버 프로젝트 로그 · 본인 코치 row UPDATE · <b>자기 평가 조회 불가</b></td></tr>
+    </tbody>
+  </table>
+</section>
+<hr class="hr">
+
+<!-- ====================== 9. 기술 / 보안 ====================== -->
+<section id="stack">
+  <div class="sec-head"><span class="sec-num">09</span><h2>기술 스택 / 보안</h2></div>
+
+  <div class="cards">
+    <div class="card">
+      <div class="chead"><span class="cicon">🖥️</span><span class="ctitle">프론트</span></div>
+      <div class="cdesc"><b>빌드 없는 단일</b> <span class="code">public/index.html</span> (~12K줄 바닐라 JS). <span class="code">switchView</span> + 해시 라우팅. i18n ko/en/ja.</div>
+      <div class="ctbl">XSS 방어 = 전역 <span class="code">escHtml</span> / <span class="code">escAttr</span></div>
+    </div>
+    <div class="card">
+      <div class="chead"><span class="cicon">☁️</span><span class="ctitle">백엔드</span></div>
+      <div class="cdesc">Vercel serverless <span class="code">api/extract-session.js</span> <b>1개</b> (maxDuration 60s).</div>
+    </div>
+    <div class="card">
+      <div class="chead"><span class="cicon">🤖</span><span class="ctitle">AI</span></div>
+      <div class="cdesc">Gemini <span class="code">gemini-2.5-pro</span> (추출 · Native Audio) → <span class="code">flash</span> 폴백. 임베딩 <span class="code">gemini-embedding-001</span> (1536).</div>
+      <div class="ctbl">추천 RPC 는 coach-finder 가 사용</div>
+    </div>
+    <div class="card star">
+      <div class="chead"><span class="cicon">🔒</span><span class="ctitle">보안</span></div>
+      <div class="cdesc">extract-session <b>JWT 인증 게이트</b>(Gemini 호출 전 401 차단) + <b>CORS allowlist</b>(와일드카드 없음) + 입력 크기 검증.</div>
+      <div class="ctbl">service-role 키 = 서버 전용</div>
+    </div>
+  </div>
+
+  <div class="note-box">
+    <b>변경 금지 / 운영 룰</b> — 적용된 마이그레이션 수정 금지(새 파일만 추가) · <span class="code">coaches_directory</span> 컬럼 변경 = ADR + 3앱 동시 반영 ·
+    역할 모델 admin/pm/coach · 임베딩 1536 · <span class="code">escHtml</span> 의무.
+  </div>
+</section>
+<hr class="hr">
+
+<!-- ====================== 10. 한계 ====================== -->
+<section id="limits">
+  <div class="sec-head"><span class="sec-num">10</span><h2>알려진 한계 / 백로그</h2></div>
+  <table>
+    <thead><tr><th style="width:34%">항목</th><th>내용</th></tr></thead>
+    <tbody>
+      <tr><td>단일 index.html 12K줄</td><td>모듈화 미착수 (대형 · ADR 게이트)</td></tr>
+      <tr><td>평가 UI 중복 (Gap 3)</td><td>coach-finder 와 같은 테이블 · 평가→tier 자동 트리거 부재(Gap 4)</td></tr>
+      <tr><td>코치 사진</td><td>Supabase Storage (이전 Firebase 의존 제거됨)</td></tr>
+      <tr><td>자가등록 신청</td><td>anon <span class="code">coach_applications</span> rate-limit / captcha 미적용 (ADR-004 후보)</td></tr>
+      <tr><td>인증 메일</td><td>Supabase SMTP 설정 의존 (운영 항목)</td></tr>
+    </tbody>
+  </table>
+</section>
+
+</div><!-- /wrap -->
+
+<!-- ====================== FOOTER ====================== -->
+<footer>
+  <div class="wrap">
+    <p><b>출처</b> — 본 문서는 <span class="code">docs/PRD-v2.md</span> (2026-06-04 · 현행 코드 기준)를 시각화한 것입니다. 코드/마이그레이션이 진실원본(SoT)이며, 사실은 file:line 근거로 작성되었습니다.</p>
+    <p><b>자매 PRD</b> — coach-finder <span class="code">docs/PRD-v2.md</span> · <b>상세 백로그</b> — <span class="code">docs/AUDIT-2026-06-01-verification.md</span></p>
+    <p style="margin-top:14px;color:var(--line);">coaching-log · 언더독스 / UD&nbsp;IMPACT · Product Requirements v2.0</p>
+  </div>
+</footer>
+
+</body>
+</html>
