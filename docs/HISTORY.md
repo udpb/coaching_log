@@ -18,6 +18,7 @@
 
 | 파일 | 역할 | 신선도 |
 |------|------|--------|
+| `docs/PRD-v2.md` ⭐ | **제품 정의 v2.0 (2026-06-04)** — 현행 코드 기준, 사용자 플로우·프로세스 중심. 본 레포 첫 PRD | ✅ 최신 (현행 PRD) |
 | `docs/INTEGRATED_ARCHITECTURE.md` | 4앱 통합 + Gap 1~5 | ✅ 양호 (핵심 참조) |
 | `docs/ARCHITECTURE.md` | 단일 앱 아키텍처 (AWS 포터블 의도) | ✅ 양호 |
 | `docs/HANDOVER.md` | 인수인계 | 🟡 일부 stale — 파일트리에 `lib/server.js` 잔재 (모델명·README 류는 ARCHITECTURE/README 에서 정정 완료 2026-06-01) |
