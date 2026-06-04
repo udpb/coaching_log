@@ -11355,13 +11355,20 @@ async function searchBPCoachPicker(q) {
   let dir = (typeof coachDirectory !== 'undefined' && Array.isArray(coachDirectory)) ? coachDirectory : [];
   if (dir.length === 0) {
     try {
+      // PostgREST .or() 필터 인젝션 방어: 쉼표·괄호·별표·백슬래시 등
+      // 필터 구문 메타문자를 제거한다. (RLS 가 행 가시성은 막지만, 사용자
+      // 입력을 raw 보간하면 필터 구조가 변조될 수 있어 경계에서 정제.)
+      const safeQ = String(query).replace(/[,()*\\%]/g, ' ').trim();
+      if (!safeQ) { dir = []; }
+      else {
       const { data, error } = await supabaseClient
         .from('coaches_directory')
         .select('id, name, email, organization, expertise, photo_url')
-        .or(`name.ilike.%${query}%,email.ilike.%${query}%,organization.ilike.%${query}%`)
+        .or(`name.ilike.%${safeQ}%,email.ilike.%${safeQ}%,organization.ilike.%${safeQ}%`)
         .limit(30);
       if (error) throw error;
       dir = data || [];
+      }
     } catch (e) {
       host.innerHTML = `<div style="padding:14px;font-size:12px;color:var(--red);">검색 실패: ${escHtml(e.message || String(e))}</div>`;
       return;
