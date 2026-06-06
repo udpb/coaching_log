@@ -7742,9 +7742,24 @@ async function resolveMyCoachDirId() {
     .select('id')
     .eq('linked_user_id', user.id)
     .maybeSingle();
-  if (error || !data) return null;
-  myInfoCoachDirId = data.id;
-  return data.id;
+  if (!error && data) {
+    myInfoCoachDirId = data.id;
+    return data.id;
+  }
+  // 미연결(행 없음/이메일 불일치) — 온보딩 데드락 해소(ADR-009, Phase U).
+  // self-link RPC 로 자동 연결(이메일 일치 시) 또는 본인 draft 행 생성.
+  try {
+    const { data: cdId, error: rpcErr } = await supabaseClient
+      .rpc('ensure_my_coach_directory_row');
+    if (!rpcErr && cdId) {
+      myInfoCoachDirId = cdId;
+      return cdId;
+    }
+    if (rpcErr) console.warn('ensure_my_coach_directory_row failed', rpcErr);
+  } catch (e) {
+    console.warn('ensure_my_coach_directory_row threw', e);
+  }
+  return null;
 }
 
 async function loadMyInfoContract() {
