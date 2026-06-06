@@ -4006,9 +4006,12 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
       <!-- Segmentation for PM matching -->
       <div class="row3">
         <div>
-          <label>Tier</label>
+          <label>유형</label>
           <select id="coachTier">
-            <option value="">—</option><option>S</option><option>A</option><option>B</option><option>C</option>
+            <option value="">—</option>
+            <option value="1">베테랑코치</option>
+            <option value="2">UD코치</option>
+            <option value="3">외부풀</option>
           </select>
         </div>
         <div><label>Category</label><input type="text" id="coachCategory"></div>
@@ -8254,8 +8257,7 @@ function renderMyInfoProfile() {
   const host = document.getElementById('myInfoProfileContent');
   const data = _myInfoProfileData;
   if (!host || !data) return;
-  const tierNum = Number(data.tier);
-  const tierLabel = tierNum === 1 ? '베테랑코치' : tierNum === 2 ? 'UD코치' : tierNum === 3 ? '외부풀' : '미지정';
+  const tierLabel = coachTypeLabel(data.tier) || '미지정';
   const isActive = data.status !== 'inactive';
   const statusBadge = isActive
     ? '<span style="display:inline-block; padding:2px 8px; background:var(--green-bg); color:var(--green); font-size:11px;">활동 중</span>'
@@ -9605,6 +9607,17 @@ async function loadCoachDirectory() {
   }
 }
 
+// 코치 "유형" 라벨 — DB tier 컬럼(1/2/3)을 사용자에게 보이는 3분류로 변환.
+// 제품 정책: 화면에 "tier"·숫자·S/A/B/C 표기 금지. 항상 이 라벨만 노출.
+//   1 = 베테랑코치 · 2 = UD코치 · 3 = 외부풀.
+function coachTypeLabel(tier) {
+  const n = Number(tier);
+  if (n === 1) return '베테랑코치';
+  if (n === 2) return 'UD코치';
+  if (n === 3) return '외부풀';
+  return '';  // 미지정/빈값 → 라벨 없음
+}
+
 function coachInitials(name) {
   if (!name) return '?';
   const trimmed = String(name).trim();
@@ -9661,7 +9674,8 @@ function _coachDirGridHtml(filtered) {
       ? `<img src="${escAttr(c.photo_url)}" alt="${escAttr(c.name)}" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'${escAttr(coachInitials(c.name))}'}))">`
       : escHtml(coachInitials(c.name));
     let tagsHtml = '';
-    if (c.tier) tagsHtml += `<span class="cd-tag tier">tier ${escHtml(c.tier)}</span>`;
+    // 유형 라벨(베테랑/UD/외부풀)만 노출 — "tier"·숫자 표기 금지(제품 정책).
+    if (c.tier) { const _t = coachTypeLabel(c.tier); if (_t) tagsHtml += `<span class="cd-tag tier">${escHtml(_t)}</span>`; }
     if (c.linked_user_id) tagsHtml += `<span class="cd-tag linked">🔗 로그인 연결됨</span>`;
     if (c.status && c.status !== 'active') tagsHtml += `<span class="cd-tag status-${escAttr(c.status)}">${escHtml(c.status)}</span>`;
     if (c.availability_status && c.availability_status !== 'available') tagsHtml += `<span class="cd-tag avail-${escAttr(c.availability_status)}">${escHtml(c.availability_status)}</span>`;
@@ -9699,7 +9713,8 @@ function renderCoachDirBody(host) {
   const f = coachDirFilter;
   const filtered = _coachDirFiltered();
 
-  const tierOptions  = tierValues.map(v => `<option value="${escAttr(v)}"${f.tier === v ? ' selected' : ''}>${escHtml(v)}</option>`).join('');
+  // 값(value)은 필터용으로 유지하되 표시 라벨은 유형(베테랑/UD/외부풀)만.
+  const tierOptions  = tierValues.map(v => `<option value="${escAttr(v)}"${f.tier === v ? ' selected' : ''}>${escHtml(coachTypeLabel(v) || v)}</option>`).join('');
   const exOptions    = topExpertise.map(v => `<option value="${escAttr(v)}"${f.expertise === v ? ' selected' : ''}>${escHtml(v)}</option>`).join('');
   const regionOpts   = topRegions.map(v => `<option value="${escAttr(v)}"${f.region === v ? ' selected' : ''}>${escHtml(v)}</option>`).join('');
 
@@ -9737,7 +9752,7 @@ function renderCoachDirBody(host) {
           <option value="unavailable"${f.availability === 'unavailable' ? ' selected' : ''}>unavailable</option>
         </select>
         <select onchange="updateCoachFilter('tier', this.value)">
-          <option value="">tier: 전체</option>
+          <option value="">유형: 전체</option>
           ${tierOptions}
         </select>
         <select onchange="updateCoachFilter('expertise', this.value)">
@@ -9987,7 +10002,7 @@ function _coachCollectForm() {
     expertise:         [..._coachChipState.expertise],
     roles:             [..._coachChipState.roles],
     tags:              [..._coachChipState.tags],
-    tier:              str('coachTier'),
+    tier:              str('coachTier') ? Number(str('coachTier')) : null,  // DB tier=integer(1/2/3)
     category:          str('coachCategory'),
     business_type:     str('coachBusinessType'),
     status:            str('coachStatus') || 'active',
