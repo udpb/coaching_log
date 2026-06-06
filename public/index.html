@@ -3678,34 +3678,25 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
           </span>
         </label>
         <div class="proj-member-list" id="projMemberList"></div>
-        <div class="proj-member-add">
+        <!-- UX4 (2026-06-06): 이름·소속 검색 → 체크박스 다중선택(누적) → 일괄 배정 -->
+        <div class="proj-member-bulk" style="margin-top:10px;padding:8px;background:var(--gray100);">
           <div style="position:relative;">
-            <input type="text" id="projMemberEmail" placeholder="이름·이메일·소속으로 코치 검색" autocomplete="off"
-                   oninput="onMemberSearchInput(this.value)" onfocus="onMemberSearchInput(this.value)">
+            <input type="text" id="projMemberEmail" placeholder="이름·이메일·소속으로 코치 검색 (다중선택)" autocomplete="off"
+                   oninput="onMemberSearchInput(this.value)" onfocus="onMemberSearchInput(this.value)"
+                   style="width:100%;padding:6px 10px;font-size:12px;border:1px solid var(--gray300);font-family:inherit;box-sizing:border-box;">
             <div id="projMemberSuggestions" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--gray300);z-index:10;max-height:220px;overflow-y:auto;"></div>
           </div>
-          <select id="projMemberRole">
-            <option value="coach">coach</option>
-            <option value="pm">pm (협업)</option>
-            <option value="observer">observer</option>
-          </select>
-          <button onclick="addProjectMember()">배정</button>
-        </div>
-        <!-- D3-c (2026-05-03): 미가입 코치 검출 시 inline 초대 영역 자동 표시 -->
-        <div id="projMemberInvite" style="display:none;flex-direction:column;gap:6px;background:var(--orange-bg);border:1px solid var(--orange);padding:10px 12px;border-radius:4px;margin-top:8px;font-size:12px;">
-          <div>
-            📩 <strong id="projMemberInviteEmail"></strong> 는 coaching-log 가입 전입니다. 가입을 도와주세요.
-          </div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;">
-            <button type="button" onclick="sendInviteMagicLink()"
-                    style="background:var(--orange);color:white;border:none;padding:6px 10px;border-radius:3px;font-size:12px;font-weight:600;cursor:pointer;">
-              ✉️ 초대 메일 발송
+          <div id="projMemberChips" style="display:none;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
+          <div id="projMemberBulkBar" style="display:none;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap;">
+            <select id="projMemberRole" style="padding:6px 10px;font-size:12px;border:1px solid var(--gray300);font-family:inherit;">
+              <option value="coach">coach</option>
+              <option value="pm">pm (협업)</option>
+              <option value="observer">observer</option>
+            </select>
+            <button type="button" id="projMemberBulkBtn" onclick="bulkAssignSelected()"
+                    style="padding:6px 14px;font-size:12px;background:var(--orange);color:#fff;border:none;font-family:inherit;font-weight:600;cursor:pointer;">
+              선택한 0명 배정
             </button>
-            <button type="button" onclick="copyInviteUrl()"
-                    style="background:white;border:1px solid var(--orange);color:var(--orange);padding:6px 10px;border-radius:3px;font-size:12px;font-weight:600;cursor:pointer;">
-              🔗 가입 URL 복사
-            </button>
-            <span id="projMemberInviteStatus" style="font-size:11px;color:var(--gray500);align-self:center;"></span>
           </div>
         </div>
       </div>
@@ -5716,7 +5707,18 @@ function openProjectManageModal(id) {
   document.getElementById('projDeleteBtn').style.display = '';
   document.getElementById('projModalError').textContent = '';
   document.getElementById('projModal').classList.add('active');
+  _resetMemberSelection();
   loadAndRenderProjectMembers(p.id);
+}
+
+// UX4: 모달 열 때 이전 프로젝트의 선택/검색 잔재 초기화.
+function _resetMemberSelection() {
+  _memberSelected = [];
+  const emailEl = document.getElementById('projMemberEmail');
+  if (emailEl) emailEl.value = '';
+  const sg = document.getElementById('projMemberSuggestions');
+  if (sg) { sg.style.display = 'none'; sg.innerHTML = ''; }
+  renderMemberChips();
 }
 
 function closeProjectModal() {
@@ -5864,6 +5866,9 @@ async function deleteCurrentProject() {
 
 let _projCurrentMembers = [];
 
+// UX4: invite 행 캐시 (가입대기 코치). { id, coach_directory_id, role, name, email, linked_user_id }
+let _projCurrentInvites = [];
+
 async function loadAndRenderProjectMembers(projectId) {
   const host = document.getElementById('projMemberList');
   host.innerHTML = '<div style="padding:10px;color:var(--gray400);font-size:12px;">불러오는 중…</div>';
@@ -5889,6 +5894,39 @@ async function loadAndRenderProjectMembers(projectId) {
       email: profilesById[m.user_id] ? profilesById[m.user_id].email : '(unknown)',
       display_name: profilesById[m.user_id] ? profilesById[m.user_id].display_name : ''
     }));
+
+    // UX4: 가입대기 초대(project_invites) 도 함께 fetch → coaches_directory 조인.
+    // ⚠️ invite 는 부가 기능 — fetch 실패(예: 마이그레이션 미적용)해도 멤버
+    //    목록은 살아있어야 한다. throw 하지 말고 빈 목록으로 degrade.
+    _projCurrentInvites = [];
+    const { data: invites, error: invErr } = await supabaseClient
+      .from('project_invites')
+      .select('id, coach_directory_id, role, invited_at')
+      .eq('project_id', projectId);
+    if (invErr) {
+      console.warn('[project_invites] fetch 실패 — 멤버 목록만 표시:', invErr.message || invErr);
+    }
+    const dirIds = (invites || []).map(i => i.coach_directory_id);
+    let dirById = {};
+    if (dirIds.length > 0) {
+      const { data: dirRows, error: dErr } = await supabaseClient
+        .from('coaches_directory')
+        .select('id, name, email, linked_user_id')
+        .in('id', dirIds);
+      if (!dErr && dirRows) dirRows.forEach(d => { dirById[d.id] = d; });
+    }
+    _projCurrentInvites = (invites || []).map(i => {
+      const d = dirById[i.coach_directory_id] || {};
+      return {
+        id: i.id,
+        coach_directory_id: i.coach_directory_id,
+        role: i.role,
+        name: d.name || '',
+        email: d.email || '',
+        linked_user_id: d.linked_user_id || null
+      };
+    });
+
     renderProjectMembers();
   } catch (e) {
     host.innerHTML = `<div style="padding:10px;color:var(--red);font-size:12px;">멤버 로드 실패: ${escHtml(e.message || String(e))}</div>`;
@@ -5897,47 +5935,85 @@ async function loadAndRenderProjectMembers(projectId) {
 
 function renderProjectMembers() {
   const host = document.getElementById('projMemberList');
-  if (_projCurrentMembers.length === 0) {
+  if (_projCurrentMembers.length === 0 && _projCurrentInvites.length === 0) {
     host.innerHTML = '<div style="padding:10px;color:var(--gray400);font-size:12px;">배정된 코치가 아직 없습니다.</div>';
     return;
   }
-  host.innerHTML = _projCurrentMembers.map(m => `
+  // 가입 멤버 (✅ 배정됨)
+  const memberRows = _projCurrentMembers.map(m => `
     <div class="proj-member-row">
       <div>
-        <div class="m-email">${escHtml(m.email)}</div>
+        <div class="m-email">✅ ${escHtml(m.email)}</div>
         ${m.display_name ? `<div class="m-name">${escHtml(m.display_name)}</div>` : ''}
       </div>
-      <select onchange="updateProjectMemberRole('${escAttr(m.id)}', this.value)">
+      <select data-act="role" data-mid="${escAttr(m.id)}">
         <option value="coach"${m.role === 'coach' ? ' selected' : ''}>coach</option>
         <option value="pm"${m.role === 'pm' ? ' selected' : ''}>pm (협업)</option>
         <option value="observer"${m.role === 'observer' ? ' selected' : ''}>observer</option>
       </select>
-      <button title="해제" onclick="removeProjectMember('${escAttr(m.id)}')">×</button>
+      <button title="해제" data-act="remove" data-mid="${escAttr(m.id)}">×</button>
     </div>
   `).join('');
+  // 초대 (⏳ 가입대기 / ✅ 가입함 → 배정하기)
+  const inviteRows = _projCurrentInvites.map(iv => {
+    const joined = !!iv.linked_user_id;
+    const label = iv.name ? (iv.name + (iv.email ? ' · ' + iv.email : '')) : (iv.email || '(이름 없음)');
+    const mid = joined
+      ? `<button data-act="promote" data-iid="${escAttr(iv.id)}" style="background:var(--orange);color:#fff;border:none;font-size:11px;padding:4px 8px;font-family:inherit;font-weight:600;cursor:pointer;">배정하기</button>`
+      : `<span style="font-size:11px;color:var(--gray500);white-space:nowrap;">⏳ 가입대기</span>`;
+    return `
+    <div class="proj-member-row">
+      <div>
+        <div class="m-email">${joined ? '✅' : '⏳'} ${escHtml(label)}</div>
+        <div class="m-name">${joined ? '가입 완료 — 배정 가능' : '아직 coaching-log 미가입'}</div>
+      </div>
+      ${mid}
+      <button title="초대 취소" data-act="cancelInvite" data-iid="${escAttr(iv.id)}">×</button>
+    </div>
+  `;
+  }).join('');
+  host.innerHTML = memberRows + inviteRows;
 }
 
-// Live search over coaches_directory for the member-assignment input.
-// Falls back gracefully to plain email entry if the user ignores the dropdown.
-// D3-c (2026-05-03): 코치 검색 + 미가입 검출 + Magic Link 초대.
-// _memberSearchSelected 에 directory row 전체 정보를 보관 — linked_user_id 로
-// 가입 여부를 즉시 판단해서 inline 초대 영역 (#projMemberInvite) 자동 토글.
-let _memberSearchSelected = null;
-// { email, name, linkedUserId, fromDirectory: true|false }
+// UX4: 배정 목록 액션 위임 (data-act 기반, onclick 문자열 인자 회피).
+document.addEventListener('click', (e) => {
+  const btn = e.target && e.target.closest ? e.target.closest('[data-act]') : null;
+  if (!btn) return;
+  const host = document.getElementById('projMemberList');
+  if (!host || !host.contains(btn)) return;
+  const act = btn.getAttribute('data-act');
+  if (act === 'remove') removeProjectMember(btn.getAttribute('data-mid'));
+  else if (act === 'cancelInvite') cancelProjectInvite(btn.getAttribute('data-iid'));
+  else if (act === 'promote') promoteProjectInvite(btn.getAttribute('data-iid'));
+});
+document.addEventListener('change', (e) => {
+  const sel = e.target && e.target.closest ? e.target.closest('select[data-act="role"]') : null;
+  if (!sel) return;
+  const host = document.getElementById('projMemberList');
+  if (!host || !host.contains(sel)) return;
+  updateProjectMemberRole(sel.getAttribute('data-mid'), sel.value);
+});
 
+// UX4: 검색 결과 다중선택 — 체크박스 누적. 선택된 코치는 _memberSelected 에 보관.
+// 각 항목: { id(=coaches_directory.id), name, email, linkedUserId, organization }
+let _memberSelected = [];
+
+function _isSelected(id) { return _memberSelected.some(s => s.id === id); }
+
+// Live search over coaches_directory for the member-assignment input.
+// UX4 (2026-06-06): 단일선택 → 체크박스 다중선택(누적). 검색어 바꿔도 선택 유지.
 function onMemberSearchInput(v) {
   const q = (v || '').trim().toLowerCase();
-  _memberSearchSelected = null;
-  _updateInviteSection();
   const host = document.getElementById('projMemberSuggestions');
   if (!host) return;
   if (q.length < 1) { host.style.display = 'none'; host.innerHTML = ''; return; }
   // Lazy-load directory the first time
   const go = (dir) => {
     const matches = dir.filter(c => {
+      if (!c.id) return false;
       const hay = ((c.name || '') + ' ' + (c.email || '') + ' ' + (c.organization || '')).toLowerCase();
       return hay.includes(q);
-    }).slice(0, 8);
+    }).slice(0, 12);
     if (matches.length === 0) {
       // 사용자 요청: coach-finder 가 코치 마스터 — 검색 결과 없으면 그쪽으로 안내
       host.innerHTML = `<div style="padding:10px;font-size:12px;color:var(--gray500);line-height:1.6;">
@@ -5949,15 +6025,18 @@ function onMemberSearchInput(v) {
         후 다시 검색해 주세요.
       </div>`;
     } else {
-      host.innerHTML = matches.map(c => `
-        <div style="padding:6px 10px;cursor:pointer;border-bottom:1px solid var(--gray100);font-size:12px;display:flex;gap:8px;align-items:center;"
-             onmousedown="event.preventDefault();pickMemberSuggestion('${escAttr(c.email || '')}','${escAttr(c.name || '')}','${escAttr(c.linked_user_id || '')}')">
-          <div style="width:24px;height:24px;background:var(--gray100);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--gray500);overflow:hidden;">${c.photo_url ? `<img src="${escAttr(c.photo_url)}" style="width:100%;height:100%;object-fit:cover;">` : escHtml(coachInitials(c.name))}</div>
+      host.innerHTML = matches.map(c => {
+        const checked = _isSelected(c.id);
+        return `
+        <label style="padding:6px 10px;cursor:pointer;border-bottom:1px solid var(--gray100);font-size:12px;display:flex;gap:8px;align-items:center;${checked ? 'background:var(--orange-bg);' : ''}">
+          <input type="checkbox" data-suggest-id="${escAttr(c.id)}"${checked ? ' checked' : ''} style="margin:0;flex:none;">
+          <div style="width:24px;height:24px;background:var(--gray100);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--gray500);overflow:hidden;flex:none;">${c.photo_url ? `<img src="${escAttr(c.photo_url)}" style="width:100%;height:100%;object-fit:cover;">` : escHtml(coachInitials(c.name))}</div>
           <div style="flex:1;min-width:0;">
-            <div style="font-weight:600;">${escHtml(c.name || '')}${!c.linked_user_id ? ' <span style="color:var(--red);font-size:10px;">(앱 가입 전)</span>' : ''}</div>
+            <div style="font-weight:600;">${escHtml(c.name || '')}${!c.linked_user_id ? ' <span style="color:var(--gray500);font-size:10px;">(가입 전 — 초대 예약)</span>' : ''}</div>
             <div style="color:var(--gray500);font-size:11px;">${escHtml(c.email || '(이메일 없음)')}${c.organization ? ' · ' + escHtml(c.organization) : ''}</div>
           </div>
-        </div>`).join('');
+        </label>`;
+      }).join('');
     }
     host.style.display = 'block';
   };
@@ -5965,175 +6044,158 @@ function onMemberSearchInput(v) {
   loadCoachDirectory().then(() => go(coachDirectory));
 }
 
-function pickMemberSuggestion(email, name, linkedUserId) {
-  document.getElementById('projMemberEmail').value = email || name;
-  _memberSearchSelected = {
-    email: (email || '').toLowerCase(),
-    name,
-    linkedUserId: linkedUserId || null,
-    fromDirectory: true,
-  };
-  const host = document.getElementById('projMemberSuggestions');
-  if (host) { host.style.display = 'none'; host.innerHTML = ''; }
-  _updateInviteSection();
-}
-
-// 미가입 검출 시 inline 초대 영역 표시/숨김 (선택 변화마다 자동).
-function _updateInviteSection() {
-  const sec = document.getElementById('projMemberInvite');
-  if (!sec) return;
-  const emailEl = document.getElementById('projMemberInviteEmail');
-  const statusEl = document.getElementById('projMemberInviteStatus');
-  if (statusEl) statusEl.textContent = '';
-  const sel = _memberSearchSelected;
-  // 표시 조건: directory 에서 선택했고 + email 있음 + linked_user_id 비어있음
-  if (sel && sel.fromDirectory && sel.email && !sel.linkedUserId) {
-    if (emailEl) emailEl.textContent = sel.email;
-    sec.style.display = 'flex';
+// 검색 드롭다운 체크박스 토글 (위임). 검색창 blur 없이 누적 선택.
+document.addEventListener('change', (e) => {
+  const cb = e.target;
+  if (!cb || cb.type !== 'checkbox' || !cb.hasAttribute || !cb.hasAttribute('data-suggest-id')) return;
+  const id = cb.getAttribute('data-suggest-id');
+  const row = (coachDirectory || []).find(c => c.id === id);
+  if (!row) return;
+  if (cb.checked) {
+    if (!_isSelected(id)) {
+      _memberSelected.push({
+        id: row.id,
+        name: row.name || '',
+        email: row.email || '',
+        linkedUserId: row.linked_user_id || null,
+        organization: row.organization || ''
+      });
+    }
   } else {
-    sec.style.display = 'none';
+    _memberSelected = _memberSelected.filter(s => s.id !== id);
   }
-}
+  // 드롭다운의 해당 라벨 배경만 갱신
+  const label = cb.closest('label');
+  if (label) label.style.background = cb.checked ? 'var(--orange-bg)' : '';
+  renderMemberChips();
+});
 
-// ✉️ Magic Link 초대 — Supabase Auth signInWithOtp.
-// 코치가 메일의 링크 클릭 시 자동 가입 + handle_new_user → autolink trigger
-// → coaches_directory.linked_user_id 자동 채움 → PM 이 다시 와서 배정 가능.
-//
-// 2026-05-15 — 에러 핸들링 강화. 발송 실패 흔한 원인:
-//   1) Supabase 무료 플랜 rate limit (시간당 3-4건)
-//   2) Supabase Dashboard → Auth → URL Configuration 의 Redirect URLs 에
-//      현재 도메인 미등록
-//   3) Auth → Providers → Email 비활성화 또는 Magic Link 옵션 OFF
-//   4) SMTP 미설정 (기본 발송기 매우 제한적)
-// 발송 실패 시 자동으로 "URL 복사" 흐름 안내.
-async function sendInviteMagicLink() {
-  const sel = _memberSearchSelected;
-  const statusEl = document.getElementById('projMemberInviteStatus');
-  if (!sel || !sel.email) {
-    if (statusEl) statusEl.textContent = '코치를 먼저 선택하세요.';
+// 선택 칩 + 일괄배정 버튼 갱신.
+function renderMemberChips() {
+  const chipHost = document.getElementById('projMemberChips');
+  const bar = document.getElementById('projMemberBulkBar');
+  const btn = document.getElementById('projMemberBulkBtn');
+  if (!chipHost || !bar || !btn) return;
+  const n = _memberSelected.length;
+  if (n === 0) {
+    chipHost.style.display = 'none';
+    chipHost.innerHTML = '';
+    bar.style.display = 'none';
     return;
   }
-  if (statusEl) {
-    statusEl.style.color = '';
-    statusEl.textContent = '발송 중…';
-  }
-  try {
-    const { data, error } = await supabaseClient.auth.signInWithOtp({
-      email: sel.email,
-      options: {
-        emailRedirectTo: window.location.origin + '/#teams',
-        shouldCreateUser: true,
-      },
-    });
-    if (error) throw error;
-    // eslint-disable-next-line no-console
-    console.info('[invite] signInWithOtp ok for', sel.email, data);
-    if (statusEl) {
-      statusEl.style.color = 'var(--green)';
-      statusEl.textContent = '✓ 발송됨. 스팸함도 확인 요청. 못 받으면 옆 "🔗 URL 복사" 사용.';
-    }
-  } catch (e) {
-    const msg = String(e?.message || e || 'unknown');
-    // eslint-disable-next-line no-console
-    console.error('[invite] signInWithOtp failed:', e);
-    let hint = '';
-    if (/rate limit|too many/i.test(msg)) {
-      hint = ' (Supabase 무료 플랜 시간당 한도 초과. 잠시 후 다시.)';
-    } else if (/redirect.*url|allowed/i.test(msg)) {
-      hint = ' (Supabase Dashboard → Auth → URL Configuration 에 ' +
-             window.location.origin + ' 등록 필요.)';
-    } else if (/email.*disabled|provider.*disabled/i.test(msg)) {
-      hint = ' (Supabase Dashboard → Auth → Providers → Email 활성화 필요.)';
-    } else if (/smtp|email.*server/i.test(msg)) {
-      hint = ' (SMTP 미설정. Dashboard → Auth → Email Templates 확인.)';
-    } else {
-      hint = ' (대신 옆 "🔗 URL 복사" 로 카톡 등에 직접 전달 가능.)';
-    }
-    if (statusEl) {
-      statusEl.style.color = 'var(--red)';
-      statusEl.textContent = '✗ ' + msg + hint;
-    }
-  }
+  chipHost.style.display = 'flex';
+  chipHost.innerHTML = _memberSelected.map(s => `
+    <span style="display:inline-flex;align-items:center;gap:4px;background:#fff;border:1px solid var(--gray300);border-radius:12px;padding:2px 4px 2px 10px;font-size:11px;">
+      ${escHtml(s.name || s.email || '코치')}${!s.linkedUserId ? ' <span style="color:var(--gray500);">⏳</span>' : ''}
+      <button type="button" data-chip-remove="${escAttr(s.id)}" title="제거" style="background:none;border:none;color:var(--gray500);cursor:pointer;font-size:13px;line-height:1;padding:0 4px;">×</button>
+    </span>
+  `).join('');
+  bar.style.display = 'flex';
+  btn.textContent = '선택한 ' + n + '명 배정';
 }
 
-// 🔗 가입 URL 클립보드 복사 — PM 이 카톡 등 다른 채널로 직접 전달.
-async function copyInviteUrl() {
-  const sel = _memberSearchSelected;
-  const statusEl = document.getElementById('projMemberInviteStatus');
-  const url = window.location.origin;
-  const msg = sel && sel.name
-    ? `${sel.name} 코치님, coaching-log 가입 안내:\n${url}\n\n위 링크에서 본인 이메일(${sel.email})로 가입 후 알려주세요.`
-    : `coaching-log 가입 안내:\n${url}`;
-  try {
-    await navigator.clipboard.writeText(msg);
-    if (statusEl) statusEl.textContent = '✓ 복사 완료. 코치에게 보내주세요.';
-  } catch (e) {
-    if (statusEl) statusEl.textContent = '복사 실패. URL: ' + url;
-  }
-}
+// 칩 제거 (위임).
+document.addEventListener('click', (e) => {
+  const btn = e.target && e.target.closest ? e.target.closest('[data-chip-remove]') : null;
+  if (!btn) return;
+  const id = btn.getAttribute('data-chip-remove');
+  _memberSelected = _memberSelected.filter(s => s.id !== id);
+  renderMemberChips();
+  // 드롭다운이 열려 있으면 체크 상태 동기화
+  const cb = document.querySelector('#projMemberSuggestions input[data-suggest-id="' + (window.CSS && CSS.escape ? CSS.escape(id) : id) + '"]');
+  if (cb) { cb.checked = false; const lbl = cb.closest('label'); if (lbl) lbl.style.background = ''; }
+});
 
-// Close suggestion dropdown on outside click
+// Close suggestion dropdown on outside click (검색창·드롭다운 내부 클릭은 유지).
 document.addEventListener('click', (e) => {
   if (e.target && e.target.id === 'projMemberEmail') return;
   const host = document.getElementById('projMemberSuggestions');
   if (host && !host.contains(e.target)) { host.style.display = 'none'; }
 });
 
-async function addProjectMember() {
+// UX4: 일괄 배정 — 가입자→project_members / 미가입→project_invites 분기 INSERT.
+async function bulkAssignSelected() {
   if (_projModalState.mode !== 'edit' || !_projModalState.id) return;
-  const typed = (document.getElementById('projMemberEmail').value || '').trim().toLowerCase();
-  const sel = _memberSearchSelected;
-  const email = (sel && sel.email) || typed;
-  const role = document.getElementById('projMemberRole').value;
   const errEl = document.getElementById('projModalError');
   errEl.textContent = '';
-  if (!email) { errEl.textContent = '코치를 검색하거나 이메일을 입력하세요.'; return; }
-  try {
-    // D3-c: 우선 coaches_directory 의 linked_user_id 활용 (한 번에 가능).
-    //   sel.linkedUserId 가 있으면 → 그대로 사용 (가입자, profile lookup 생략).
-    //   비어있으면 → invite section 표시되어 있을 것, 배정 거절.
-    //   sel 자체가 없으면 (직접 타이핑) → profiles 검색 fallback.
-    let userId = null;
-    if (sel && sel.fromDirectory) {
-      if (sel.linkedUserId) {
-        userId = sel.linkedUserId;
+  if (_memberSelected.length === 0) { errEl.textContent = '코치를 먼저 선택하세요.'; return; }
+  const role = document.getElementById('projMemberRole').value;
+  const projectId = _projModalState.id;
+  const uid = currentUser ? currentUser.id : null;
+  let assigned = 0, invited = 0, skipped = 0, failed = 0;
+  for (const s of _memberSelected) {
+    try {
+      if (s.linkedUserId) {
+        const { error } = await supabaseClient.from('project_members').insert([{
+          project_id: projectId,
+          user_id: s.linkedUserId,
+          role,
+          added_by: uid
+        }]);
+        if (error) {
+          if (/duplicate|unique/i.test(error.message || '')) skipped++;
+          else { failed++; console.error('[bulkAssign] member insert failed', s, error); }
+        } else assigned++;
       } else {
-        // 미가입 — invite section 자동 표시 + 명확한 안내
-        _updateInviteSection();
-        errEl.textContent = '이 코치는 아직 coaching-log에 가입하지 않았습니다. 위의 "초대 메일 발송" 으로 안내해 주세요.';
-        return;
+        const { error } = await supabaseClient.from('project_invites').insert([{
+          project_id: projectId,
+          coach_directory_id: s.id,
+          role,
+          invited_by: uid
+        }]);
+        if (error) {
+          if (/duplicate|unique/i.test(error.message || '')) skipped++;
+          else { failed++; console.error('[bulkAssign] invite insert failed', s, error); }
+        } else invited++;
       }
-    } else {
-      // directory 에 없음 → profiles 직접 검색 (옛 흐름 백업)
-      const { data: profiles, error: pErr } = await supabaseClient
-        .from('profiles').select('id, email').eq('email', email).limit(1);
-      if (pErr) throw pErr;
-      if (!profiles || profiles.length === 0) {
-        errEl.textContent = '이 이메일의 코치를 찾을 수 없습니다. coach-finder 에 먼저 등록한 뒤 다시 시도하세요.';
-        return;
-      }
-      userId = profiles[0].id;
+    } catch (e) {
+      failed++;
+      console.error('[bulkAssign] error', s, e);
     }
+  }
+  // 정리 + 새로고침
+  _memberSelected = [];
+  document.getElementById('projMemberEmail').value = '';
+  const sgHost = document.getElementById('projMemberSuggestions');
+  if (sgHost) { sgHost.style.display = 'none'; sgHost.innerHTML = ''; }
+  renderMemberChips();
+  await loadAndRenderProjectMembers(projectId);
+  // 요약 toast
+  const parts = [];
+  if (assigned) parts.push(assigned + '명 배정');
+  if (invited) parts.push(invited + '명 가입대기 예약');
+  if (skipped) parts.push(skipped + '명 이미 있음(건너뜀)');
+  if (failed) parts.push(failed + '명 실패');
+  showToast(parts.length ? parts.join(' · ') : '변경 없음');
+  if (failed) errEl.textContent = failed + '명 배정 실패 (콘솔 확인).';
+}
 
-    const payload = {
-      project_id: _projModalState.id,
-      user_id: userId,
-      role,
-      added_by: currentUser ? currentUser.id : null
-    };
-    const { error } = await supabaseClient.from('project_members').insert([payload]);
-    if (error) {
-      if (/duplicate|unique/i.test(error.message)) errEl.textContent = '이미 배정된 코치입니다.';
-      else throw error;
-      return;
-    }
-    document.getElementById('projMemberEmail').value = '';
-    _memberSearchSelected = null;
-    _updateInviteSection();
+// UX4: 초대 취소 (project_invites DELETE).
+async function cancelProjectInvite(inviteId) {
+  if (!inviteId) return;
+  if (!confirm('이 초대(가입대기)를 취소하시겠어요?')) return;
+  try {
+    const { error } = await supabaseClient.from('project_invites').delete().eq('id', inviteId);
+    if (error) throw error;
+    await loadAndRenderProjectMembers(_projModalState.id);
+    showToast('초대를 취소했습니다.');
+  } catch (e) {
+    showToast('초대 취소 실패: ' + (e.message || e));
+  }
+}
+
+// UX4: 가입 완료된 invite → member 승격 (promote_invite_to_member RPC).
+async function promoteProjectInvite(inviteId) {
+  if (!inviteId) return;
+  try {
+    const { error } = await supabaseClient.rpc('promote_invite_to_member', { p_invite_id: inviteId });
+    if (error) throw error;
     await loadAndRenderProjectMembers(_projModalState.id);
     showToast('배정되었습니다.');
   } catch (e) {
-    errEl.textContent = '배정 실패: ' + (e.message || e);
+    const msg = String(e?.message || e || '');
+    if (/not joined/i.test(msg)) showToast('아직 코치가 가입을 완료하지 않았습니다.');
+    else showToast('배정 실패: ' + msg);
   }
 }
 
