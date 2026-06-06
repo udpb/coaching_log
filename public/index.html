@@ -3756,95 +3756,7 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
   </div>
 </div>
 
-<!-- Coach evaluation create/edit modal (admin/pm) — Phase C3 -->
-<div class="rpt-modal-overlay" id="bpEvalModal">
-  <div class="rpt-modal" style="max-width:560px;">
-    <h2 id="bpEvalModalTitle">코치 평가 작성</h2>
-    <div class="sub" id="bpEvalModalSub">핀(고정)된 코치 중에서 선택해 평가를 등록하세요.</div>
-    <div class="proj-modal-body">
-      <label>대상 코치 <span style="color:var(--red);">*</span></label>
-      <select id="bpEvalCoachSelect"></select>
-
-      <label style="margin-top:14px;">평가 점수</label>
-      <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px;">
-        <div class="bp-eval-rating-row" id="bpEvalRow_overall" style="font-size:13px;">
-          <span style="color:var(--dark);">종합 <span style="color:var(--red);">*</span></span>
-          <span class="bp-eval-rating-input" data-dim="overall">
-            <span data-n="1" onclick="setBPEvalRating('overall',1)">☆</span>
-            <span data-n="2" onclick="setBPEvalRating('overall',2)">☆</span>
-            <span data-n="3" onclick="setBPEvalRating('overall',3)">☆</span>
-            <span data-n="4" onclick="setBPEvalRating('overall',4)">☆</span>
-            <span data-n="5" onclick="setBPEvalRating('overall',5)">☆</span>
-          </span>
-        </div>
-        <div class="bp-eval-rating-row" id="bpEvalRow_communication" style="font-size:13px;">
-          <span style="color:var(--dark);">소통</span>
-          <span class="bp-eval-rating-input" data-dim="communication">
-            <span data-n="1" onclick="setBPEvalRating('communication',1)">☆</span>
-            <span data-n="2" onclick="setBPEvalRating('communication',2)">☆</span>
-            <span data-n="3" onclick="setBPEvalRating('communication',3)">☆</span>
-            <span data-n="4" onclick="setBPEvalRating('communication',4)">☆</span>
-            <span data-n="5" onclick="setBPEvalRating('communication',5)">☆</span>
-          </span>
-        </div>
-        <div class="bp-eval-rating-row" id="bpEvalRow_expertise" style="font-size:13px;">
-          <span style="color:var(--dark);">전문성</span>
-          <span class="bp-eval-rating-input" data-dim="expertise">
-            <span data-n="1" onclick="setBPEvalRating('expertise',1)">☆</span>
-            <span data-n="2" onclick="setBPEvalRating('expertise',2)">☆</span>
-            <span data-n="3" onclick="setBPEvalRating('expertise',3)">☆</span>
-            <span data-n="4" onclick="setBPEvalRating('expertise',4)">☆</span>
-            <span data-n="5" onclick="setBPEvalRating('expertise',5)">☆</span>
-          </span>
-        </div>
-        <div class="bp-eval-rating-row" id="bpEvalRow_reliability" style="font-size:13px;">
-          <span style="color:var(--dark);">성실함</span>
-          <span class="bp-eval-rating-input" data-dim="reliability">
-            <span data-n="1" onclick="setBPEvalRating('reliability',1)">☆</span>
-            <span data-n="2" onclick="setBPEvalRating('reliability',2)">☆</span>
-            <span data-n="3" onclick="setBPEvalRating('reliability',3)">☆</span>
-            <span data-n="4" onclick="setBPEvalRating('reliability',4)">☆</span>
-            <span data-n="5" onclick="setBPEvalRating('reliability',5)">☆</span>
-          </span>
-        </div>
-      </div>
-
-      <!-- 평가 일원화 2단계 (2026-05-03): coach-finder 와 동일한 3-state 토글.
-           체크박스 2-state(true/false) → 3-state 버튼 그룹(true/false/유보).
-           value: true=그렇다, false=아니다, null=유보. -->
-      <label style="margin-top:14px;">재의뢰 의향</label>
-      <div id="bpEvalRehireGroup" style="display:flex;gap:6px;margin-top:4px;">
-        <button type="button" class="bp-rehire-btn" data-val="true"
-                onclick="setBPEvalRehire(true)"
-                style="flex:1;padding:8px;border:1px solid var(--gray300);background:#fff;cursor:pointer;font-size:12px;">
-          👍 그렇다
-        </button>
-        <button type="button" class="bp-rehire-btn" data-val="false"
-                onclick="setBPEvalRehire(false)"
-                style="flex:1;padding:8px;border:1px solid var(--gray300);background:#fff;cursor:pointer;font-size:12px;">
-          👎 아니다
-        </button>
-        <button type="button" class="bp-rehire-btn" data-val="null"
-                onclick="setBPEvalRehire(null)"
-                style="flex:1;padding:8px;border:1px solid var(--gray300);background:#fff;cursor:pointer;font-size:12px;">
-          유보
-        </button>
-      </div>
-
-      <label style="margin-top:10px;">코멘트</label>
-      <textarea id="bpEvalComment" placeholder="평가 내용을 자유롭게 작성하세요 (선택)" style="min-height:80px;"></textarea>
-
-      <div class="auth-error" id="bpEvalModalError" style="margin-top:10px;"></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-danger" id="bpEvalDeleteBtn" onclick="deleteBPEvalFromModal()" style="display:none;">평가 삭제</button>
-      <div style="display:flex;gap:8px;margin-left:auto;">
-        <button class="btn btn-ghost" onclick="closeBPEvalModal()">취소</button>
-        <button class="btn btn-primary" id="bpEvalSaveBtn" onclick="saveBPEval()">저장</button>
-      </div>
-    </div>
-  </div>
-</div>
+<!-- Coach evaluation create/edit modal removed (ADR-011): 평가 쓰기는 coach-finder 단일 소유. coaching-log 는 읽기(표시)만. -->
 
 <!-- Business Plan coach picker modal (admin/pm) -->
 <div class="rpt-modal-overlay" id="bpCoachPickerModal">
@@ -10634,8 +10546,7 @@ let bpFilter = { q: '', status: '' };                   // toolbar filter
 let _bpModalState = { mode: 'create', id: null };       // create/edit modal
 let _bpDetailId = null;                                 // currently-open BP id (null => list view)
 let _bpDetailCoaches = [];                              // pinned coaches for the open BP
-let _bpDetailEvaluations = [];                          // full coach_evaluations rows for the open BP (Phase C3)
-let _bpEvalModalState = { mode: 'create', id: null, coach_directory_id: null, ratings: { overall: 0, communication: 0, expertise: 0, reliability: 0 }, rehire: null };
+let _bpDetailEvaluations = [];                          // full coach_evaluations rows for the open BP — read-only display (ADR-011: 쓰기는 coach-finder)
 let _bpCoachPickerState = { bp_id: null, q: '', results: [] };
 
 async function loadAllBusinessPlans() {
@@ -11001,10 +10912,8 @@ function renderBPDetailBody() {
     ? `<button class="btn btn-danger" onclick="deleteBPFromDetail('${escAttr(bp.id)}')">🗑 삭제</button>`
     : '';
 
-  // Coach evaluation list (Phase C3). Permissions: any admin/pm can edit
-  // their own evaluation; admin can edit any; only admin can delete.
-  // RLS already enforces these; the UI gates layer on top.
-  const canWriteEval = (currentUserRole === 'admin' || currentUserRole === 'pm');
+  // Coach evaluation list (Phase C3) — read-only display.
+  // ADR-011: 평가 쓰기(작성·편집·삭제)는 coach-finder 단일 소유. 여기는 표시만.
   const evalListHtml = _bpDetailEvaluations.length === 0
     ? `<div class="bp-eval-empty">아직 작성된 평가가 없습니다.</div>`
     : _bpDetailEvaluations.map(ev => {
@@ -11018,15 +10927,6 @@ function renderBPDetailBody() {
           : (ev.would_rehire === false)
             ? `<span class="bp-eval-rehire-no">재의뢰 의향 ✗</span>`
             : `<span class="bp-eval-rehire-no">재의뢰 의향 —</span>`;
-        const isOwn = currentUser && ev.evaluator_id === currentUser.id;
-        const canEditThis = canWriteEval && (currentUserRole === 'admin' || (currentUserRole === 'pm' && isOwn));
-        const canDeleteThis = (currentUserRole === 'admin');
-        const editEvalBtn = canEditThis
-          ? `<button class="btn btn-ghost" onclick="openBPEvalEditModal('${escAttr(ev.id)}')">✏️ 편집</button>`
-          : '';
-        const deleteEvalBtn = canDeleteThis
-          ? `<button class="btn btn-danger" onclick="deleteBPEval('${escAttr(ev.id)}')">🗑 삭제</button>`
-          : '';
         const commentHtml = ev.comment
           ? `<div class="bp-eval-comment">${escHtml(ev.comment)}</div>`
           : '';
@@ -11037,7 +10937,6 @@ function renderBPDetailBody() {
                 <div style="font-weight:700;color:var(--dark);">${escHtml(coachName)}</div>
                 <div class="bp-eval-card-meta">평가자: ${escHtml(evaluatorLabel)} · 작성일: ${escHtml(createdAt)}</div>
               </div>
-              <div style="display:flex;gap:6px;">${editEvalBtn}${deleteEvalBtn}</div>
             </div>
             <div class="bp-eval-ratings">
               ${_bpStarRow('종합', ev.rating_overall)}
@@ -11049,9 +10948,6 @@ function renderBPDetailBody() {
             ${commentHtml}
           </div>`;
       }).join('');
-  const newEvalBtn = canWriteEval
-    ? `<button class="btn btn-ghost" onclick="openBPEvalCreateModal('${escAttr(bp.id)}')">+ 새 평가</button>`
-    : '';
 
   host.innerHTML = `
     <div class="bp-detail-wrap">
@@ -11108,8 +11004,8 @@ function renderBPDetailBody() {
       <div class="bp-eval-section">
         <div class="bp-eval-header">
           <h3 style="margin:0;font-size:15px;font-weight:700;">코치 평가</h3>
-          ${newEvalBtn}
         </div>
+        <p style="font-size:12px;color:var(--gray500);margin:0 0 10px;">평가 작성·수정은 coach-finder 에서 합니다. 여기서는 보기만 가능합니다.</p>
         <div class="bp-eval-list">
           ${evalListHtml}
         </div>
@@ -11118,8 +11014,7 @@ function renderBPDetailBody() {
 }
 
 // Helper: render a single rating dimension row with filled/empty stars.
-// Used by the read-only evaluation cards. The interactive rating input in
-// the modal uses its own per-span DOM update path (setBPEvalRating).
+// Used by the read-only evaluation cards (display only — 평가 쓰기는 coach-finder, ADR-011).
 function _bpStarRow(label, rating) {
   const r = Math.max(0, Math.min(5, Number(rating) || 0));
   const stars = '★'.repeat(r) + '☆'.repeat(5 - r);
@@ -11564,333 +11459,6 @@ async function unpinCoachFromBP(bpcId) {
   } catch (e) {
     showToast('제거 실패: ' + (e.message || e));
     console.error('unpinCoachFromBP failed', e);
-  }
-}
-
-// ---------- Coach evaluations (Phase C3) ----------
-//
-// CRUD on coach_evaluations. RLS gates SELECT/INSERT to admin/pm,
-// UPDATE to admin or PM-own-row, DELETE to admin only. UI mirrors
-// these gates so coaches never see write affordances.
-//
-// Focus stability: setBPEvalRating mutates DOM in place rather than
-// re-rendering the modal — keeps the textarea focus during edits.
-
-function _bpEvalSetModalTitle(mode) {
-  const t = document.getElementById('bpEvalModalTitle');
-  if (t) t.textContent = mode === 'edit' ? '코치 평가 편집' : '코치 평가 작성';
-  const delBtn = document.getElementById('bpEvalDeleteBtn');
-  if (delBtn) {
-    // Delete is admin-only AND only meaningful in edit mode.
-    delBtn.style.display = (mode === 'edit' && currentUserRole === 'admin') ? '' : 'none';
-  }
-}
-
-function _bpEvalPaintRatingRow(dim) {
-  const row = document.getElementById('bpEvalRow_' + dim);
-  if (!row) return;
-  const n = Math.max(0, Math.min(5, Number(_bpEvalModalState.ratings[dim]) || 0));
-  const spans = row.querySelectorAll('.bp-eval-rating-input span[data-n]');
-  spans.forEach(s => {
-    const v = Number(s.getAttribute('data-n'));
-    if (v <= n) {
-      s.textContent = '★';
-      s.classList.add('active');
-    } else {
-      s.textContent = '☆';
-      s.classList.remove('active');
-    }
-  });
-}
-
-function _bpEvalPaintAllRatingRows() {
-  ['overall', 'communication', 'expertise', 'reliability'].forEach(_bpEvalPaintRatingRow);
-}
-
-function setBPEvalRating(dim, n) {
-  if (!_bpEvalModalState.ratings) _bpEvalModalState.ratings = { overall: 0, communication: 0, expertise: 0, reliability: 0 };
-  // Click the same rating again to clear (toggle off) — only meaningful for
-  // optional dimensions; overall is required at save time.
-  const cur = Number(_bpEvalModalState.ratings[dim]) || 0;
-  _bpEvalModalState.ratings[dim] = (cur === n) ? 0 : n;
-  _bpEvalPaintRatingRow(dim);
-}
-
-// 평가 일원화 2단계 (2026-05-03): rehire 3-state (true/false/null) 토글.
-// coach-finder 와 동일한 UX. _bpEvalModalState.rehire 에 값 보관.
-function setBPEvalRehire(val) {
-  _bpEvalModalState.rehire = val;
-  _bpRenderRehireButtons();
-}
-
-function _bpRenderRehireButtons() {
-  const group = document.getElementById('bpEvalRehireGroup');
-  if (!group) return;
-  const cur = _bpEvalModalState && 'rehire' in _bpEvalModalState ? _bpEvalModalState.rehire : null;
-  // value 매핑: data-val="true" / "false" / "null"
-  const curKey = cur === true ? 'true' : (cur === false ? 'false' : 'null');
-  const palette = {
-    true:  { bg: 'rgba(46,158,90,.10)', border: 'var(--green)', color: 'var(--green)' },
-    false: { bg: 'rgba(217,69,69,.08)', border: 'var(--red)', color: 'var(--red)' },
-    null:  { bg: 'var(--gray100)', border: 'var(--gray500)', color: 'var(--dark)' },
-  };
-  for (const btn of group.querySelectorAll('button.bp-rehire-btn')) {
-    const k = btn.getAttribute('data-val');
-    if (k === curKey) {
-      const p = palette[k];
-      btn.style.background = p.bg;
-      btn.style.borderColor = p.border;
-      btn.style.color = p.color;
-      btn.style.fontWeight = '600';
-    } else {
-      btn.style.background = '#fff';
-      btn.style.borderColor = 'var(--gray300)';
-      btn.style.color = 'var(--gray500)';
-      btn.style.fontWeight = '400';
-    }
-  }
-}
-
-function _bpEvalPopulateCoachSelect(selectedId, lock) {
-  const sel = document.getElementById('bpEvalCoachSelect');
-  if (!sel) return;
-  sel.innerHTML = '';
-  if (!_bpDetailCoaches || _bpDetailCoaches.length === 0) {
-    const opt = document.createElement('option');
-    opt.value = '';
-    opt.textContent = '핀(고정)된 코치가 없습니다';
-    sel.appendChild(opt);
-    sel.disabled = true;
-    return;
-  }
-  for (const bpc of _bpDetailCoaches) {
-    const cd = bpc.coaches_directory || {};
-    const opt = document.createElement('option');
-    opt.value = bpc.coach_directory_id;
-    const orgPart = cd.organization ? ` (${cd.organization})` : '';
-    opt.textContent = (cd.name || '(이름 없음)') + orgPart;
-    if (selectedId && bpc.coach_directory_id === selectedId) opt.selected = true;
-    sel.appendChild(opt);
-  }
-  // In edit mode the coach is locked to the original; in create mode editable.
-  sel.disabled = !!lock;
-}
-
-function openBPEvalCreateModal(bpId) {
-  // Permission gate (UI). DB RLS enforces independently.
-  if (currentUserRole !== 'admin' && currentUserRole !== 'pm') {
-    showToast('평가 작성 권한이 없습니다.'); return;
-  }
-  if (!currentUser) { showToast('로그인이 필요합니다.'); return; }
-  if (!_bpDetailId || _bpDetailId !== bpId) {
-    // Defensive: only allow opening from the currently-open BP detail.
-    showToast('BP 상세가 열려있지 않습니다.'); return;
-  }
-  _bpEvalModalState = {
-    mode: 'create',
-    id: null,
-    coach_directory_id: null,
-    ratings: { overall: 0, communication: 0, expertise: 0, reliability: 0 },
-    rehire: null,  // 3-state: true / false / null (유보 = default)
-  };
-  _bpEvalSetModalTitle('create');
-  _bpEvalPopulateCoachSelect(null, false);
-  _bpRenderRehireButtons();
-  const cmt = document.getElementById('bpEvalComment');
-  if (cmt) cmt.value = '';
-  const errEl = document.getElementById('bpEvalModalError');
-  if (errEl) errEl.textContent = '';
-  _bpEvalPaintAllRatingRows();
-  // If no coaches pinned, show inline error and disable Save.
-  const saveBtn = document.getElementById('bpEvalSaveBtn');
-  if (_bpDetailCoaches.length === 0) {
-    if (errEl) errEl.textContent = '먼저 코치를 핀(고정)하세요.';
-    if (saveBtn) saveBtn.disabled = true;
-  } else {
-    if (saveBtn) saveBtn.disabled = false;
-  }
-  document.getElementById('bpEvalModal').classList.add('active');
-  setTimeout(() => {
-    const sel = document.getElementById('bpEvalCoachSelect');
-    if (sel) sel.focus();
-  }, 0);
-}
-
-function openBPEvalEditModal(evalId) {
-  if (currentUserRole !== 'admin' && currentUserRole !== 'pm') {
-    showToast('평가 편집 권한이 없습니다.'); return;
-  }
-  if (!currentUser) { showToast('로그인이 필요합니다.'); return; }
-  const ev = _bpDetailEvaluations.find(r => r.id === evalId);
-  if (!ev) { showToast('평가를 찾을 수 없습니다.'); return; }
-  // PM may only edit their own; admin any.
-  const isOwn = ev.evaluator_id === currentUser.id;
-  if (currentUserRole === 'pm' && !isOwn) {
-    showToast('본인이 작성한 평가만 편집할 수 있습니다.'); return;
-  }
-  _bpEvalModalState = {
-    mode: 'edit',
-    id: ev.id,
-    coach_directory_id: ev.coach_directory_id,
-    ratings: {
-      overall: Number(ev.rating_overall) || 0,
-      communication: Number(ev.rating_communication) || 0,
-      expertise: Number(ev.rating_expertise) || 0,
-      reliability: Number(ev.rating_reliability) || 0
-    }
-  };
-  _bpEvalSetModalTitle('edit');
-  _bpEvalPopulateCoachSelect(ev.coach_directory_id, true);
-  // 평가 일원화 2단계: 3-state rehire 복원. null/undefined → 유보 표시.
-  _bpEvalModalState.rehire = (ev.would_rehire === true || ev.would_rehire === false)
-    ? ev.would_rehire
-    : null;
-  _bpRenderRehireButtons();
-  const cmt = document.getElementById('bpEvalComment');
-  if (cmt) cmt.value = ev.comment || '';
-  const errEl = document.getElementById('bpEvalModalError');
-  if (errEl) errEl.textContent = '';
-  const saveBtn = document.getElementById('bpEvalSaveBtn');
-  if (saveBtn) saveBtn.disabled = false;
-  _bpEvalPaintAllRatingRows();
-  document.getElementById('bpEvalModal').classList.add('active');
-  setTimeout(() => { if (cmt) cmt.focus(); }, 0);
-}
-
-function closeBPEvalModal() {
-  const m = document.getElementById('bpEvalModal');
-  if (m) m.classList.remove('active');
-  _bpEvalModalState = {
-    mode: 'create',
-    id: null,
-    coach_directory_id: null,
-    ratings: { overall: 0, communication: 0, expertise: 0, reliability: 0 }
-  };
-}
-
-async function saveBPEval() {
-  // UI permission gate.
-  if (currentUserRole !== 'admin' && currentUserRole !== 'pm') {
-    showToast('평가 저장 권한이 없습니다.'); return;
-  }
-  if (!currentUser) { showToast('로그인이 필요합니다.'); return; }
-  if (!supabaseAvailable) { showToast('서버 연결 안됨'); return; }
-  const errEl = document.getElementById('bpEvalModalError');
-  const setErr = (m) => { if (errEl) errEl.textContent = m; };
-  setErr('');
-
-  const sel = document.getElementById('bpEvalCoachSelect');
-  const coachId = sel ? sel.value : '';
-  if (!coachId) { setErr('대상 코치를 선택하세요.'); return; }
-
-  const r = _bpEvalModalState.ratings || {};
-  const overall = Number(r.overall) || 0;
-  if (overall < 1 || overall > 5) {
-    setErr('"종합" 점수를 1~5점으로 매겨주세요.'); return;
-  }
-  const optInt = (v) => {
-    const n = Number(v) || 0;
-    return (n >= 1 && n <= 5) ? n : null;
-  };
-
-  // 평가 일원화 2단계: rehire 가 3-state (true/false/null) — _bpEvalModalState 에 보관.
-  const rehireValue = (_bpEvalModalState && 'rehire' in _bpEvalModalState)
-    ? _bpEvalModalState.rehire
-    : null;
-  const cmt = document.getElementById('bpEvalComment');
-  const commentRaw = cmt ? cmt.value : '';
-  const comment = (commentRaw && commentRaw.trim().length > 0) ? commentRaw : null;
-
-  const bp = allBusinessPlans.find(b => b.id === _bpDetailId);
-  if (!bp) { setErr('BP를 찾을 수 없습니다.'); return; }
-
-  const payloadBase = {
-    coach_directory_id: coachId,
-    business_plan_id: bp.id,
-    project_id: bp.project_id || null,
-    rating_overall: overall,
-    rating_communication: optInt(r.communication),
-    rating_expertise: optInt(r.expertise),
-    rating_reliability: optInt(r.reliability),
-    would_rehire: rehireValue,  // 3-state: true/false/null (null = 유보)
-    comment: comment
-  };
-
-  const saveBtn = document.getElementById('bpEvalSaveBtn');
-  if (saveBtn) saveBtn.disabled = true;
-  try {
-    if (_bpEvalModalState.mode === 'edit' && _bpEvalModalState.id) {
-      // UPDATE — coach_directory_id is locked in edit mode but we still send
-      // the full payload for consistency. evaluator_id NOT updated (the RLS
-      // policy checks it against auth.uid()).
-      const { error } = await supabaseClient
-        .from('coach_evaluations')
-        .update(payloadBase)
-        .eq('id', _bpEvalModalState.id);
-      if (error) throw error;
-      showToast('평가가 수정되었습니다.');
-    } else {
-      // INSERT — set evaluator_id to the current user.
-      const insertPayload = { ...payloadBase, evaluator_id: currentUser.id };
-      const { error } = await supabaseClient
-        .from('coach_evaluations')
-        .insert(insertPayload);
-      if (error) throw error;
-      showToast('평가가 저장되었습니다.');
-    }
-    // Refresh detail data and re-render the panel.
-    await _bpLoadDetailData(_bpDetailId);
-    renderBPDetailBody();
-    closeBPEvalModal();
-  } catch (e) {
-    setErr('저장 실패: ' + (e.message || e));
-    console.error('saveBPEval failed', e);
-    if (saveBtn) saveBtn.disabled = false;
-  }
-}
-
-async function deleteBPEval(evalId) {
-  if (currentUserRole !== 'admin') {
-    showToast('평가 삭제는 관리자만 가능합니다.'); return;
-  }
-  if (!supabaseAvailable) { showToast('서버 연결 안됨'); return; }
-  if (!confirm('이 평가를 삭제하시겠어요? 되돌릴 수 없습니다.')) return;
-  try {
-    const { error } = await supabaseClient
-      .from('coach_evaluations')
-      .delete()
-      .eq('id', evalId);
-    if (error) throw error;
-    _bpDetailEvaluations = _bpDetailEvaluations.filter(r => r.id !== evalId);
-    showToast('평가가 삭제되었습니다.');
-    renderBPDetailBody();
-  } catch (e) {
-    showToast('삭제 실패: ' + (e.message || e));
-    console.error('deleteBPEval failed', e);
-  }
-}
-
-// Delete from inside the edit modal (admin-only). Closes the modal on success.
-async function deleteBPEvalFromModal() {
-  if (currentUserRole !== 'admin') {
-    showToast('평가 삭제는 관리자만 가능합니다.'); return;
-  }
-  const id = _bpEvalModalState && _bpEvalModalState.id;
-  if (!id) { showToast('편집 중인 평가가 없습니다.'); return; }
-  if (!confirm('이 평가를 삭제하시겠어요? 되돌릴 수 없습니다.')) return;
-  try {
-    const { error } = await supabaseClient
-      .from('coach_evaluations')
-      .delete()
-      .eq('id', id);
-    if (error) throw error;
-    _bpDetailEvaluations = _bpDetailEvaluations.filter(r => r.id !== id);
-    showToast('평가가 삭제되었습니다.');
-    closeBPEvalModal();
-    renderBPDetailBody();
-  } catch (e) {
-    showToast('삭제 실패: ' + (e.message || e));
-    console.error('deleteBPEvalFromModal failed', e);
   }
 }
 
