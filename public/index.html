@@ -9832,14 +9832,19 @@ function showDetail(id) {
   }
 
   // Action buttons (export + edit + delete)
+  // 세션 기록 = 코치의 것: 수정·삭제는 본인 기록 또는 admin 만. PM 등 타인은
+  // 모니터링(읽기·리포트)만. RLS(coach_id=auth.uid())가 DB는 이미 막지만,
+  // 버튼을 숨겨 UX 혼란 + 오프라인 캐시 로컬삭제 부작용을 방지한다.
+  const _isOwnLog = currentUser && String(record.coach_id) === String(currentUser.id);
+  const _canEditLog = _isOwnLog || currentUserRole === 'admin';
   html += `
     <div style="margin-top: 32px; display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap;">
       <div style="display:flex; gap:8px;">
-        <button class="btn btn-primary" onclick="editRecord('${escAttr(String(record.id))}')" data-i18n="edit_record">수정</button>
+        ${_canEditLog ? `<button class="btn btn-primary" onclick="editRecord('${escAttr(String(record.id))}')" data-i18n="edit_record">수정</button>` : ''}
         <button class="btn btn-ghost" onclick="exportSessionPDF('${escAttr(String(record.id))}')">📄 PDF 리포트</button>
         <button class="btn btn-ghost" onclick="exportSessionDocx('${escAttr(String(record.id))}')">📝 Word 리포트</button>
       </div>
-      <button class="btn btn-danger" onclick="deleteRecord('${escAttr(String(record.id))}')">${t('delete_record')}</button>
+      ${_canEditLog ? `<button class="btn btn-danger" onclick="deleteRecord('${escAttr(String(record.id))}')">${t('delete_record')}</button>` : ''}
     </div>`;
 
   content.innerHTML = html;
