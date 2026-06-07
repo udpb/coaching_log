@@ -9562,7 +9562,7 @@ function _coachDirFiltered() {
   return coachDirectory.filter(c => {
     if (f.status && c.status !== f.status) return false;
     if (f.availability && c.availability_status !== f.availability) return false;
-    if (f.tier && c.tier !== f.tier) return false;
+    if (f.tier && String(c.tier) !== String(f.tier)) return false;  // DB tier=integer, 필터값=string → 정규화 비교
     if (f.expertise && !(c.expertise || []).includes(f.expertise)) return false;
     if (f.region && !(c.regions || []).includes(f.region)) return false;
     if (q) {
@@ -9626,7 +9626,7 @@ function renderCoachDirBody(host) {
   const filtered = _coachDirFiltered();
 
   // 값(value)은 필터용으로 유지하되 표시 라벨은 유형(베테랑/UD/외부풀)만.
-  const tierOptions  = tierValues.map(v => `<option value="${escAttr(v)}"${f.tier === v ? ' selected' : ''}>${escHtml(coachTypeLabel(v) || v)}</option>`).join('');
+  const tierOptions  = tierValues.map(v => `<option value="${escAttr(v)}"${String(f.tier) === String(v) ? ' selected' : ''}>${escHtml(coachTypeLabel(v) || v)}</option>`).join('');
   const exOptions    = topExpertise.map(v => `<option value="${escAttr(v)}"${f.expertise === v ? ' selected' : ''}>${escHtml(v)}</option>`).join('');
   const regionOpts   = topRegions.map(v => `<option value="${escAttr(v)}"${f.region === v ? ' selected' : ''}>${escHtml(v)}</option>`).join('');
 
@@ -10042,7 +10042,7 @@ function exportCoachesCSV() {
   const rows = coachDirectory.filter(c => {
     if (f.status && c.status !== f.status) return false;
     if (f.availability && c.availability_status !== f.availability) return false;
-    if (f.tier && c.tier !== f.tier) return false;
+    if (f.tier && String(c.tier) !== String(f.tier)) return false;  // DB tier=integer, 필터값=string → 정규화 비교
     if (f.expertise && !(c.expertise || []).includes(f.expertise)) return false;
     if (f.region && !(c.regions || []).includes(f.region)) return false;
     if (q) {
