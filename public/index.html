@@ -8074,7 +8074,7 @@ async function loadMyInfoProjects() {
     const p = r.project || {};
     const period = [p.target_start_date, p.target_end_date].filter(Boolean).join(' ~ ') || '—';
     const statusBadge = p.status === 'active' ? '<span style="background:var(--green-bg); color:var(--green); padding:2px 8px; font-size:11px;">진행 중</span>'
-                     : p.status === 'completed' ? '<span style="background:var(--gray100); color:var(--gray500); padding:2px 8px; font-size:11px;">완료</span>'
+                     : (p.status === 'closed' || p.status === 'archived') ? '<span style="background:var(--gray100); color:var(--gray500); padding:2px 8px; font-size:11px;">완료</span>'
                      : '<span style="background:var(--yellow-bg); color:var(--yellow); padding:2px 8px; font-size:11px;">기획</span>';
     return `
       <div style="border:1px solid var(--gray200); padding:16px; margin-bottom:8px;">
