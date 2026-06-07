@@ -3076,7 +3076,6 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
       <button class="nav-tab" data-view="list" data-i18n="nav_list">List</button>
       <button class="nav-tab" data-view="dashboard" data-i18n="nav_dashboard">대시보드</button>
       <button class="nav-tab" data-view="coaches" id="navCoaches" style="display:none;" data-i18n="nav_coaches">코치 디렉토리</button>
-      <button class="nav-tab" data-view="plans" id="navPlans" style="display:none;" data-i18n="nav_plans">사업기획</button>
       <button class="nav-tab" data-view="users" id="navUsers" style="display:none;" data-i18n="nav_users">사용자 관리</button>
       <!-- Phase G2-A "내 정보" 는 nav 가운데 끼우지 않고 header-right 의 사용자 이름 옆에 배치 (2026-05-15) -->
     </nav>
@@ -3428,14 +3427,7 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
   </div>
 </div>
 
-<!-- View 8: Business Plans (admin/pm) -->
-<div class="view" id="viewPlans">
-  <div class="container">
-    <div id="plansContent">
-      <!-- Rendered by JS -->
-    </div>
-  </div>
-</div>
+<!-- View 8: Business Plans removed (SEAL1) — 사업기획(BP)은 coach-finder 영역. coaching-log 는 수주後 코치 도구. -->
 
 <!-- View 5: Detail View -->
 <div class="view" id="viewDetail">
@@ -3649,23 +3641,26 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
   </div>
 </div>
 
-<!-- Project create/edit/manage modal (admin) -->
+<!-- Project manage modal (admin/pm) — SEAL1: 멤버(코치) 배정 전용.
+     프로젝트 메타(이름/기간/상태)는 읽기 전용 표시만. 생성/수정/삭제는 coach-finder 영역. -->
 <div class="rpt-modal-overlay" id="projModal">
   <div class="rpt-modal">
-    <h2 id="projModalTitle">새 프로젝트</h2>
-    <div class="sub" id="projModalSub">프로젝트 정보를 입력하세요.</div>
+    <h2 id="projModalTitle">프로젝트 관리</h2>
+    <div class="sub" id="projModalSub">코치 배정을 관리합니다.</div>
     <div class="proj-modal-body">
-      <label>이름 <span style="color:var(--red);">*</span></label>
-      <input type="text" id="projName" placeholder="예: Underdogs Spring 2026">
+      <!-- SEAL1: 메타 필드는 disabled — 읽기 전용 표시. 프로젝트 생성/수정은
+           coach-finder(수주 트리거)가 담당하므로 여기서는 수정 불가. -->
+      <label>이름</label>
+      <input type="text" id="projName" disabled>
       <label>설명</label>
-      <textarea id="projDesc" placeholder="간단 설명 (선택)"></textarea>
-      <label>기간 (선택)</label>
+      <textarea id="projDesc" disabled></textarea>
+      <label>기간</label>
       <div class="row2">
-        <input type="date" id="projStart">
-        <input type="date" id="projEnd">
+        <input type="date" id="projStart" disabled>
+        <input type="date" id="projEnd" disabled>
       </div>
       <label>상태</label>
-      <select id="projStatus">
+      <select id="projStatus" disabled>
         <option value="active">active (진행 중)</option>
         <option value="closed">closed (종료)</option>
         <option value="archived">archived (보관)</option>
@@ -3703,84 +3698,20 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
       <div class="auth-error" id="projModalError" style="margin-top:10px;"></div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-danger" id="projDeleteBtn" onclick="deleteCurrentProject()" style="display:none;">프로젝트 삭제</button>
+      <!-- SEAL1: 저장/삭제 버튼 제거 — 메타 수정/삭제는 coach-finder 영역.
+           멤버 배정은 위 projMemberSection 의 즉시-반영 UI(bulkAssignSelected 등)가 담당. -->
       <div style="display:flex;gap:8px;margin-left:auto;">
-        <button class="btn btn-ghost" onclick="closeProjectModal()">취소</button>
-        <button class="btn btn-primary" id="projSaveBtn" onclick="saveProjectModal()">저장</button>
+        <button class="btn btn-ghost" onclick="closeProjectModal()">닫기</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Business Plan create/edit modal (admin/pm) -->
-<div class="rpt-modal-overlay" id="bpModal">
-  <div class="rpt-modal">
-    <h2 id="bpModalTitle">새 사업기획</h2>
-    <div class="sub" id="bpModalSub">사업기획(BP) 정보를 입력하세요. 수주(won)는 별도 버튼으로 처리합니다.</div>
-    <div class="proj-modal-body">
-      <label>제목 <span style="color:var(--red);">*</span></label>
-      <input type="text" id="bpTitle" placeholder="예: 2026 봄 BP — Acme Corp">
-      <label>고객사 / 조직</label>
-      <input type="text" id="bpClientOrg" placeholder="예: Acme Corp">
-      <label>설명</label>
-      <textarea id="bpDesc" placeholder="간단 설명 (선택)"></textarea>
-      <label>예상 기간 (선택)</label>
-      <div class="row2">
-        <input type="date" id="bpStart">
-        <input type="date" id="bpEnd">
-      </div>
-      <label>예상 예산 (KRW, 선택)</label>
-      <input type="number" id="bpBudget" placeholder="예: 30000000" min="0" step="1">
-      <label>상태</label>
-      <!-- 'won' is intentionally NOT selectable here. 수주는 BP 상세화면의
-           "수주 처리" 버튼으로만 진행됩니다 — DB 트리거(bp_on_won)가
-           project + project_members 자동 생성을 담당하기 때문입니다. -->
-      <select id="bpStatus">
-        <option value="draft">draft (작성중)</option>
-        <option value="proposed">proposed (제안)</option>
-        <option value="won" disabled>won (수주) — 별도 버튼으로 처리</option>
-        <option value="lost">lost (실주)</option>
-        <option value="cancelled">cancelled (취소)</option>
-      </select>
-      <label>비고</label>
-      <textarea id="bpNotes" placeholder="내부 메모 (선택)"></textarea>
-      <div class="auth-error" id="bpModalError" style="margin-top:10px;"></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-danger" id="bpDeleteBtn" onclick="deleteBP()" style="display:none;">BP 삭제</button>
-      <div style="display:flex;gap:8px;margin-left:auto;">
-        <button class="btn btn-ghost" onclick="closeBPModal()">취소</button>
-        <button class="btn btn-primary" id="bpSaveBtn" onclick="saveBP()">저장</button>
-      </div>
-    </div>
-  </div>
-</div>
+<!-- Business Plan create/edit modal removed (SEAL1): BP 직접생성/쓰기는 coach-finder 영역. -->
 
 <!-- Coach evaluation create/edit modal removed (ADR-011): 평가 쓰기는 coach-finder 단일 소유. coaching-log 는 읽기(표시)만. -->
 
-<!-- Business Plan coach picker modal (admin/pm) -->
-<div class="rpt-modal-overlay" id="bpCoachPickerModal">
-  <div class="rpt-modal" style="max-width:560px;">
-    <h2>코치 후보 추가</h2>
-    <div class="sub">이름·이메일·소속·전문 분야로 검색하세요.</div>
-    <div class="proj-modal-body">
-      <label>검색</label>
-      <input type="text" id="bpCoachPickerInput" placeholder="이름·이메일·소속·전문분야"
-             autocomplete="off"
-             oninput="searchBPCoachPicker(this.value)"
-             onfocus="searchBPCoachPicker(this.value)">
-      <div class="bp-picker-results" id="bpCoachPickerResults">
-        <div style="padding:14px;font-size:12px;color:var(--gray400);">검색어를 입력하세요.</div>
-      </div>
-      <div class="auth-error" id="bpCoachPickerError" style="margin-top:10px;"></div>
-    </div>
-    <div class="modal-footer">
-      <div style="display:flex;gap:8px;margin-left:auto;">
-        <button class="btn btn-ghost" onclick="closeBPCoachPicker()">닫기</button>
-      </div>
-    </div>
-  </div>
-</div>
+<!-- Business Plan coach picker modal removed (SEAL1): BP 코치 핀은 coach-finder 영역. -->
 
 <!-- Session project-move modal (admin/pm) -->
 <div class="rpt-modal-overlay" id="moveProjectModal">
@@ -3801,216 +3732,7 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
   </div>
 </div>
 
-<!-- CSV import preview modal -->
-<div class="rpt-modal-overlay" id="csvImportModal">
-  <div class="rpt-modal" style="max-width:720px;">
-    <h2>📥 CSV 가져오기 미리보기</h2>
-    <div class="sub" id="csvImportSub">파일을 분석 중…</div>
-    <div class="cd-modal-body">
-      <div id="csvImportSummary" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;"></div>
-      <div id="csvImportIssues" style="font-size:12px;color:var(--red);margin-bottom:10px;"></div>
-      <label style="margin-top:0;">매칭 기준</label>
-      <select id="csvImportKey">
-        <option value="external_id">external_id (권장 — JSON id와 동일)</option>
-        <option value="email">email</option>
-      </select>
-      <label>중복 행 처리</label>
-      <select id="csvImportConflict">
-        <option value="update">업데이트 (기존 값 덮어쓰기)</option>
-        <option value="skip">건너뛰기 (새 행만 추가)</option>
-      </select>
-      <label>샘플 (앞 5행)</label>
-      <div style="overflow-x:auto;border:1px solid var(--gray200);">
-        <table id="csvImportPreview" style="width:100%;font-size:11px;border-collapse:collapse;">
-          <thead></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-      <div class="auth-error" id="csvImportError" style="margin-top:10px;"></div>
-    </div>
-    <div class="modal-footer">
-      <div style="margin-right:auto;font-size:11px;color:var(--gray500);">
-        ⚠ 저장 전에 <strong>매칭 기준</strong>이 맞는지 확인하세요.
-      </div>
-      <button class="btn btn-ghost" onclick="closeCsvImportModal()">취소</button>
-      <button class="btn btn-primary" id="csvImportCommitBtn" onclick="commitCsvImport()">적용</button>
-    </div>
-  </div>
-</div>
-
-<!-- Coach directory edit modal (admin) -->
-<div class="rpt-modal-overlay" id="coachModal">
-  <div class="rpt-modal cd-modal">
-    <h2 id="coachModalTitle">코치 편집</h2>
-    <div class="sub" id="coachModalSub"></div>
-    <div class="cd-modal-body">
-
-      <!-- Photo -->
-      <div class="cd-photo-block">
-        <div class="cd-photo-preview" id="coachPhotoPreview">?</div>
-        <div class="cd-photo-actions" style="flex:1;">
-          <label style="margin:0;">사진</label>
-          <input type="text" id="coachPhotoUrl" placeholder="photo URL 붙여넣기 (외부 CDN 또는 비워두기)">
-          <label style="margin:4px 0 0;">또는 파일 업로드 (Supabase Storage)</label>
-          <input type="file" id="coachPhotoFile" accept="image/*">
-          <span id="coachPhotoStatus" style="font-size:10.5px;color:var(--gray500);"></span>
-        </div>
-      </div>
-
-      <!-- Identity -->
-      <div class="row2">
-        <div>
-          <label>이름 <span style="color:var(--red);">*</span></label>
-          <input type="text" id="coachName" placeholder="홍길동">
-        </div>
-        <div>
-          <label>이메일</label>
-          <input type="email" id="coachEmail" placeholder="coach@example.com">
-        </div>
-      </div>
-      <div class="row3">
-        <div><label>전화</label><input type="tel" id="coachPhone"></div>
-        <div><label>성별</label>
-          <select id="coachGender">
-            <option value="">—</option>
-            <option value="남">남</option>
-            <option value="여">여</option>
-            <option value="기타">기타</option>
-          </select>
-        </div>
-        <div><label>언어</label><input type="text" id="coachLanguage"></div>
-      </div>
-
-      <!-- Location -->
-      <div class="row2">
-        <div><label>주 활동 지역</label><input type="text" id="coachLocation" placeholder="경기도"></div>
-        <div><label>국가</label><input type="text" id="coachCountry" placeholder="KR"></div>
-      </div>
-      <label>지역 태그 (regions) — Enter로 추가</label>
-      <div class="cd-chips" data-field="regions">
-        <input type="text" placeholder="예: 서울특별시 → Enter">
-      </div>
-
-      <!-- Organization -->
-      <div class="row2">
-        <div><label>소속 조직</label><input type="text" id="coachOrganization"></div>
-        <div><label>직함</label><input type="text" id="coachPosition"></div>
-      </div>
-
-      <!-- Specialization -->
-      <label>산업 (industries)</label>
-      <div class="cd-chips" data-field="industries">
-        <input type="text" placeholder="예: 콘텐츠/예술 → Enter">
-      </div>
-      <label>전문 영역 (expertise)</label>
-      <div class="cd-chips" data-field="expertise">
-        <input type="text" placeholder="예: 비즈니스 모델 → Enter">
-      </div>
-      <label>역할 (roles)</label>
-      <div class="cd-chips" data-field="roles">
-        <input type="text" placeholder="예: 코칭 → Enter">
-      </div>
-      <label>태그 (tags) — 운영 자유 레이블</label>
-      <div class="cd-chips" data-field="tags">
-        <input type="text" placeholder="예: #여성창업가전문 → Enter">
-      </div>
-
-      <!-- Segmentation for PM matching -->
-      <div class="row3">
-        <div>
-          <label>유형</label>
-          <select id="coachTier">
-            <option value="">—</option>
-            <option value="1">베테랑코치</option>
-            <option value="2">UD코치</option>
-            <option value="3">외부풀</option>
-          </select>
-        </div>
-        <div><label>Category</label><input type="text" id="coachCategory"></div>
-        <div><label>Business Type</label><input type="text" id="coachBusinessType"></div>
-      </div>
-
-      <!-- Availability -->
-      <div class="row3">
-        <div>
-          <label>상태</label>
-          <select id="coachStatus">
-            <option value="active">active (활동 중)</option>
-            <option value="draft">draft (준비 중)</option>
-            <option value="inactive">inactive (일시 중단)</option>
-            <option value="archived">archived (보관)</option>
-          </select>
-        </div>
-        <div>
-          <label>가용성</label>
-          <select id="coachAvailability">
-            <option value="available">available (배정 가능)</option>
-            <option value="limited">limited (제한적)</option>
-            <option value="unavailable">unavailable (불가)</option>
-          </select>
-        </div>
-        <div>
-          <label>최대 동시 프로젝트</label>
-          <input type="number" id="coachMaxConcurrent" min="0" max="50">
-        </div>
-      </div>
-
-      <!-- Experience -->
-      <div class="row2">
-        <div><label>경력 연수 (숫자)</label><input type="number" id="coachCareerYears" step="0.5"></div>
-        <div><label>경력 연수 원문</label><input type="text" id="coachCareerYearsRaw"></div>
-      </div>
-      <div class="row2">
-        <div>
-          <label>해외 활동</label>
-          <select id="coachOverseas">
-            <option value="false">아니오</option>
-            <option value="true">예</option>
-          </select>
-        </div>
-        <div><label>해외 활동 상세</label><input type="text" id="coachOverseasDetail"></div>
-      </div>
-
-      <!-- Profile body (future embedding sources) -->
-      <label>소개 (intro)</label>
-      <textarea id="coachIntro"></textarea>
-      <label>경력 이력</label>
-      <textarea id="coachCareerHistory"></textarea>
-      <label>학력</label>
-      <textarea id="coachEducation"></textarea>
-      <label>언더독스 활동 이력</label>
-      <textarea id="coachUnderdogsHistory"></textarea>
-      <label>현재 업무</label>
-      <textarea id="coachCurrentWork"></textarea>
-      <label>툴·스킬</label>
-      <textarea id="coachToolsSkills"></textarea>
-
-      <!-- Account link -->
-      <label>연결된 로그인 계정 이메일 (있는 경우)</label>
-      <input type="text" id="coachLinkedEmail" placeholder="이 코치가 쓰는 앱 로그인 이메일. 비워두면 미연결." disabled style="background:var(--gray100);">
-      <span id="coachLinkedHint" style="font-size:11px;color:var(--gray500);">이메일과 매칭되는 profile이 가입하면 자동으로 연결됩니다.</span>
-
-      <!-- Notes (ops) -->
-      <label>운영 메모 (내부)</label>
-      <textarea id="coachNotes" placeholder="관리자만 봅니다"></textarea>
-
-      <!-- History -->
-      <div id="coachHistoryWrap" style="display:none;">
-        <label>최근 변경 이력</label>
-        <div class="cd-history" id="coachHistory"></div>
-      </div>
-
-      <div class="auth-error" id="coachModalError" style="margin-top:10px;"></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-danger" id="coachDeleteBtn" onclick="deleteCoach()" style="display:none;">삭제</button>
-      <div style="display:flex;gap:8px;margin-left:auto;">
-        <button class="btn btn-ghost" onclick="closeCoachModal()">취소</button>
-        <button class="btn btn-primary" id="coachSaveBtn" onclick="saveCoach()">저장</button>
-      </div>
-    </div>
-  </div>
-</div>
+<!-- SEAL1: coachModal(코치 편집/등록) · csvImportModal(CSV 가져오기) 제거 — 코치 쓰기는 coach-finder 영역. -->
 
 <!-- Report output — hidden on screen, shown via @media print -->
 <div id="printView"></div>
@@ -4076,7 +3798,6 @@ const i18n = {
     nav_list: '목록',
     nav_dashboard: '대시보드',
     nav_coaches: '코치 디렉토리',
-    nav_plans: '사업기획',
     nav_users: '사용자 관리',
     teams_title: '어떤 팀의 세션인가요?',
     teams_subtitle: '기존 팀을 선택하거나 새 팀을 만드세요',
@@ -4194,7 +3915,6 @@ const i18n = {
     nav_list: 'List',
     nav_dashboard: 'Dashboard',
     nav_coaches: 'Coach Directory',
-    nav_plans: 'Business Plans',
     nav_users: 'Users',
     teams_title: 'Which team is this session for?',
     teams_subtitle: 'Select an existing team or create a new one',
@@ -4307,7 +4027,6 @@ const i18n = {
     nav_list: '一覧',
     nav_dashboard: 'ダッシュボード',
     nav_coaches: 'コーチ一覧',
-    nav_plans: '事業企画',
     nav_users: 'ユーザー管理',
     teams_title: 'どのチームのセッションですか？',
     teams_subtitle: '既存のチームを選択するか新しいチームを作成',
@@ -4657,7 +4376,6 @@ function attachAuthListener() {
       currentProject = null;
       logs = [];
       allProfiles = [];
-      allBusinessPlans = [];
       localStorage.removeItem('ud-current-project-id');
       renderRoleBadge();
       showAuthScreen();
@@ -4894,8 +4612,6 @@ async function loadCurrentUserRole() {
   if (navCoachesEl) navCoachesEl.style.display = 'none';
   const navUsersEl = document.getElementById('navUsers');
   if (navUsersEl) navUsersEl.style.display = 'none';
-  const navPlansEl = document.getElementById('navPlans');
-  if (navPlansEl) navPlansEl.style.display = 'none';
 
   // CRITICAL: do NOT gate on supabaseAvailable here. It is set true lazily
   // inside loadLogs(), which runs AFTER this function in the init chain — so
@@ -4981,10 +4697,6 @@ function renderRoleBadge() {
   // Coach directory tab: admin + pm see it (only admin can edit; gate is in modal handlers)
   const navCoaches = document.getElementById('navCoaches');
   if (navCoaches) navCoaches.style.display =
-    (currentUserRole === 'admin' || currentUserRole === 'pm') ? '' : 'none';
-  // Business plans tab: admin + pm see it (coach hides). Same gate as coaches.
-  const navPlans = document.getElementById('navPlans');
-  if (navPlans) navPlans.style.display =
     (currentUserRole === 'admin' || currentUserRole === 'pm') ? '' : 'none';
   // User management tab: admin ONLY (PMs cannot manage users)
   const navUsers = document.getElementById('navUsers');
@@ -5500,7 +5212,6 @@ function switchView(name, opts) {
   if (name === 'dashboard') renderDashboard();
   if (name === 'coaches') renderCoachDirectory();
   if (name === 'users') renderUsersView();
-  if (name === 'plans') renderBPView();
   if (name === 'myinfo') renderMyInfo();  // Phase G2-A
 
   // Phase G2-C (2026-05-22): 미완료 코치는 myinfo 에 도착했을 때 모달 강제 표시.
@@ -5589,22 +5300,7 @@ function goHome() {
 // { mode: 'create' | 'edit', id: uuid | null }
 let _projModalState = { mode: 'create', id: null };
 
-function openProjectCreateModal() {
-  if (currentUserRole !== 'admin' && currentUserRole !== 'pm') { showToast('프로젝트 생성 권한이 없습니다.'); return; }
-  _projModalState = { mode: 'create', id: null };
-  document.getElementById('projModalTitle').textContent = '새 프로젝트';
-  document.getElementById('projModalSub').textContent = '프로젝트 정보를 입력하세요. 생성 후 코치를 배정할 수 있습니다.';
-  document.getElementById('projName').value = '';
-  document.getElementById('projDesc').value = '';
-  document.getElementById('projStart').value = '';
-  document.getElementById('projEnd').value = '';
-  document.getElementById('projStatus').value = 'active';
-  document.getElementById('projMemberSection').style.display = 'none';
-  document.getElementById('projDeleteBtn').style.display = 'none';
-  document.getElementById('projModalError').textContent = '';
-  document.getElementById('projModal').classList.add('active');
-  setTimeout(() => document.getElementById('projName').focus(), 0);
-}
+// openProjectCreateModal removed (SEAL1): 프로젝트 직접생성은 coach-finder 수주 트리거가 담당.
 
 function openProjectManageModal(id) {
   if (currentUserRole !== 'admin' && currentUserRole !== 'pm') { showToast('프로젝트 관리 권한이 없습니다.'); return; }
@@ -5612,14 +5308,15 @@ function openProjectManageModal(id) {
   if (!p) return;
   _projModalState = { mode: 'edit', id: p.id };
   document.getElementById('projModalTitle').textContent = '프로젝트 관리';
-  document.getElementById('projModalSub').textContent = p.name;
+  document.getElementById('projModalSub').textContent = p.name + ' · 코치 배정 관리';
+  // SEAL1: 프로젝트 메타(name/기간/상태)는 읽기 전용 표시만. 직접 수정/삭제는
+  //   coach-finder(수주 트리거) 영역. 이 모달은 멤버(코치) 배정 컨테이너로만 동작한다.
   document.getElementById('projName').value = p.name || '';
   document.getElementById('projDesc').value = p.description || '';
   document.getElementById('projStart').value = p.start_date || '';
   document.getElementById('projEnd').value = p.end_date || '';
   document.getElementById('projStatus').value = p.status || 'active';
   document.getElementById('projMemberSection').style.display = '';
-  document.getElementById('projDeleteBtn').style.display = '';
   document.getElementById('projModalError').textContent = '';
   document.getElementById('projModal').classList.add('active');
   _resetMemberSelection();
@@ -5640,56 +5337,8 @@ function closeProjectModal() {
   document.getElementById('projModal').classList.remove('active');
 }
 
-async function saveProjectModal() {
-  const name = document.getElementById('projName').value.trim();
-  if (!name) {
-    document.getElementById('projModalError').textContent = '이름은 필수입니다.';
-    return;
-  }
-  const payload = {
-    name,
-    description: document.getElementById('projDesc').value.trim() || null,
-    start_date: document.getElementById('projStart').value || null,
-    end_date: document.getElementById('projEnd').value || null,
-    status: document.getElementById('projStatus').value || 'active'
-  };
-  const btn = document.getElementById('projSaveBtn');
-  btn.disabled = true;
-  try {
-    let data, error;
-    if (_projModalState.mode === 'create') {
-      payload.created_by = currentUser ? currentUser.id : null;
-      ({ data, error } = await supabaseClient.from('projects').insert([payload]).select());
-    } else {
-      ({ data, error } = await supabaseClient.from('projects')
-        .update(payload).eq('id', _projModalState.id).select());
-    }
-    if (error) throw error;
-    showToast(_projModalState.mode === 'create' ? '프로젝트가 생성되었습니다.' : '저장되었습니다.');
-    await loadProjects();
-    // If we just edited the active project, refresh its in-memory ref
-    if (currentProject && !currentProject.__virtual && data && data[0] && data[0].id === currentProject.id) {
-      currentProject = data[0];
-    }
-    if (_projModalState.mode === 'create') {
-      // Keep modal open so admin can assign members right away
-      _projModalState = { mode: 'edit', id: data[0].id };
-      document.getElementById('projModalTitle').textContent = '프로젝트 관리';
-      document.getElementById('projModalSub').textContent = data[0].name;
-      document.getElementById('projMemberSection').style.display = '';
-      document.getElementById('projDeleteBtn').style.display = '';
-      loadAndRenderProjectMembers(data[0].id);
-    } else {
-      closeProjectModal();
-    }
-    renderTeams();
-  } catch (e) {
-    console.error('project save failed', e);
-    document.getElementById('projModalError').textContent = '저장 실패: ' + (e.message || e);
-  } finally {
-    btn.disabled = false;
-  }
-}
+// saveProjectModal removed (SEAL1): 프로젝트 메타 생성/수정은 coach-finder 영역.
+//   이 모달은 멤버 배정 전용 — 메타 입력은 읽기 전용이고 저장 버튼이 없다.
 
 // ------------------------------------------------------------
 // Phase 5-A: Move a single session to another project (or 미지정)
@@ -5760,24 +5409,7 @@ async function saveMoveProjectModal() {
   }
 }
 
-async function deleteCurrentProject() {
-  if (_projModalState.mode !== 'edit' || !_projModalState.id) return;
-  const p = myProjects.find(x => x.id === _projModalState.id);
-  if (!confirm(`"${p ? p.name : ''}" 프로젝트를 삭제하시겠어요?\n소속 세션은 남지만 project_id가 비워집니다.`)) return;
-  try {
-    const { error } = await supabaseClient.from('projects').delete().eq('id', _projModalState.id);
-    if (error) throw error;
-    showToast('프로젝트가 삭제되었습니다.');
-    if (currentProject && !currentProject.__virtual && currentProject.id === _projModalState.id) {
-      setCurrentProject(null);
-    }
-    await loadProjects();
-    closeProjectModal();
-    renderTeams();
-  } catch (e) {
-    document.getElementById('projModalError').textContent = '삭제 실패: ' + (e.message || e);
-  }
-}
+// deleteCurrentProject removed (SEAL1): 프로젝트 삭제는 coach-finder 영역.
 
 let _projCurrentMembers = [];
 
@@ -6259,7 +5891,7 @@ function renderProjectPicker(grid) {
         <p>프로젝트를 선택하면 해당 프로젝트의 팀·세션을 보고 새 코칭일지를 추가할 수 있습니다.</p>
         ${pmSummary}
       </div>
-      ${canManageProjects ? `<button class="btn btn-primary" onclick="openProjectCreateModal()">+ 새 프로젝트</button>` : ''}
+      ${canManageProjects ? `<span style="font-size:12px;color:var(--gray500);align-self:center;">프로젝트는 coach-finder 수주 시 자동 생성됩니다.</span>` : ''}
     </div>`;
 
   html += '<div class="proj-picker-grid" style="grid-column:1 / -1;">';
@@ -6269,7 +5901,7 @@ function renderProjectPicker(grid) {
       <div class="proj-empty" style="grid-column:1 / -1;">
         <div class="proj-empty-icon">🗂️</div>
         <p>${emptyMsg}</p>
-        ${canManageProjects ? `<button class="btn btn-primary" style="margin-top:12px;" onclick="openProjectCreateModal()">+ 첫 프로젝트 만들기</button>` : ''}
+        ${canManageProjects ? `<p style="margin-top:12px;font-size:12px;color:var(--gray500);">프로젝트는 coach-finder 수주 시 자동 생성됩니다.</p>` : ''}
       </div>`;
   }
 
@@ -6304,13 +5936,7 @@ function renderProjectPicker(grid) {
       </div>`;
   }
 
-  if (canManageProjects && myProjects.length > 0) {
-    html += `
-      <div class="proj-card proj-card-new" onclick="openProjectCreateModal()">
-        <div class="plus">+</div>
-        <span>새 프로젝트</span>
-      </div>`;
-  }
+  // "+ 새 프로젝트" tile removed (SEAL1): 프로젝트는 coach-finder 수주 시 자동 생성.
 
   html += '</div>';
   grid.innerHTML = html;
@@ -9594,7 +9220,7 @@ function _coachDirGridHtml(filtered) {
     const primaryExp = (c.expertise || [])[0];
     if (primaryExp) tagsHtml += `<span class="cd-tag">${escHtml(primaryExp)}</span>`;
     html += `
-        <div class="cd-card" onclick="openCoachEditModal('${escAttr(c.id)}')">
+        <div class="cd-card cd-card-readonly" style="cursor:default;">
           <div class="cd-avatar">${photoBlock}</div>
           <div class="cd-card-main">
             <div class="cd-name">${escHtml(c.name || '-')}</div>
@@ -9635,15 +9261,11 @@ function renderCoachDirBody(host) {
       <div class="cd-head">
         <div>
           <h2>코치 디렉토리</h2>
-          <div class="sub">언더독스 코치풀 ${coachDirectory.length}명. 클릭하면 상세 정보 편집, 로그인 계정 자동 연결.</div>
+          <div class="sub">언더독스 코치풀 ${coachDirectory.length}명. 읽기 전용 — 코치 등록·수정은 <a href="https://coach-finder-iota.vercel.app/" target="_blank" rel="noreferrer" style="color:var(--orange);text-decoration:underline;">coach-finder</a> 에서.</div>
         </div>
         <div style="display:flex;gap:8px;">
+          <!-- SEAL1: CSV 가져오기 / 새 코치 버튼 제거 — 코치 쓰기는 coach-finder 영역. CSV 내보내기(읽기)는 유지. -->
           <button class="btn btn-ghost" onclick="exportCoachesCSV()">📤 CSV 내보내기</button>
-          ${currentUserRole === 'admin' ? `
-          <button class="btn btn-ghost" onclick="document.getElementById('csvImportFile').click()">📥 CSV 가져오기</button>
-          <input type="file" id="csvImportFile" accept=".csv,text/csv" style="display:none;" onchange="onCoachCSVFilePicked(event)">
-          <button class="btn btn-primary" onclick="openCoachCreateModal()">+ 새 코치</button>
-          ` : ''}
         </div>
       </div>
 
@@ -9714,294 +9336,7 @@ function updateCoachFilter(key, value) {
 //  The underlying RPC `search_coaches_by_embedding` and embedding column
 //  remain on Supabase as shared infrastructure for both apps.)
 
-// ─── Coach edit modal ────────────────────────────────────────
-let _coachModalId = null;   // null = create mode, uuid = edit mode
-let _coachChipState = { regions: [], industries: [], expertise: [], roles: [], tags: [] };
-
-function openCoachCreateModal() {
-  if (currentUserRole !== 'admin') { showToast('관리자만 코치를 등록할 수 있습니다.'); return; }
-  _coachModalId = null;
-  document.getElementById('coachModalTitle').textContent = '새 코치 등록';
-  document.getElementById('coachModalSub').textContent = '언더독스 코치풀에 추가합니다.';
-  fillCoachModal({});   // empty
-  document.getElementById('coachDeleteBtn').style.display = 'none';
-  document.getElementById('coachHistoryWrap').style.display = 'none';
-  document.getElementById('coachModal').classList.add('active');
-  setTimeout(() => document.getElementById('coachName').focus(), 0);
-}
-
-async function openCoachEditModal(id) {
-  if (currentUserRole !== 'admin') { showToast('관리자만 편집 가능'); return; }
-  const c = coachDirectory.find(x => x.id === id);
-  if (!c) { showToast('코치를 찾지 못했습니다.'); return; }
-  _coachModalId = c.id;
-  document.getElementById('coachModalTitle').textContent = '코치 편집';
-  document.getElementById('coachModalSub').textContent = (c.name || '') + (c.email ? ' · ' + c.email : '');
-  // Hydrate full row (the list query had a reduced field set; fetch the rest)
-  try {
-    const { data, error } = await supabaseClient
-      .from('coaches_directory').select('*').eq('id', id).single();
-    if (error) throw error;
-    fillCoachModal(data);
-  } catch (e) {
-    // Fallback to list data
-    fillCoachModal(c);
-  }
-  document.getElementById('coachDeleteBtn').style.display = '';
-  document.getElementById('coachHistoryWrap').style.display = '';
-  loadCoachHistory(id);
-  document.getElementById('coachModal').classList.add('active');
-}
-
-function closeCoachModal() {
-  document.getElementById('coachModal').classList.remove('active');
-  document.getElementById('coachModalError').textContent = '';
-}
-
-function fillCoachModal(c) {
-  const v = (k, def = '') => c[k] == null ? def : c[k];
-  document.getElementById('coachName').value           = v('name');
-  document.getElementById('coachEmail').value          = v('email');
-  document.getElementById('coachPhone').value          = v('phone');
-  document.getElementById('coachGender').value         = v('gender');
-  document.getElementById('coachLanguage').value       = v('language');
-  document.getElementById('coachLocation').value       = v('location');
-  document.getElementById('coachCountry').value        = v('country');
-  document.getElementById('coachOrganization').value   = v('organization');
-  document.getElementById('coachPosition').value       = v('position');
-  document.getElementById('coachTier').value           = v('tier');
-  document.getElementById('coachCategory').value       = v('category');
-  document.getElementById('coachBusinessType').value   = v('business_type');
-  document.getElementById('coachStatus').value         = v('status', 'active');
-  document.getElementById('coachAvailability').value   = v('availability_status', 'available');
-  document.getElementById('coachMaxConcurrent').value  = v('max_concurrent_projects') === null ? '' : v('max_concurrent_projects');
-  document.getElementById('coachCareerYears').value    = v('career_years') === null ? '' : v('career_years');
-  document.getElementById('coachCareerYearsRaw').value = v('career_years_raw');
-  document.getElementById('coachOverseas').value       = v('overseas') ? 'true' : 'false';
-  document.getElementById('coachOverseasDetail').value = v('overseas_detail');
-  document.getElementById('coachIntro').value          = v('intro');
-  document.getElementById('coachCareerHistory').value  = v('career_history');
-  document.getElementById('coachEducation').value      = v('education');
-  document.getElementById('coachUnderdogsHistory').value = v('underdogs_history');
-  document.getElementById('coachCurrentWork').value    = v('current_work');
-  document.getElementById('coachToolsSkills').value    = v('tools_skills');
-  document.getElementById('coachNotes').value          = v('notes');
-  document.getElementById('coachPhotoUrl').value       = v('photo_url');
-  document.getElementById('coachPhotoStatus').textContent = '';
-
-  // Chips arrays
-  _coachChipState = {
-    regions:     Array.isArray(c.regions)     ? [...c.regions]     : [],
-    industries:  Array.isArray(c.industries)  ? [...c.industries]  : [],
-    expertise:   Array.isArray(c.expertise)   ? [...c.expertise]   : [],
-    roles:       Array.isArray(c.roles)       ? [...c.roles]       : [],
-    tags:        Array.isArray(c.tags)        ? [...c.tags]        : []
-  };
-  for (const k of Object.keys(_coachChipState)) renderCoachChips(k);
-
-  renderCoachPhotoPreview(c.photo_url, c.name);
-
-  // Linked user — read-only display (auto-linked by trigger when profile email matches)
-  if (c.linked_user_id) {
-    document.getElementById('coachLinkedEmail').value = '✓ 연결됨 (user id: ' + String(c.linked_user_id).slice(0, 8) + '...)';
-  } else {
-    document.getElementById('coachLinkedEmail').value = '';
-  }
-}
-
-function renderCoachChips(field) {
-  const box = document.querySelector(`.cd-chips[data-field="${field}"]`);
-  if (!box) return;
-  const input = box.querySelector('input');
-  const chips = _coachChipState[field] || [];
-  // Remove existing chips (keep only the input)
-  Array.from(box.children).forEach(ch => { if (ch !== input) ch.remove(); });
-  for (const val of chips) {
-    const span = document.createElement('span');
-    span.className = 'cd-chip';
-    span.innerHTML = `${escHtml(val)}<span class="x" data-val="${escAttr(val)}">×</span>`;
-    span.querySelector('.x').addEventListener('click', (e) => {
-      const v = e.target.dataset.val;
-      _coachChipState[field] = _coachChipState[field].filter(x => x !== v);
-      renderCoachChips(field);
-    });
-    box.insertBefore(span, input);
-  }
-  // Attach enter handler once
-  if (!input.dataset.bound) {
-    input.dataset.bound = '1';
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ',') {
-        e.preventDefault();
-        const val = input.value.trim();
-        if (val && !_coachChipState[field].includes(val)) {
-          _coachChipState[field].push(val);
-          renderCoachChips(field);
-        }
-        input.value = '';
-      } else if (e.key === 'Backspace' && !input.value && _coachChipState[field].length > 0) {
-        _coachChipState[field].pop();
-        renderCoachChips(field);
-      }
-    });
-  }
-}
-
-function renderCoachPhotoPreview(url, name) {
-  const box = document.getElementById('coachPhotoPreview');
-  if (!box) return;
-  if (url) {
-    box.innerHTML = `<img src="${escAttr(url)}" alt="${escAttr(name || '')}" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'${escAttr(coachInitials(name))}'}))">`;
-  } else {
-    box.textContent = coachInitials(name);
-  }
-}
-
-// Photo URL typed manually → re-render preview live
-document.addEventListener('input', (e) => {
-  if (e.target && e.target.id === 'coachPhotoUrl') {
-    renderCoachPhotoPreview(e.target.value.trim(), document.getElementById('coachName').value);
-  }
-});
-
-// File upload → Supabase Storage → fill photo_url
-document.addEventListener('change', async (e) => {
-  if (!(e.target && e.target.id === 'coachPhotoFile')) return;
-  const file = e.target.files && e.target.files[0];
-  if (!file) return;
-  const status = document.getElementById('coachPhotoStatus');
-  status.textContent = '업로드 중…';
-  try {
-    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
-    const safeName = (document.getElementById('coachName').value || 'coach').replace(/[^a-zA-Z0-9가-힣_-]/g, '_').slice(0, 40);
-    const path = `${Date.now()}_${safeName}.${ext}`;
-    const { data, error } = await supabaseClient.storage.from('coach-photos').upload(path, file, {
-      cacheControl: '31536000', upsert: false, contentType: file.type
-    });
-    if (error) throw error;
-    const { data: pub } = supabaseClient.storage.from('coach-photos').getPublicUrl(data.path);
-    const url = pub.publicUrl;
-    document.getElementById('coachPhotoUrl').value = url;
-    renderCoachPhotoPreview(url, document.getElementById('coachName').value);
-    status.textContent = '업로드 완료.';
-    e.target.value = '';
-  } catch (err) {
-    status.textContent = '업로드 실패: ' + (err.message || err);
-  }
-});
-
-function _coachCollectForm() {
-  const num = (id) => {
-    const v = document.getElementById(id).value.trim();
-    return v === '' ? null : (Number.isFinite(Number(v)) ? Number(v) : null);
-  };
-  const str = (id) => {
-    const v = document.getElementById(id).value.trim();
-    return v === '' ? null : v;
-  };
-  return {
-    name:              str('coachName') || '(이름 미기재)',
-    email:             str('coachEmail') ? str('coachEmail').toLowerCase() : null,
-    phone:             str('coachPhone'),
-    gender:            str('coachGender'),
-    language:          str('coachLanguage'),
-    location:          str('coachLocation'),
-    country:           str('coachCountry'),
-    regions:           [..._coachChipState.regions],
-    organization:      str('coachOrganization'),
-    position:          str('coachPosition'),
-    industries:        [..._coachChipState.industries],
-    expertise:         [..._coachChipState.expertise],
-    roles:             [..._coachChipState.roles],
-    tags:              [..._coachChipState.tags],
-    tier:              str('coachTier') ? Number(str('coachTier')) : null,  // DB tier=integer(1/2/3)
-    category:          str('coachCategory'),
-    business_type:     str('coachBusinessType'),
-    status:            str('coachStatus') || 'active',
-    availability_status: str('coachAvailability') || 'available',
-    max_concurrent_projects: num('coachMaxConcurrent'),
-    career_years:      num('coachCareerYears'),
-    career_years_raw:  str('coachCareerYearsRaw'),
-    overseas:          document.getElementById('coachOverseas').value === 'true',
-    overseas_detail:   str('coachOverseasDetail'),
-    intro:             str('coachIntro'),
-    career_history:    str('coachCareerHistory'),
-    education:         str('coachEducation'),
-    underdogs_history: str('coachUnderdogsHistory'),
-    current_work:      str('coachCurrentWork'),
-    tools_skills:      str('coachToolsSkills'),
-    notes:             str('coachNotes'),
-    photo_url:         str('coachPhotoUrl')
-  };
-}
-
-async function saveCoach() {
-  const payload = _coachCollectForm();
-  if (!payload.name) {
-    document.getElementById('coachModalError').textContent = '이름은 필수입니다.';
-    return;
-  }
-  const btn = document.getElementById('coachSaveBtn');
-  btn.disabled = true;
-  try {
-    let data, error;
-    if (_coachModalId) {
-      ({ data, error } = await supabaseClient.from('coaches_directory')
-        .update(payload).eq('id', _coachModalId).select());
-    } else {
-      ({ data, error } = await supabaseClient.from('coaches_directory')
-        .insert([payload]).select());
-    }
-    if (error) throw error;
-    showToast(_coachModalId ? '저장되었습니다.' : '코치가 등록되었습니다.');
-    await loadCoachDirectory();
-    closeCoachModal();
-    renderCoachDirBody(document.getElementById('coachesContent'));
-  } catch (e) {
-    document.getElementById('coachModalError').textContent = '저장 실패: ' + (e.message || e);
-  } finally {
-    btn.disabled = false;
-  }
-}
-
-async function deleteCoach() {
-  if (!_coachModalId) return;
-  const c = coachDirectory.find(x => x.id === _coachModalId);
-  if (!confirm(`"${c ? c.name : ''}" 코치를 삭제하시겠어요?\n(archive로 대신 바꾸는 걸 권장합니다)`)) return;
-  try {
-    const { error } = await supabaseClient.from('coaches_directory').delete().eq('id', _coachModalId);
-    if (error) throw error;
-    showToast('삭제되었습니다.');
-    await loadCoachDirectory();
-    closeCoachModal();
-    renderCoachDirBody(document.getElementById('coachesContent'));
-  } catch (e) {
-    document.getElementById('coachModalError').textContent = '삭제 실패: ' + (e.message || e);
-  }
-}
-
-async function loadCoachHistory(id) {
-  const host = document.getElementById('coachHistory');
-  host.innerHTML = '<div style="padding:6px 10px;color:var(--gray400);">이력 로드 중…</div>';
-  try {
-    const { data, error } = await supabaseClient.from('coaches_directory_history')
-      .select('op, changed_at, changed_by')
-      .eq('coach_id', id).order('changed_at', { ascending: false }).limit(10);
-    if (error) throw error;
-    if (!data || data.length === 0) {
-      host.innerHTML = '<div style="padding:6px 10px;">변경 이력 없음</div>';
-      return;
-    }
-    host.innerHTML = data.map(h => `
-      <div class="cd-history-row">
-        <strong>${escHtml(h.op)}</strong> ·
-        ${escHtml(new Date(h.changed_at).toLocaleString('ko-KR'))} ·
-        by ${escHtml(h.changed_by ? String(h.changed_by).slice(0, 8) + '…' : 'system')}
-      </div>`).join('');
-  } catch (e) {
-    host.innerHTML = `<div style="padding:6px 10px;color:var(--red);">이력 로드 실패: ${escHtml(e.message || String(e))}</div>`;
-  }
-}
+// SEAL1: 코치 디렉토리 쓰기(openCoachCreateModal·openCoachEditModal·closeCoachModal·fillCoachModal·renderCoachChips·renderCoachPhotoPreview·photo upload listeners·_coachCollectForm·saveCoach·deleteCoach·loadCoachHistory) 제거 — 코치 등록/수정은 coach-finder 영역. 디렉토리 읽기/검색/필터/CSV내보내기는 유지.
 
 // ============================================================
 // Coach Directory — CSV Import / Export (admin)
@@ -10084,194 +9419,7 @@ function exportCoachesCSV() {
   })();
 }
 
-// ─── CSV Import ──────────────────────────────────────────────
-// Small RFC4180-ish parser — handles quoted fields, commas in quotes,
-// escaped double-quotes, and \r\n / \n line endings. Adequate for
-// admin-managed spreadsheets.
-function _parseCSV(text) {
-  // Strip UTF-8 BOM
-  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
-  const rows = [];
-  let row = [];
-  let field = '';
-  let inQuotes = false;
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i], n = text[i + 1];
-    if (inQuotes) {
-      if (c === '"' && n === '"') { field += '"'; i++; }
-      else if (c === '"') { inQuotes = false; }
-      else { field += c; }
-    } else {
-      if (c === '"') inQuotes = true;
-      else if (c === ',') { row.push(field); field = ''; }
-      else if (c === '\r' && n === '\n') { row.push(field); rows.push(row); row = []; field = ''; i++; }
-      else if (c === '\n' || c === '\r') { row.push(field); rows.push(row); row = []; field = ''; }
-      else field += c;
-    }
-  }
-  // Flush last field/row
-  if (field !== '' || row.length > 0) { row.push(field); rows.push(row); }
-  // Drop trailing empty row
-  while (rows.length > 0 && rows[rows.length - 1].every(x => x === '')) rows.pop();
-  return rows;
-}
-
-let _csvImportState = { parsed: [], headers: [], file: null };
-
-function onCoachCSVFilePicked(ev) {
-  const file = ev.target.files && ev.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    try {
-      const rows = _parseCSV(reader.result);
-      if (rows.length < 2) throw new Error('헤더 + 데이터 행이 최소 1개 이상 필요합니다.');
-      const headers = rows[0].map(h => h.trim());
-      const records = [];
-      for (let i = 1; i < rows.length; i++) {
-        const r = rows[i];
-        if (r.every(x => (x || '').trim() === '')) continue;
-        const obj = {};
-        for (let j = 0; j < headers.length; j++) {
-          obj[headers[j]] = r[j] !== undefined ? r[j] : '';
-        }
-        records.push(obj);
-      }
-      _csvImportState = { parsed: records, headers, file };
-      showCsvImportPreview();
-    } catch (e) {
-      showToast('CSV 파싱 실패: ' + (e.message || e));
-    }
-    // Reset file input so the same file can be re-picked later
-    ev.target.value = '';
-  };
-  reader.readAsText(file, 'utf-8');
-}
-
-function showCsvImportPreview() {
-  const { parsed, headers } = _csvImportState;
-  // Summary
-  const sub = document.getElementById('csvImportSub');
-  sub.textContent = `${_csvImportState.file.name} · ${parsed.length}개 행`;
-
-  const unknownCols = headers.filter(h => !COACH_CSV_COLUMNS.includes(h));
-  const missingCols = COACH_CSV_COLUMNS.filter(h => !headers.includes(h));
-  const withEmail = parsed.filter(r => (r.email || '').trim()).length;
-  const withExtId = parsed.filter(r => (r.external_id || '').trim()).length;
-
-  document.getElementById('csvImportSummary').innerHTML = `
-    <div class="rpt-kpi"><div class="rpt-kpi-label">총 행</div><div class="rpt-kpi-value">${parsed.length}</div></div>
-    <div class="rpt-kpi"><div class="rpt-kpi-label">external_id 있음</div><div class="rpt-kpi-value">${withExtId}</div></div>
-    <div class="rpt-kpi"><div class="rpt-kpi-label">email 있음</div><div class="rpt-kpi-value">${withEmail}</div></div>
-    <div class="rpt-kpi"><div class="rpt-kpi-label">알 수 없는 컬럼</div><div class="rpt-kpi-value" style="color:${unknownCols.length ? 'var(--yellow)' : 'inherit'};">${unknownCols.length}</div></div>`;
-
-  let issues = '';
-  if (unknownCols.length > 0) issues += `<div>⚠ 알 수 없는 컬럼 (무시됨): ${unknownCols.join(', ')}</div>`;
-  if (missingCols.length > 0) issues += `<div style="color:var(--gray500);">※ CSV에 없는 컬럼 (기존 값 유지): ${missingCols.join(', ')}</div>`;
-  document.getElementById('csvImportIssues').innerHTML = issues;
-
-  // Preview table (first 5 rows × known cols only)
-  const previewCols = headers.filter(h => COACH_CSV_COLUMNS.includes(h)).slice(0, 8);
-  const thead = '<tr>' + previewCols.map(c => `<th style="padding:4px 8px;text-align:left;border-bottom:1px solid var(--gray200);font-weight:600;background:var(--gray100);">${escHtml(c)}</th>`).join('') + '</tr>';
-  const tbody = parsed.slice(0, 5).map(r => '<tr>' +
-    previewCols.map(c => `<td style="padding:4px 8px;border-bottom:1px solid var(--gray100);white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis;">${escHtml((r[c] || '').slice(0, 80))}</td>`).join('')
-    + '</tr>').join('');
-  document.getElementById('csvImportPreview').querySelector('thead').innerHTML = thead;
-  document.getElementById('csvImportPreview').querySelector('tbody').innerHTML = tbody;
-
-  document.getElementById('csvImportError').textContent = '';
-  document.getElementById('csvImportCommitBtn').disabled = parsed.length === 0;
-  document.getElementById('csvImportModal').classList.add('active');
-}
-
-function closeCsvImportModal() {
-  document.getElementById('csvImportModal').classList.remove('active');
-}
-
-function _toArrField(raw) {
-  if (raw == null) return [];
-  return String(raw).split(/[;,]/).map(x => x.trim()).filter(Boolean);
-}
-function _toBoolField(raw) {
-  if (raw == null) return false;
-  const s = String(raw).trim().toLowerCase();
-  return ['true','yes','y','1','t','예'].includes(s);
-}
-function _toNumField(raw) {
-  if (raw == null || String(raw).trim() === '') return null;
-  const n = Number(raw);
-  return Number.isFinite(n) ? n : null;
-}
-
-async function commitCsvImport() {
-  const { parsed } = _csvImportState;
-  if (!parsed || parsed.length === 0) return;
-  const keyCol = document.getElementById('csvImportKey').value;
-  const onConflict = document.getElementById('csvImportConflict').value;
-  const btn = document.getElementById('csvImportCommitBtn');
-  btn.disabled = true;
-  const errEl = document.getElementById('csvImportError');
-  errEl.textContent = '';
-
-  // Map rows → canonical shape
-  const mapped = [];
-  let skippedNoKey = 0;
-  for (const r of parsed) {
-    const keyVal = (r[keyCol] || '').trim();
-    if (!keyVal) { skippedNoKey++; continue; }
-    const row = {};
-    for (const col of COACH_CSV_COLUMNS) {
-      if (!(col in r)) continue;
-      const raw = r[col];
-      if (COACH_ARRAY_COLS.has(col)) row[col] = _toArrField(raw);
-      else if (COACH_BOOL_COLS.has(col)) row[col] = _toBoolField(raw);
-      else if (COACH_NUM_COLS.has(col)) row[col] = _toNumField(raw);
-      else {
-        const v = typeof raw === 'string' ? raw.trim() : raw;
-        row[col] = v === '' ? null : v;
-      }
-    }
-    // Normalize email
-    if (row.email) row.email = String(row.email).toLowerCase().trim();
-    // Ensure required fields
-    if (!row.name) row.name = row.name || '(이름 미기재)';
-    mapped.push(row);
-  }
-
-  if (mapped.length === 0) {
-    errEl.textContent = `매칭 기준 컬럼(${keyCol})에 값이 있는 행이 없습니다.`;
-    btn.disabled = false;
-    return;
-  }
-
-  try {
-    let inserted = 0, updated = 0, failed = 0;
-    const batchSize = 50;
-    for (let i = 0; i < mapped.length; i += batchSize) {
-      const batch = mapped.slice(i, i + batchSize);
-      const options = onConflict === 'skip'
-        ? { onConflict: keyCol, ignoreDuplicates: true }
-        : { onConflict: keyCol };
-      const { data, error } = await supabaseClient
-        .from('coaches_directory')
-        .upsert(batch, options)
-        .select('id');
-      if (error) { failed += batch.length; throw error; }
-      // supabase-js doesn't tell us inserted vs updated explicitly; estimate via
-      // returned count vs batch size when onConflict=skip.
-      if (onConflict === 'skip') inserted += (data || []).length;
-      else updated += (data || []).length;  // simplification: treat all as touched
-    }
-    showToast(`완료: ${onConflict === 'skip' ? inserted + '건 신규 (중복 건너뜀)' : updated + '건 반영'}${skippedNoKey > 0 ? ` · ${skippedNoKey}건 skip (키 없음)` : ''}`);
-    closeCsvImportModal();
-    await loadCoachDirectory();
-    renderCoachDirBody(document.getElementById('coachesContent'));
-  } catch (e) {
-    errEl.textContent = '실패: ' + (e.message || e);
-  } finally {
-    btn.disabled = false;
-  }
-}
+// SEAL1: CSV 가져오기(_parseCSV·onCoachCSVFilePicked·showCsvImportPreview·closeCsvImportModal·_to*Field·commitCsvImport) 제거 — 코치 쓰기는 coach-finder 영역. CSV 내보내기(exportCoachesCSV)는 유지.
 
 // ============================================================
 // View 7: User Management (admin-only)
@@ -10524,941 +9672,6 @@ async function quickAddPM(email) {
   } catch (e) {
     showToast('PM 등록 실패: ' + (e.message || e));
     console.error(e);
-  }
-}
-
-// ============================================================
-// View 8: Business Plans (admin / pm) — Phase 5-B
-// ============================================================
-//
-// Backend: tables `business_plans`, `business_plan_coaches`, `coach_evaluations`
-// (migration 20260428_phase5b_business_plans.sql). The `bp_on_won` AFTER UPDATE
-// trigger auto-creates a row in `projects` and copies accepted coaches into
-// `project_members` when status transitions to 'won' — so the UI just sets
-// status='won' and re-fetches to pick up the new project_id.
-//
-// State is intentionally module-level (not closure-scoped) so debug code in the
-// console can poke at it. All Supabase calls are wrapped in try/catch with
-// user-facing toasts on failure.
-
-let allBusinessPlans = [];                              // cache of BP rows
-let bpFilter = { q: '', status: '' };                   // toolbar filter
-let _bpModalState = { mode: 'create', id: null };       // create/edit modal
-let _bpDetailId = null;                                 // currently-open BP id (null => list view)
-let _bpDetailCoaches = [];                              // pinned coaches for the open BP
-let _bpDetailEvaluations = [];                          // full coach_evaluations rows for the open BP — read-only display (ADR-011: 쓰기는 coach-finder)
-let _bpCoachPickerState = { bp_id: null, q: '', results: [] };
-
-async function loadAllBusinessPlans() {
-  if (!supabaseAvailable) return;
-  try {
-    const { data, error } = await supabaseClient
-      .from('business_plans')
-      .select('id, title, client_org, description, status, target_start_date, target_end_date, estimated_budget, notes, project_id, created_by, created_at, updated_at')
-      .order('created_at', { ascending: false });
-    if (!error && data) allBusinessPlans = data;
-    else if (error) console.warn('loadAllBusinessPlans error', error);
-  } catch (e) { console.warn('loadAllBusinessPlans failed', e); }
-}
-
-async function renderBPView() {
-  const host = document.getElementById('plansContent');
-  if (!host) return;
-  // Hard gate: admin or pm only. (Coach role should never see the tab, but
-  // defend in depth in case the URL/state is reused.)
-  if (currentUserRole !== 'admin' && currentUserRole !== 'pm') {
-    showToast('관리자/PM만 접근 가능합니다');
-    switchView('teams');
-    return;
-  }
-  // Reset detail state when entering the view fresh from nav
-  _bpDetailId = null;
-  if (allBusinessPlans.length === 0) {
-    host.innerHTML = `<div class="bp-empty">⏳ 로딩 중…</div>`;
-    await loadAllBusinessPlans();
-  }
-  renderBPListBody(host);
-}
-
-function bpStatusPill(status) {
-  const map = {
-    draft:     { label: '작성중',   cls: 'bp-status-draft' },
-    proposed:  { label: '제안',     cls: 'bp-status-proposed' },
-    won:       { label: '수주 ✓',   cls: 'bp-status-won' },
-    lost:      { label: '실주',     cls: 'bp-status-lost' },
-    cancelled: { label: '취소',     cls: 'bp-status-cancelled' },
-  };
-  const m = map[status] || map.draft;
-  return `<span class="bp-status ${m.cls}">${m.label}</span>`;
-}
-
-function _bpFmtDate(s) {
-  if (!s) return '-';
-  try {
-    const d = new Date(s);
-    if (isNaN(d.getTime())) return String(s);
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
-  } catch (e) { return String(s); }
-}
-
-function _bpFmtBudget(n) {
-  if (n === null || n === undefined || n === '') return '-';
-  const num = Number(n);
-  if (!isFinite(num)) return String(n);
-  // Korean Won, with thousands separator
-  return '₩ ' + num.toLocaleString('ko-KR');
-}
-
-function _bpFiltered() {
-  const f = bpFilter;
-  const q = f.q.trim().toLowerCase();
-  return allBusinessPlans.filter(bp => {
-    if (f.status && bp.status !== f.status) return false;
-    if (q) {
-      const hay = ((bp.title || '') + ' ' + (bp.client_org || '') + ' ' + (bp.description || '')).toLowerCase();
-      if (!hay.includes(q)) return false;
-    }
-    return true;
-  });
-}
-
-function _bpGridHtml(rows) {
-  if (rows.length === 0) {
-    return `<div class="bp-empty">
-      <div class="bp-empty-icon">📋</div>
-      <div>등록된 사업기획이 없습니다.</div>
-      <div style="font-size:12px;margin-top:6px;">우측 상단의 "+ 새 BP" 버튼으로 시작하세요.</div>
-    </div>`;
-  }
-  let html = '';
-  for (const bp of rows) {
-    const dateRange = (bp.target_start_date || bp.target_end_date)
-      ? `${_bpFmtDate(bp.target_start_date)} ~ ${_bpFmtDate(bp.target_end_date)}`
-      : '기간 미정';
-    html += `
-      <div class="bp-card" onclick="openBPDetail('${escAttr(bp.id)}')">
-        <div class="bp-card-top">
-          <div class="bp-title">${escHtml(bp.title || '(제목 없음)')}</div>
-          ${bpStatusPill(bp.status)}
-        </div>
-        <div class="bp-client">${escHtml(bp.client_org || '(고객사 미정)')}</div>
-        <div class="bp-meta">
-          <span>📅 ${escHtml(dateRange)}</span>
-          <span class="bp-budget">${escHtml(_bpFmtBudget(bp.estimated_budget))}</span>
-        </div>
-        ${bp.project_id ? `<div style="font-size:11px;color:var(--green);margin-top:4px;">→ 프로젝트 생성됨</div>` : ''}
-      </div>`;
-  }
-  return `<div class="bp-grid">${html}</div>`;
-}
-
-function renderBPListBody(host) {
-  const f = bpFilter;
-  const filtered = _bpFiltered();
-  const html = `
-    <div class="bp-wrap">
-      <div class="bp-head">
-        <div>
-          <h2>사업기획 (BP)</h2>
-          <div class="sub">고객사 BP를 관리하고 후보 코치를 핀(고정)합니다. 수주(won)로 전환하면 프로젝트와 멤버가 자동 생성됩니다.</div>
-        </div>
-        <div class="bp-head-actions">
-          <button class="btn btn-primary" onclick="openBPCreateModal()">+ 새 BP</button>
-        </div>
-      </div>
-
-      <div class="bp-toolbar">
-        <input type="text" placeholder="제목·고객사·설명 검색" value="${escAttr(f.q)}"
-               oninput="updateBPFilter('q', this.value)">
-        <select onchange="updateBPFilter('status', this.value)">
-          <option value="">상태: 전체</option>
-          <option value="draft"${f.status === 'draft' ? ' selected' : ''}>draft (작성중)</option>
-          <option value="proposed"${f.status === 'proposed' ? ' selected' : ''}>proposed (제안)</option>
-          <option value="won"${f.status === 'won' ? ' selected' : ''}>won (수주)</option>
-          <option value="lost"${f.status === 'lost' ? ' selected' : ''}>lost (실주)</option>
-          <option value="cancelled"${f.status === 'cancelled' ? ' selected' : ''}>cancelled (취소)</option>
-        </select>
-        <span class="bp-count">${filtered.length} / ${allBusinessPlans.length}건</span>
-      </div>
-
-      <div id="bpGridHost">
-        ${_bpGridHtml(filtered)}
-      </div>
-    </div>`;
-  host.innerHTML = html;
-}
-
-// Re-render only the grid + count — preserves the search input focus.
-// (The user previously hit a focus-loss bug in updateCoachFilter; we mirror
-// the fix here: 'q' input changes MUST NOT redraw the toolbar input.)
-function renderBPGridOnly() {
-  const gridHost = document.getElementById('bpGridHost');
-  if (!gridHost) {
-    renderBPListBody(document.getElementById('plansContent'));
-    return;
-  }
-  const filtered = _bpFiltered();
-  gridHost.innerHTML = _bpGridHtml(filtered);
-  const countEl = document.querySelector('#viewPlans .bp-count');
-  if (countEl) countEl.textContent = `${filtered.length} / ${allBusinessPlans.length}건`;
-}
-
-function updateBPFilter(key, value) {
-  bpFilter[key] = value;
-  if (key === 'q') {
-    renderBPGridOnly();
-  } else {
-    renderBPListBody(document.getElementById('plansContent'));
-  }
-}
-
-// ---------- BP detail panel (inline, replaces grid) ----------
-
-async function openBPDetail(id) {
-  _bpDetailId = id;
-  _bpDetailCoaches = [];
-  _bpDetailEvaluations = [];
-  // Show a loading shell first so the click feels responsive
-  const host = document.getElementById('plansContent');
-  if (host) {
-    host.innerHTML = `
-      <div class="bp-detail-wrap">
-        <button class="bp-detail-back" onclick="closeBPDetail()">← 목록으로</button>
-        <div class="bp-empty">⏳ 로딩 중…</div>
-      </div>`;
-  }
-  await _bpLoadDetailData(id);
-  renderBPDetailBody();
-}
-
-async function _bpLoadDetailData(bpId) {
-  if (!supabaseAvailable) return;
-  try {
-    // Pinned coaches with denormalized name/email/org from coaches_directory.
-    // We use Supabase's nested-select syntax (FK relationship name = the
-    // referenced table). If the relationship isn't auto-detected, fall back
-    // to two queries.
-    const { data: coachRows, error: cErr } = await supabaseClient
-      .from('business_plan_coaches')
-      .select('id, business_plan_id, coach_directory_id, rank, status, notes, added_at, coaches_directory:coach_directory_id(id, name, email, organization, expertise)')
-      .eq('business_plan_id', bpId)
-      .order('rank', { ascending: true, nullsFirst: false })
-      .order('added_at', { ascending: true });
-    if (cErr) {
-      console.warn('bp coaches join failed; falling back', cErr);
-      // Fallback: two-step
-      const { data: bpc } = await supabaseClient
-        .from('business_plan_coaches')
-        .select('*')
-        .eq('business_plan_id', bpId);
-      const ids = (bpc || []).map(r => r.coach_directory_id).filter(Boolean);
-      let dirs = [];
-      if (ids.length > 0) {
-        const { data: cd } = await supabaseClient
-          .from('coaches_directory')
-          .select('id, name, email, organization, expertise')
-          .in('id', ids);
-        dirs = cd || [];
-      }
-      _bpDetailCoaches = (bpc || []).map(r => ({
-        ...r,
-        coaches_directory: dirs.find(d => d.id === r.coach_directory_id) || null
-      }));
-    } else {
-      _bpDetailCoaches = coachRows || [];
-    }
-  } catch (e) { console.warn('bp detail coaches failed', e); }
-
-  try {
-    // Phase C3: load full evaluation rows. Try the nested-select first (FK
-    // relationship to coaches_directory). If relationship inference fails,
-    // fall back to a two-step fetch (mirrors the business_plan_coaches block
-    // above). Sort by created_at DESC so newest evaluations appear first.
-    const { data: evalRows, error: eErr } = await supabaseClient
-      .from('coach_evaluations')
-      .select('id, coach_directory_id, business_plan_id, project_id, evaluator_id, rating_overall, rating_communication, rating_expertise, rating_reliability, would_rehire, comment, created_at, updated_at, coaches_directory:coach_directory_id(id, name, email, organization)')
-      .eq('business_plan_id', bpId)
-      .order('created_at', { ascending: false });
-    let evalsBase = [];
-    if (eErr) {
-      console.warn('bp eval join failed; falling back', eErr);
-      const { data: rawEvals } = await supabaseClient
-        .from('coach_evaluations')
-        .select('*')
-        .eq('business_plan_id', bpId)
-        .order('created_at', { ascending: false });
-      const cIds = (rawEvals || []).map(r => r.coach_directory_id).filter(Boolean);
-      let cDirs = [];
-      if (cIds.length > 0) {
-        const { data: cd } = await supabaseClient
-          .from('coaches_directory')
-          .select('id, name, email, organization')
-          .in('id', cIds);
-        cDirs = cd || [];
-      }
-      evalsBase = (rawEvals || []).map(r => ({
-        ...r,
-        coaches_directory: cDirs.find(d => d.id === r.coach_directory_id) || null
-      }));
-    } else {
-      evalsBase = evalRows || [];
-    }
-    // Resolve evaluator display_name via a separate profiles fetch (no direct
-    // FK relationship from coach_evaluations to profiles in PostgREST).
-    const evIds = Array.from(new Set(evalsBase.map(r => r.evaluator_id).filter(Boolean)));
-    let profById = {};
-    if (evIds.length > 0) {
-      try {
-        const { data: profs, error: pErr } = await supabaseClient
-          .from('profiles')
-          .select('id, email, display_name')
-          .in('id', evIds);
-        if (!pErr && profs) profs.forEach(p => { profById[p.id] = p; });
-      } catch (pe) { console.warn('bp eval profile fetch failed', pe); }
-    }
-    _bpDetailEvaluations = evalsBase.map(r => ({
-      ...r,
-      _evaluator_profile: profById[r.evaluator_id] || null
-    }));
-  } catch (e) {
-    console.warn('bp eval load failed', e);
-    _bpDetailEvaluations = [];
-  }
-}
-
-function _bpTransitionsFor(status) {
-  // Returns array of {to, label, cls} for valid transitions from current status.
-  // 'won' uses dedicated styling because it triggers project auto-creation.
-  switch (status) {
-    case 'draft':
-      return [
-        { to: 'proposed',  label: '제안 단계로',     cls: '' },
-        { to: 'cancelled', label: '취소',            cls: 'bp-trans-cancelled' },
-      ];
-    case 'proposed':
-      return [
-        { to: 'won',       label: '수주 처리',       cls: 'bp-trans-won' },
-        { to: 'lost',      label: '실주',            cls: 'bp-trans-lost' },
-        { to: 'cancelled', label: '취소',            cls: 'bp-trans-cancelled' },
-        { to: 'draft',     label: '작성중으로 되돌리기', cls: '' },
-      ];
-    case 'won':
-      // Once won, the project exists; we don't allow rolling back from the UI.
-      return [];
-    case 'lost':
-    case 'cancelled':
-      return [
-        { to: 'draft', label: '다시 작성중으로', cls: '' },
-      ];
-    default:
-      return [];
-  }
-}
-
-function renderBPDetailBody() {
-  const host = document.getElementById('plansContent');
-  if (!host || !_bpDetailId) return;
-  const bp = allBusinessPlans.find(b => b.id === _bpDetailId);
-  if (!bp) {
-    host.innerHTML = `
-      <div class="bp-detail-wrap">
-        <button class="bp-detail-back" onclick="closeBPDetail()">← 목록으로</button>
-        <div class="bp-empty">BP를 찾을 수 없습니다.</div>
-      </div>`;
-    return;
-  }
-  const dateRange = (bp.target_start_date || bp.target_end_date)
-    ? `${_bpFmtDate(bp.target_start_date)} ~ ${_bpFmtDate(bp.target_end_date)}`
-    : '기간 미정';
-
-  // Status transition buttons
-  const trans = _bpTransitionsFor(bp.status);
-  const transHtml = trans.length === 0
-    ? `<div style="font-size:12px;color:var(--gray400);margin:4px 0 14px;">상태 전이 불가 (수주 완료된 BP는 잠금)</div>`
-    : `<div class="bp-detail-trans">${trans.map(t =>
-        `<button class="${t.cls}" onclick="transitionBPStatus('${escAttr(bp.id)}','${t.to}')">${escHtml(t.label)}</button>`
-      ).join('')}</div>`;
-
-  // Pinned coach rows
-  const coachRowsHtml = _bpDetailCoaches.length === 0
-    ? `<div class="bp-coach-empty">아직 핀(고정)된 코치가 없습니다. "+ 코치 추가"로 후보를 등록하세요.</div>`
-    : _bpDetailCoaches.map(bpc => {
-        const cd = bpc.coaches_directory || {};
-        const statusOpts = ['candidate', 'proposed', 'accepted', 'rejected', 'withdrawn']
-          .map(s => `<option value="${s}"${bpc.status === s ? ' selected' : ''}>${s}</option>`).join('');
-        const orgLine = cd.organization || cd.email || '';
-        return `
-          <div class="bp-coach-row">
-            <div>
-              <div class="c-name">${escHtml(cd.name || '(이름 없음)')}</div>
-              <div class="c-org">${escHtml(orgLine)}</div>
-            </div>
-            <select onchange="updateBPCoachStatus('${escAttr(bpc.id)}', this.value)">${statusOpts}</select>
-            <button title="제거" onclick="unpinCoachFromBP('${escAttr(bpc.id)}')">×</button>
-          </div>`;
-      }).join('');
-
-  // Project link
-  const projectLink = bp.project_id
-    ? `<a href="javascript:void(0)" onclick="_bpJumpToProject('${escAttr(bp.project_id)}')" style="color:var(--orange);font-weight:600;">프로젝트 보기 →</a>`
-    : `<span style="color:var(--gray400);">아직 프로젝트가 생성되지 않았습니다.</span>`;
-
-  // Edit / delete buttons (delete admin-only)
-  const editBtn = `<button class="btn btn-ghost" onclick="openBPEditModal('${escAttr(bp.id)}')">✏️ 편집</button>`;
-  const deleteBtn = (currentUserRole === 'admin')
-    ? `<button class="btn btn-danger" onclick="deleteBPFromDetail('${escAttr(bp.id)}')">🗑 삭제</button>`
-    : '';
-
-  // Coach evaluation list (Phase C3) — read-only display.
-  // ADR-011: 평가 쓰기(작성·편집·삭제)는 coach-finder 단일 소유. 여기는 표시만.
-  const evalListHtml = _bpDetailEvaluations.length === 0
-    ? `<div class="bp-eval-empty">아직 작성된 평가가 없습니다.</div>`
-    : _bpDetailEvaluations.map(ev => {
-        const cd = ev.coaches_directory || {};
-        const coachName = cd.name || '(이름 없음)';
-        const evProf = ev._evaluator_profile || null;
-        const evaluatorLabel = (evProf && (evProf.display_name || evProf.email)) || ev.evaluator_id || '-';
-        const createdAt = _bpFmtDate(ev.created_at);
-        const rehireBadge = (ev.would_rehire === true)
-          ? `<span class="bp-eval-rehire-yes">재의뢰 의향 ✓</span>`
-          : (ev.would_rehire === false)
-            ? `<span class="bp-eval-rehire-no">재의뢰 의향 ✗</span>`
-            : `<span class="bp-eval-rehire-no">재의뢰 의향 —</span>`;
-        const commentHtml = ev.comment
-          ? `<div class="bp-eval-comment">${escHtml(ev.comment)}</div>`
-          : '';
-        return `
-          <div class="bp-eval-card">
-            <div class="bp-eval-card-top">
-              <div>
-                <div style="font-weight:700;color:var(--dark);">${escHtml(coachName)}</div>
-                <div class="bp-eval-card-meta">평가자: ${escHtml(evaluatorLabel)} · 작성일: ${escHtml(createdAt)}</div>
-              </div>
-            </div>
-            <div class="bp-eval-ratings">
-              ${_bpStarRow('종합', ev.rating_overall)}
-              ${_bpStarRow('소통', ev.rating_communication)}
-              ${_bpStarRow('전문성', ev.rating_expertise)}
-              ${_bpStarRow('성실함', ev.rating_reliability)}
-            </div>
-            <div style="margin-top:6px;">${rehireBadge}</div>
-            ${commentHtml}
-          </div>`;
-      }).join('');
-
-  host.innerHTML = `
-    <div class="bp-detail-wrap">
-      <button class="bp-detail-back" onclick="closeBPDetail()">← 목록으로</button>
-
-      <div class="bp-detail-head">
-        <div style="flex:1;min-width:0;">
-          <h2 class="bp-detail-title">${escHtml(bp.title || '(제목 없음)')}</h2>
-          <div class="bp-detail-client">${escHtml(bp.client_org || '(고객사 미정)')} · ${bpStatusPill(bp.status)}</div>
-        </div>
-        <div class="bp-detail-actions">
-          ${editBtn}
-          ${deleteBtn}
-        </div>
-      </div>
-
-      ${transHtml}
-
-      <div class="bp-detail-grid">
-        <div class="bp-detail-card">
-          <h4>예상 기간</h4>
-          <p>${escHtml(dateRange)}</p>
-        </div>
-        <div class="bp-detail-card">
-          <h4>예상 예산</h4>
-          <p>${escHtml(_bpFmtBudget(bp.estimated_budget))}</p>
-        </div>
-        <div class="bp-detail-card full-width">
-          <h4>설명</h4>
-          <p>${escHtml(bp.description || '-')}</p>
-        </div>
-        <div class="bp-detail-card full-width">
-          <h4>비고</h4>
-          <p>${escHtml(bp.notes || '-')}</p>
-        </div>
-        <div class="bp-detail-card">
-          <h4>연결된 프로젝트</h4>
-          <p>${projectLink}</p>
-        </div>
-        <div class="bp-detail-card">
-          <h4>코치 평가</h4>
-          <p style="font-size:13px;color:var(--gray500);margin-bottom:0;">${_bpDetailEvaluations.length}건</p>
-        </div>
-      </div>
-
-      <div style="display:flex;justify-content:space-between;align-items:baseline;margin:18px 4px 6px;">
-        <h3 style="margin:0;font-size:15px;font-weight:700;">핀(고정)된 코치 후보</h3>
-        <button class="btn btn-ghost" onclick="openBPCoachPicker('${escAttr(bp.id)}')">+ 코치 추가</button>
-      </div>
-      <div class="bp-coach-list">
-        ${coachRowsHtml}
-      </div>
-
-      <div class="bp-eval-section">
-        <div class="bp-eval-header">
-          <h3 style="margin:0;font-size:15px;font-weight:700;">코치 평가</h3>
-        </div>
-        <p style="font-size:12px;color:var(--gray500);margin:0 0 10px;">평가 작성·수정은 coach-finder 에서 합니다. 여기서는 보기만 가능합니다.</p>
-        <div class="bp-eval-list">
-          ${evalListHtml}
-        </div>
-      </div>
-    </div>`;
-}
-
-// Helper: render a single rating dimension row with filled/empty stars.
-// Used by the read-only evaluation cards (display only — 평가 쓰기는 coach-finder, ADR-011).
-function _bpStarRow(label, rating) {
-  const r = Math.max(0, Math.min(5, Number(rating) || 0));
-  const stars = '★'.repeat(r) + '☆'.repeat(5 - r);
-  return `<div class="bp-eval-rating-row"><span>${escHtml(label)}</span><span class="bp-eval-stars">${stars}</span></div>`;
-}
-
-function closeBPDetail() {
-  _bpDetailId = null;
-  _bpDetailCoaches = [];
-  _bpDetailEvaluations = [];
-  renderBPListBody(document.getElementById('plansContent'));
-}
-
-function _bpJumpToProject(projectId) {
-  // Best-effort: set currentProject if it's in myProjects, then go to dashboard.
-  try {
-    if (Array.isArray(myProjects)) {
-      const p = myProjects.find(x => x.id === projectId);
-      if (p) { setCurrentProject(p); }
-    }
-  } catch (_) { /* myProjects may not exist for some roles; ignore */ }
-  switchView('list');
-}
-
-// ---------- BP CRUD modal ----------
-
-function openBPCreateModal() {
-  if (currentUserRole !== 'admin' && currentUserRole !== 'pm') {
-    showToast('BP 생성 권한이 없습니다.'); return;
-  }
-  _bpModalState = { mode: 'create', id: null };
-  document.getElementById('bpModalTitle').textContent = '새 사업기획';
-  document.getElementById('bpModalSub').textContent = 'BP 정보를 입력하세요. 수주(won)는 저장 후 상세 화면에서 처리합니다.';
-  document.getElementById('bpTitle').value = '';
-  document.getElementById('bpClientOrg').value = '';
-  document.getElementById('bpDesc').value = '';
-  document.getElementById('bpStart').value = '';
-  document.getElementById('bpEnd').value = '';
-  document.getElementById('bpBudget').value = '';
-  // Reset status select state — was potentially disabled by a prior 'won' edit
-  const _bpStatusSel = document.getElementById('bpStatus');
-  _bpStatusSel.value = 'draft';
-  _bpStatusSel.disabled = false;
-  _bpStatusSel.title = '';
-  document.getElementById('bpNotes').value = '';
-  document.getElementById('bpDeleteBtn').style.display = 'none';
-  document.getElementById('bpModalError').textContent = '';
-  document.getElementById('bpModal').classList.add('active');
-  setTimeout(() => document.getElementById('bpTitle').focus(), 0);
-}
-
-function openBPEditModal(id) {
-  if (currentUserRole !== 'admin' && currentUserRole !== 'pm') {
-    showToast('BP 편집 권한이 없습니다.'); return;
-  }
-  const bp = allBusinessPlans.find(b => b.id === id);
-  if (!bp) { showToast('BP를 찾을 수 없습니다.'); return; }
-  _bpModalState = { mode: 'edit', id };
-  document.getElementById('bpModalTitle').textContent = 'BP 편집';
-  document.getElementById('bpModalSub').textContent = '사업기획 정보를 수정합니다.';
-  document.getElementById('bpTitle').value = bp.title || '';
-  document.getElementById('bpClientOrg').value = bp.client_org || '';
-  document.getElementById('bpDesc').value = bp.description || '';
-  document.getElementById('bpStart').value = bp.target_start_date || '';
-  document.getElementById('bpEnd').value = bp.target_end_date || '';
-  document.getElementById('bpBudget').value = bp.estimated_budget != null ? bp.estimated_budget : '';
-  // 'won' rows lock the status select to avoid inadvertent demotion bypassing
-  // the project-cleanup question. Show the actual status in the select but
-  // disable it entirely so the user sees "수주" rather than a misleading "draft".
-  const statusSel = document.getElementById('bpStatus');
-  if (bp.status === 'won') {
-    statusSel.value = 'won';
-    statusSel.disabled = true;
-    statusSel.title = '수주 완료된 BP는 상태 변경 불가 (DB 트리거 보호)';
-  } else {
-    statusSel.value = bp.status || 'draft';
-    statusSel.disabled = false;
-    statusSel.title = '';
-  }
-  document.getElementById('bpNotes').value = bp.notes || '';
-  // Delete button: admin only
-  document.getElementById('bpDeleteBtn').style.display =
-    (currentUserRole === 'admin') ? '' : 'none';
-  document.getElementById('bpModalError').textContent = '';
-  document.getElementById('bpModal').classList.add('active');
-  setTimeout(() => document.getElementById('bpTitle').focus(), 0);
-}
-
-function closeBPModal() {
-  document.getElementById('bpModal').classList.remove('active');
-}
-
-async function saveBP() {
-  const errEl = document.getElementById('bpModalError');
-  errEl.textContent = '';
-  const title = (document.getElementById('bpTitle').value || '').trim();
-  if (!title) { errEl.textContent = '제목은 필수입니다.'; return; }
-  if (!supabaseAvailable) { errEl.textContent = '서버 연결 안됨'; return; }
-
-  const status = document.getElementById('bpStatus').value;
-  if (status === 'won') {
-    // Belt-and-suspenders: the option is disabled, but reject just in case.
-    errEl.textContent = '수주(won)는 상세 화면의 "수주 처리" 버튼으로만 가능합니다.';
-    return;
-  }
-
-  const budgetRaw = (document.getElementById('bpBudget').value || '').trim();
-  const startDate = document.getElementById('bpStart').value || null;
-  const endDate = document.getElementById('bpEnd').value || null;
-  // Date range sanity check (both dates entered → end must not precede start)
-  if (startDate && endDate && endDate < startDate) {
-    errEl.textContent = '종료일이 시작일보다 빠를 수 없습니다.';
-    return;
-  }
-  const payload = {
-    title,
-    client_org: (document.getElementById('bpClientOrg').value || '').trim() || null,
-    description: (document.getElementById('bpDesc').value || '').trim() || null,
-    target_start_date: startDate,
-    target_end_date: endDate,
-    estimated_budget: budgetRaw === '' ? null : Number(budgetRaw),
-    status,
-    notes: (document.getElementById('bpNotes').value || '').trim() || null,
-  };
-  if (payload.estimated_budget != null && !isFinite(payload.estimated_budget)) {
-    errEl.textContent = '예산은 숫자여야 합니다.';
-    return;
-  }
-  if (payload.estimated_budget != null && payload.estimated_budget < 0) {
-    errEl.textContent = '예산은 0 이상이어야 합니다.';
-    return;
-  }
-
-  const btn = document.getElementById('bpSaveBtn');
-  if (btn) btn.disabled = true;
-  try {
-    if (_bpModalState.mode === 'create') {
-      payload.created_by = currentUser ? currentUser.id : null;
-      const { data, error } = await supabaseClient
-        .from('business_plans')
-        .insert([payload])
-        .select()
-        .single();
-      if (error) throw error;
-      // Optimistic local update; full reload below for consistency
-      if (data) allBusinessPlans.unshift(data);
-      showToast('BP가 생성되었습니다.');
-    } else {
-      // Edit: don't allow demoting away from 'won' here (UI prevented above
-      // by mapping won→draft in the select; reject if someone forced it).
-      const orig = allBusinessPlans.find(b => b.id === _bpModalState.id);
-      if (orig && orig.status === 'won' && payload.status !== 'won') {
-        // Strip status from payload so we don't accidentally demote a won BP.
-        delete payload.status;
-      }
-      const { data, error } = await supabaseClient
-        .from('business_plans')
-        .update(payload)
-        .eq('id', _bpModalState.id)
-        .select()
-        .single();
-      if (error) throw error;
-      // Replace in cache
-      const idx = allBusinessPlans.findIndex(b => b.id === _bpModalState.id);
-      if (idx >= 0 && data) allBusinessPlans[idx] = data;
-      showToast('BP가 저장되었습니다.');
-    }
-    closeBPModal();
-    // Re-render: detail if currently open, else list
-    if (_bpDetailId) renderBPDetailBody();
-    else renderBPListBody(document.getElementById('plansContent'));
-  } catch (e) {
-    errEl.textContent = '저장 실패: ' + (e.message || e);
-    console.error('saveBP failed', e);
-  } finally {
-    if (btn) btn.disabled = false;
-  }
-}
-
-async function deleteBP() {
-  // Called from inside the edit modal
-  if (currentUserRole !== 'admin') { showToast('관리자만 삭제할 수 있습니다.'); return; }
-  if (_bpModalState.mode !== 'edit' || !_bpModalState.id) return;
-  const bp = allBusinessPlans.find(b => b.id === _bpModalState.id);
-  const titleLabel = bp ? bp.title : _bpModalState.id;
-  if (!window.confirm(`정말로 이 BP를 삭제하시겠습니까?\n\n"${titleLabel}"\n\n핀된 코치 정보도 함께 삭제됩니다.`)) return;
-  if (bp && bp.project_id) {
-    if (!window.confirm('이 BP는 이미 수주되어 프로젝트가 생성되어 있습니다.\nBP 삭제는 프로젝트에는 영향을 주지 않지만, 추적 기록이 사라집니다.\n계속하시겠습니까?')) return;
-  }
-  try {
-    const { error } = await supabaseClient
-      .from('business_plans')
-      .delete()
-      .eq('id', _bpModalState.id);
-    if (error) throw error;
-    allBusinessPlans = allBusinessPlans.filter(b => b.id !== _bpModalState.id);
-    showToast('BP가 삭제되었습니다.');
-    closeBPModal();
-    closeBPDetail();
-  } catch (e) {
-    document.getElementById('bpModalError').textContent = '삭제 실패: ' + (e.message || e);
-    console.error('deleteBP failed', e);
-  }
-}
-
-// Convenience: delete from detail panel without opening edit modal
-async function deleteBPFromDetail(id) {
-  if (currentUserRole !== 'admin') { showToast('관리자만 삭제할 수 있습니다.'); return; }
-  _bpModalState = { mode: 'edit', id };
-  await deleteBP();
-}
-
-// ---------- Status transitions ----------
-
-async function transitionBPStatus(id, newStatus) {
-  if (currentUserRole !== 'admin' && currentUserRole !== 'pm') {
-    showToast('상태 변경 권한이 없습니다.'); return;
-  }
-  if (!supabaseAvailable) { showToast('서버 연결 안됨'); return; }
-  const bp = allBusinessPlans.find(b => b.id === id);
-  if (!bp) { showToast('BP를 찾을 수 없습니다.'); return; }
-
-  let confirmMsg = '';
-  if (newStatus === 'won') {
-    const acceptedCount = _bpDetailCoaches.filter(c => c.status === 'accepted').length;
-    confirmMsg = `수주(won) 처리합니다.\n\n` +
-      `→ 자동으로 프로젝트가 생성되고,\n` +
-      `→ accepted 상태인 코치(${acceptedCount}명)가 프로젝트 멤버로 등록됩니다.\n\n` +
-      `진행하시겠습니까?`;
-  } else if (newStatus === 'lost') {
-    confirmMsg = '실주(lost)로 표시합니다. 진행하시겠습니까?';
-  } else if (newStatus === 'cancelled') {
-    confirmMsg = '취소(cancelled)로 표시합니다. 진행하시겠습니까?';
-  } else if (newStatus === 'draft') {
-    confirmMsg = '"작성중(draft)"으로 되돌립니다. 진행하시겠습니까?';
-  } else if (newStatus === 'proposed') {
-    confirmMsg = '"제안(proposed)"으로 변경합니다. 진행하시겠습니까?';
-  }
-  if (confirmMsg && !window.confirm(confirmMsg)) return;
-
-  try {
-    const { error } = await supabaseClient
-      .from('business_plans')
-      .update({ status: newStatus })
-      .eq('id', id);
-    if (error) throw error;
-
-    // For 'won', the bp_on_won trigger asynchronously sets project_id —
-    // re-fetch the row to pick it up. (Trigger runs synchronously inside the
-    // same transaction so a SELECT right after sees the updated row.)
-    let updated = null;
-    try {
-      const { data: row, error: rErr } = await supabaseClient
-        .from('business_plans')
-        .select('id, title, client_org, description, status, target_start_date, target_end_date, estimated_budget, notes, project_id, created_by, created_at, updated_at')
-        .eq('id', id)
-        .single();
-      if (!rErr && row) updated = row;
-    } catch (_) { /* fall through to cache patch */ }
-    if (updated) {
-      const idx = allBusinessPlans.findIndex(b => b.id === id);
-      if (idx >= 0) allBusinessPlans[idx] = updated;
-    } else {
-      // Best-effort patch
-      const idx = allBusinessPlans.findIndex(b => b.id === id);
-      if (idx >= 0) allBusinessPlans[idx] = { ...allBusinessPlans[idx], status: newStatus };
-    }
-
-    if (newStatus === 'won') {
-      const projId = updated && updated.project_id ? updated.project_id : null;
-      showToast(projId ? `수주 완료 — 프로젝트 자동 생성됨` : `수주 완료 (프로젝트 ID 확인 중)`);
-      // Refresh user's project list cache if a loader exists, so the link works
-      try { if (typeof loadProjects === 'function') await loadProjects(); } catch (_) {}
-    } else {
-      showToast(`상태 변경: ${newStatus}`);
-    }
-    if (_bpDetailId === id) renderBPDetailBody();
-    else renderBPListBody(document.getElementById('plansContent'));
-  } catch (e) {
-    showToast('상태 변경 실패: ' + (e.message || e));
-    console.error('transitionBPStatus failed', e);
-  }
-}
-
-// ---------- Coach pinning ----------
-
-function openBPCoachPicker(bpId) {
-  if (currentUserRole !== 'admin' && currentUserRole !== 'pm') {
-    showToast('코치 추가 권한이 없습니다.'); return;
-  }
-  _bpCoachPickerState = { bp_id: bpId, q: '', results: [] };
-  const inp = document.getElementById('bpCoachPickerInput');
-  if (inp) inp.value = '';
-  const results = document.getElementById('bpCoachPickerResults');
-  if (results) results.innerHTML = `<div style="padding:14px;font-size:12px;color:var(--gray400);">검색어를 입력하세요.</div>`;
-  document.getElementById('bpCoachPickerError').textContent = '';
-  document.getElementById('bpCoachPickerModal').classList.add('active');
-  setTimeout(() => { if (inp) inp.focus(); }, 0);
-}
-
-function closeBPCoachPicker() {
-  document.getElementById('bpCoachPickerModal').classList.remove('active');
-  _bpCoachPickerState = { bp_id: null, q: '', results: [] };
-}
-
-async function searchBPCoachPicker(q) {
-  _bpCoachPickerState.q = q || '';
-  const host = document.getElementById('bpCoachPickerResults');
-  if (!host) return;
-  const query = (q || '').trim();
-  if (query.length < 1) {
-    host.innerHTML = `<div style="padding:14px;font-size:12px;color:var(--gray400);">검색어를 입력하세요.</div>`;
-    _bpCoachPickerState.results = [];
-    return;
-  }
-  if (!supabaseAvailable) {
-    host.innerHTML = `<div style="padding:14px;font-size:12px;color:var(--red);">서버 연결 안됨</div>`;
-    return;
-  }
-  // Prefer the in-memory coachDirectory cache (already loaded for the coach
-  // directory tab). Falls back to a Supabase query if the cache is empty.
-  const matchLocal = (dir) => {
-    const ql = query.toLowerCase();
-    const pinnedIds = new Set(_bpDetailCoaches.map(c => c.coach_directory_id));
-    return dir.filter(c => {
-      if (pinnedIds.has(c.id)) return false;   // already pinned
-      const expertiseTxt = Array.isArray(c.expertise) ? c.expertise.join(' ') : (c.expertise || '');
-      const hay = ((c.name || '') + ' ' + (c.email || '') + ' ' + (c.organization || '') + ' ' + expertiseTxt).toLowerCase();
-      return hay.includes(ql);
-    }).slice(0, 30);
-  };
-
-  let dir = (typeof coachDirectory !== 'undefined' && Array.isArray(coachDirectory)) ? coachDirectory : [];
-  if (dir.length === 0) {
-    try {
-      // PostgREST .or() 필터 인젝션 방어: 쉼표·괄호·별표·백슬래시 등
-      // 필터 구문 메타문자를 제거한다. (RLS 가 행 가시성은 막지만, 사용자
-      // 입력을 raw 보간하면 필터 구조가 변조될 수 있어 경계에서 정제.)
-      const safeQ = String(query).replace(/[,()*\\%]/g, ' ').trim();
-      if (!safeQ) { dir = []; }
-      else {
-      const { data, error } = await supabaseClient
-        .from('coaches_directory')
-        .select('id, name, email, organization, expertise, photo_url')
-        .or(`name.ilike.%${safeQ}%,email.ilike.%${safeQ}%,organization.ilike.%${safeQ}%`)
-        .limit(30);
-      if (error) throw error;
-      dir = data || [];
-      }
-    } catch (e) {
-      host.innerHTML = `<div style="padding:14px;font-size:12px;color:var(--red);">검색 실패: ${escHtml(e.message || String(e))}</div>`;
-      return;
-    }
-  }
-  const matches = matchLocal(dir);
-  _bpCoachPickerState.results = matches;
-
-  if (matches.length === 0) {
-    host.innerHTML = `<div style="padding:14px;font-size:12px;color:var(--gray400);">일치하는 코치 없음.</div>`;
-    return;
-  }
-  host.innerHTML = matches.map(c => {
-    const meta = [c.email, c.organization].filter(Boolean).join(' · ');
-    return `
-      <div class="bp-picker-row">
-        <div class="pr-main">
-          <div class="pr-name">${escHtml(c.name || '(이름 없음)')}</div>
-          <div class="pr-meta">${escHtml(meta)}</div>
-        </div>
-        <button onclick="pinCoachToBP('${escAttr(c.id)}')">+ 추가</button>
-      </div>`;
-  }).join('');
-}
-
-async function pinCoachToBP(coachDirectoryId) {
-  const bpId = _bpCoachPickerState.bp_id;
-  if (!bpId) return;
-  if (!supabaseAvailable) { showToast('서버 연결 안됨'); return; }
-  const errEl = document.getElementById('bpCoachPickerError');
-  errEl.textContent = '';
-  try {
-    const payload = {
-      business_plan_id: bpId,
-      coach_directory_id: coachDirectoryId,
-      status: 'candidate',
-      added_by: currentUser ? currentUser.id : null,
-    };
-    const { error } = await supabaseClient
-      .from('business_plan_coaches')
-      .insert([payload]);
-    if (error) {
-      if (/duplicate|unique/i.test(error.message)) {
-        errEl.textContent = '이미 핀된 코치입니다.';
-        return;
-      }
-      throw error;
-    }
-    showToast('코치가 핀(고정)되었습니다.');
-    // Refresh the detail panel data; close picker
-    await _bpLoadDetailData(bpId);
-    renderBPDetailBody();
-    // Re-run search to drop the just-added coach from the list
-    searchBPCoachPicker(_bpCoachPickerState.q);
-  } catch (e) {
-    errEl.textContent = '추가 실패: ' + (e.message || e);
-    console.error('pinCoachToBP failed', e);
-  }
-}
-
-async function updateBPCoachStatus(bpcId, newStatus) {
-  if (!supabaseAvailable) { showToast('서버 연결 안됨'); return; }
-  try {
-    const { error } = await supabaseClient
-      .from('business_plan_coaches')
-      .update({ status: newStatus })
-      .eq('id', bpcId);
-    if (error) throw error;
-    // Patch local cache to avoid full re-fetch
-    const idx = _bpDetailCoaches.findIndex(c => c.id === bpcId);
-    if (idx >= 0) _bpDetailCoaches[idx] = { ..._bpDetailCoaches[idx], status: newStatus };
-    showToast('코치 상태 변경');
-    // No re-render needed for the select itself, but the accepted-count hint
-    // shown in the 수주 confirm would be stale; that's recomputed at trigger.
-  } catch (e) {
-    showToast('상태 변경 실패: ' + (e.message || e));
-    console.error('updateBPCoachStatus failed', e);
-  }
-}
-
-async function unpinCoachFromBP(bpcId) {
-  if (!confirm('이 코치를 BP에서 제거하시겠어요?')) return;
-  if (!supabaseAvailable) { showToast('서버 연결 안됨'); return; }
-  try {
-    const { error } = await supabaseClient
-      .from('business_plan_coaches')
-      .delete()
-      .eq('id', bpcId);
-    if (error) throw error;
-    _bpDetailCoaches = _bpDetailCoaches.filter(c => c.id !== bpcId);
-    showToast('제거되었습니다.');
-    renderBPDetailBody();
-  } catch (e) {
-    showToast('제거 실패: ' + (e.message || e));
-    console.error('unpinCoachFromBP failed', e);
   }
 }
 
