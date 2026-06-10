@@ -22,10 +22,20 @@
   ADR     011·013·014·018·019 소급 작성 (docs/decisions/)
   HANDOFF 본 파일 갱신 (06-01 정체 해소)
 
+✅ 1단계 퀵윈 4종 완료·배포·실브라우저 검증 (2026-06-10 오후, 브리프 Q1~Q4 → _archive):
+  Q1  draft 자동저장 — localStorage debounce 1초 + 복원 배너. 라이브 검증: 입력→저장→
+      새로고침→배너→[복원] 필드 회복 확인. 후속 핫픽스: #form 해시 직접 복원 경로 배너 평가 (98a55bb)
+  Q3  Phase AA extraction_model/version — 마이그레이션 라이브 적용·검증(2컬럼 text).
+      메모 추출 시 model=gemini-2.5-pro·ver=2026-06-10.2 프론트 상태 보관 확인
+  Q2  메모 모드(20자↑, inputMode=memo, 프롬프트 분기) — 라이브 32자 메모 추출 성공:
+      "메모 모드로 분석 중…"→2문장 내러티브·근거 기반 필드·환각 0. EXTRACTION_VERSION 2026-06-10.2
+      +보너스: 라이브 폼의 i18n 리터럴 키 노출 12건(stt_*·narrative_*·checkin_*) 발견 → ko/en/ja 보강
+  Q4  체크인 예정 카드 — 대시보드 picker+타임라인 양쪽. 라이브 검증: UCA프로젝트 D+19·D+5
+      2건 정상 렌더, 클릭→#detail 이동
+
 📌 다음 (우선순위 — AUDIT-2026-06-10 §4):
-  1   퀵윈: draft 자동저장(localStorage) · 메모 모드(50자 완화+프롬프트 분기)
-      · extraction_version/model DB 기록 · "오늘 체크인할 팀" 뷰 (next_checkin_date 활용)
   1.5 error.message escape 4곳 · editRecord/deleteRecord 진입 가드 · escape 함수 단일화
+      · (신규) i18n 사전 부재 키 전수 점검 — 12건은 보강했으나 다른 뷰에 잔존 가능
   2   필드 메타데이터 중앙화 (22필드 5곳 하드코딩 → 단일 config) — 템플릿화 선행조건
   3   프로젝트별 템플릿 (projects.template_config — 코어 고정 + 섹션 토글 + 커스텀 jsonb)
   4   ADR 필요 결정: RAG/embedding 거취 · 죽은 컬럼 11개 처분 · 문서 드리프트 일괄 정정
@@ -66,4 +76,4 @@
 
 ## 다음 세션 진입 한 줄
 
-> **퀵윈 4종(draft 자동저장·메모 모드·extraction_version·체크인 뷰) 브리프 작성 → 위임 → 검증. (0단계 위생 + Phase Z 적용 + 라우팅 배포·검증 전부 완료됨)**
+> **1.5단계 보안 소소(escape 4곳·진입 가드·escape 단일화·i18n 잔여 키) 브리프 → 위임, 또는 2단계 필드 메타데이터 중앙화 설계 착수. (0단계 위생 + 1단계 퀵윈 4종 전부 배포·라이브 검증 완료)**
