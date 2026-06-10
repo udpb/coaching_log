@@ -13,9 +13,12 @@
 ✅ 이번 세션 완료 (2026-06-10):
   AUDIT   종합 감사 — 외부 피드백(06-09) 재검증 + UX/필드모델/파이프라인 탐색 3건
   Phase Z coaching_logs.coach_id SoT 복구 마이그레이션 (20260610_phase_z_coach_id_sot.sql)
-          ⚠️ 파일만 작성됨 — 라이브 적용(멱등·no-op 예상) + 검증 SQL 실행 필요
+          ✅ 라이브 적용 완료 (SQL Editor, "Success. No rows returned") + 검증 SQL 통과:
+             컬럼 uuid ✓ · 인덱스 신규 생성 ✓ · FK 신규 추가 validated=true(고아 0) ✓ · NULL행 0 ✓
+             → 라이브엔 FK·인덱스가 원래 없었음 — 본 마이그레이션이 무결성·성능 실효 추가
   ROUTING 뒤로가기/탭 URL 수정 — pushState 기본화 + #detail/<id> 복원 (B-20260610-routing-history)
-          ⚠️ node --check 통과·코드경로 검증 완료, 실브라우저 시나리오 (a)(b)(d) 확인 권장
+          ✅ 배포 후 실브라우저 검증 통과: 탭 3전환→뒤로 2회 복귀 · 상세 #detail/164 진입/복귀
+             · 앞으로가기 재진입 · #detail/<id> 새로고침 복원 · 부트 콘솔 에러 0
   ADR     011·013·014·018·019 소급 작성 (docs/decisions/)
   HANDOFF 본 파일 갱신 (06-01 정체 해소)
 
@@ -63,4 +66,4 @@
 
 ## 다음 세션 진입 한 줄
 
-> **Phase Z 라이브 적용+검증 SQL 확인 → 라우팅 실브라우저 시나리오 확인 → 퀵윈 4종(draft 자동저장·메모 모드·extraction_version·체크인 뷰) 브리프 작성 → 위임.**
+> **퀵윈 4종(draft 자동저장·메모 모드·extraction_version·체크인 뷰) 브리프 작성 → 위임 → 검증. (0단계 위생 + Phase Z 적용 + 라우팅 배포·검증 전부 완료됨)**
