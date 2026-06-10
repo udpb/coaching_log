@@ -1605,6 +1605,73 @@ body {
   color: var(--gray500);
 }
 
+/* 체크인 예정 (Q4 2026-06-10) — next_checkin_date 리마인더 카드 */
+.checkin-due-section {
+  margin-bottom: 24px;
+}
+.checkin-due-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--dark);
+  margin-bottom: 8px;
+}
+.checkin-due-title .checkin-due-count {
+  display: inline-block;
+  min-width: 18px;
+  padding: 0 5px;
+  font-size: 11px;
+  text-align: center;
+  background: var(--red);
+  color: var(--white);
+  border-radius: 9px;
+}
+.checkin-due-item {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: var(--white);
+  border: 1px solid var(--gray200);
+  border-left: 3px solid var(--gray300);
+  padding: 10px 14px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: border-color var(--transition), transform var(--transition);
+}
+.checkin-due-item:hover { transform: translateY(-1px); }
+.checkin-due-item.today {
+  border-left-color: var(--action-orange);
+  background: var(--orange-bg);
+}
+.checkin-due-item.today:hover { border-color: var(--orange); }
+.checkin-due-item.overdue {
+  border-left-color: var(--red);
+  background: var(--red-bg);
+}
+.checkin-due-item.overdue:hover { border-color: var(--red); }
+.checkin-due-dday {
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.checkin-due-item.today .checkin-due-dday { color: var(--orange); }
+.checkin-due-item.overdue .checkin-due-dday { color: var(--red); }
+.checkin-due-team {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--dark);
+}
+.checkin-due-meta {
+  font-size: 12px;
+  color: var(--gray500);
+  white-space: nowrap;
+}
+.checkin-due-action {
+  font-size: 12px;
+  color: var(--dark2);
+  flex-basis: 100%;
+}
+
 /* Team timeline — top bar */
 .dash-topbar {
   display: flex;
@@ -8376,6 +8443,99 @@ async function markOnboardedIfFirst() {
 // ============================================================
 let dashboardTeam = null; // last-selected team in the dashboard view
 
+// ------------------------------------------------------------
+// 체크인 예정 (Q4 2026-06-10): next_checkin_date 소비처.
+// 팀별 최신 세션의 next_checkin_date 가 오늘이거나 지났는데
+// 그 날짜 이후 새 세션이 없으면 "체크인 due" 로 본다.
+// 날짜 비교는 로컬 타임존 YYYY-MM-DD 문자열 비교 (null 안전).
+// ------------------------------------------------------------
+const CHECKIN_CHANNEL_LABELS = {
+  message: '메시지', call: '전화', video: '화상',
+  email: '이메일', inperson: '대면', other: '기타'
+};
+
+// Local-timezone today as YYYY-MM-DD (toISOString 은 UTC라 자정 근처에 어긋남)
+function localTodayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// a 가 b 보다 나중 세션인가: date 최신 → session_num 큰 쪽 → id 큰 쪽
+function isLaterSession(a, b) {
+  const da = a.date || '', db = b.date || '';
+  if (da !== db) return da > db;
+  const na = parseInt(a.session_num) || 0;
+  const nb = parseInt(b.session_num) || 0;
+  if (na !== nb) return na > nb;
+  return String(a.id || '').localeCompare(String(b.id || '')) > 0;
+}
+
+// YYYY-MM-DD 두 날짜의 일수 차 (to - from). 둘 다 로컬 자정 기준.
+function dateDiffDays(from, to) {
+  const a = new Date(from + 'T00:00:00');
+  const b = new Date(to + 'T00:00:00');
+  if (isNaN(a.getTime()) || isNaN(b.getTime())) return 0;
+  return Math.round((b - a) / 86400000);
+}
+
+function computeDueCheckins() {
+  const scoped = filterLogsByCurrentProject();
+  const today = localTodayStr();
+
+  // 팀별 최신 세션 1건
+  const latestByTeam = {};
+  for (const r of scoped) {
+    if (!r || !r.team_name) continue;
+    const cur = latestByTeam[r.team_name];
+    if (!cur || isLaterSession(r, cur)) latestByTeam[r.team_name] = r;
+  }
+
+  const due = [];
+  for (const teamName in latestByTeam) {
+    const r = latestByTeam[teamName];
+    const checkinDate = r.next_checkin_date;
+    if (!checkinDate) continue;            // 과거 행은 null 多 — null 안전
+    if (checkinDate > today) continue;     // 아직 안 옴
+    // 최신 세션 date 가 체크인 날짜 당일/이후면 사실상 이행됨 → 제외
+    if (r.date && r.date >= checkinDate) continue;
+    due.push({
+      teamName: teamName,
+      logId: String(r.id),
+      checkinDate: checkinDate,
+      channel: r.next_checkin_channel || '',
+      nextAction: r.next_action || '',
+      daysOverdue: dateDiffDays(checkinDate, today)
+    });
+  }
+  due.sort((a, b) => a.checkinDate.localeCompare(b.checkinDate));
+  return due;
+}
+
+// due 0건이면 '' 반환 — 빈 카드 금지
+function renderDueCheckinsHtml() {
+  const due = computeDueCheckins();
+  if (due.length === 0) return '';
+  let items = '';
+  for (const d of due) {
+    const overdue = d.daysOverdue > 0;
+    const dday = overdue ? `D+${d.daysOverdue}` : '오늘';
+    const chLabel = CHECKIN_CHANNEL_LABELS[d.channel] || d.channel || '';
+    const action = d.nextAction ? truncate(d.nextAction, 60) : '';
+    items += `
+      <div class="checkin-due-item ${overdue ? 'overdue' : 'today'}" onclick="showDetail('${escAttr(d.logId)}')">
+        <span class="checkin-due-dday">${dday}</span>
+        <span class="checkin-due-team">${escHtml(d.teamName)}</span>
+        <span class="checkin-due-meta">${escHtml(d.checkinDate)}${chLabel ? ' · ' + escHtml(chLabel) : ''}</span>
+        ${action ? `<span class="checkin-due-action">→ ${escHtml(action)}</span>` : ''}
+      </div>`;
+  }
+  return `
+    <div class="checkin-due-section">
+      <div class="checkin-due-title">📌 체크인 예정 <span class="checkin-due-count">${due.length}</span></div>
+      ${items}
+    </div>`;
+}
+
 function renderDashboard() {
   const host = document.getElementById('dashboardContent');
   if (!host) return;
@@ -8443,6 +8603,7 @@ function renderDashPicker(host, teams) {
   let html = `
     <div class="dash-wrap">
       ${ctxBanner}
+      ${renderDueCheckinsHtml()}
       <div class="dash-picker-title">팀을 선택하세요</div>
       <div class="dash-picker-sub">해당 팀의 코칭 흐름·메트릭 트렌드·이행률·반복 blocker를 한 화면에서 봅니다.</div>
       <div class="dash-picker-grid">`;
@@ -8492,6 +8653,8 @@ function renderTeamTimeline(host, teamName, teamLogs) {
           <button onclick="selectTeam('${escAttr(teamName)}')">+ 새 세션 기록</button>
         </div>
       </div>
+
+      ${renderDueCheckinsHtml()}
 
       <div class="dash-kpis">
         <div class="kpi">
