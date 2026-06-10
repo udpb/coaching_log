@@ -5363,6 +5363,8 @@ function switchView(name, opts) {
   if (name === 'coaches') renderCoachDirectory();
   if (name === 'users') renderUsersView();
   if (name === 'myinfo') renderMyInfo();  // Phase G2-A
+  // 새로고침 등 해시 직접 복원으로 form 진입 시에도 초안 배너 평가 (prepareForm 미경유 경로 보완)
+  if (name === 'form') { try { renderDraftBanner(); } catch (_) {} }
 
   // Phase G2-C (2026-05-22): 미완료 코치는 myinfo 에 도착했을 때 모달 강제 표시.
   //   (switchView 도입부에서 다른 view 진입 시도는 이미 myinfo 로 redirect 되었음)
