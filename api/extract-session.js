@@ -9,6 +9,9 @@
 //
 // Body:
 //   { transcript: string,
+//     inputMode?: 'memo' | 'transcript',   // default 'transcript'. 'memo' accepts
+//                                          // short notes (≥20 chars) and switches the
+//                                          // prompt to a conservative short-memo mode.
 //     context?: { date, coach, team_name, founder_name, session_num, session_type, prev?: {...} },
 //     stream?: boolean }
 //
@@ -44,7 +47,7 @@ const API_BASE     = 'https://generativelanguage.googleapis.com/v1beta';
 // coaching_logs.extraction_version by the client. Bump on every change that
 // alters the MEANING of the output (prompt body, field semantics, schema) —
 // format: 'YYYY-MM-DD.<serial>' (serial increments for same-day changes).
-const EXTRACTION_VERSION = '2026-06-10.1';
+const EXTRACTION_VERSION = '2026-06-10.2';
 
 function isRetryableStatus(status) {
   return status === 429 || status === 500 || status === 502 || status === 503 || status === 504;
@@ -151,7 +154,7 @@ module.exports = async function handler(req, res) {
   if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY not configured on server' });
 
   try {
-    const { transcript, audio, audioMimeType, context, stream: wantStream } = req.body || {};
+    const { transcript, audio, audioMimeType, context, stream: wantStream, inputMode } = req.body || {};
 
     // Phase D2 (2026-05-03): two input modes — transcript text OR audio file.
     //   - transcript mode (legacy): caller pasted STT text. Must be ≥50 chars.
@@ -160,12 +163,22 @@ module.exports = async function handler(req, res) {
     //     reasoning, (b) emit the same structured JSON in one round-trip.
     //     Saves the user the "external STT → paste" step on mobile.
     // At least one is required. If both are present, audio wins (richer signal).
+    //
+    // Q2 (2026-06-10): memo mode — body.inputMode === 'memo' relaxes the text
+    // minimum to 20 chars and switches the prompt to a conservative short-memo
+    // variant (2-4 sentence narrative, no speculation, empty fields are normal,
+    // confidence ≤ 0.7). Default stays 'transcript' (≥50 chars, unchanged).
+    const wantMemo = inputMode === 'memo';
+    const minTranscriptLen = wantMemo ? 20 : 50;
     const hasAudio = typeof audio === 'string' && audio.length > 100;
-    const hasTranscript = typeof transcript === 'string' && transcript.trim().length >= 50;
+    const hasTranscript = typeof transcript === 'string' && transcript.trim().length >= minTranscriptLen;
+    // Memo prompt only applies to text input; if audio is attached, audio wins
+    // (full-signal path stays exactly as before).
+    const isMemo = wantMemo && !hasAudio;
 
     if (!hasAudio && !hasTranscript) {
       return res.status(400).json({
-        error: 'Provide either `transcript` (≥50 chars) or `audio` (base64 inline_data).'
+        error: 'Provide `transcript` (≥50 chars; or ≥20 chars with inputMode:"memo") or `audio` (base64 inline_data).'
       });
     }
     if (hasTranscript && transcript.length > 120000) {
@@ -189,12 +202,12 @@ module.exports = async function handler(req, res) {
     const prev = ctx.prev || null;
     const isFirst = !prev;
 
-    const systemPrompt = buildSystemPrompt();
+    const systemPrompt = buildSystemPrompt(isMemo);
     // In audio-only mode we pass an empty transcript placeholder; the model
     // gets the real transcript from the audio part below.
     const userPrompt = buildUserPrompt(
       hasTranscript ? transcript : '(아래 첨부된 음성 녹음을 듣고 직접 transcript를 추출하여 분석하세요. 한국어·영어 혼용 가능.)',
-      ctx, prev, isFirst
+      ctx, prev, isFirst, isMemo
     );
 
     // Gemini request body:
@@ -500,7 +513,37 @@ function extractLatestIsoDate(s) {
   return hits[hits.length - 1];
 }
 
-function buildSystemPrompt() {
+// Q2 (2026-06-10): isMemo=true switches PASS 1 to a 2-4 sentence facts-only
+// narrative and prepends conservative memo rules before VALUE RULES. The 22
+// field definitions (STRUCTURED_FIELD_KEYS) and output schema are identical
+// in both modes.
+function buildSystemPrompt(isMemo) {
+  const pass1 = isMemo
+    ? [
+        'PASS 1 — NARRATIVE SUMMARY (narrative_summary)',
+        '  The input is a SHORT MEMO the coach wrote after the session — NOT a full transcript.',
+        '  Write a 2-4 sentence summary using ONLY facts explicitly stated in the memo.',
+        '  Do NOT speculate, embellish, or add details that are not in the memo. No guessing.',
+      ]
+    : [
+        'PASS 1 — NARRATIVE SUMMARY (narrative_summary)',
+        '  Write an 8-15 sentence rich prose summary of the session in the dominant language of the transcript.',
+        '  Capture: what was discussed, what the founder committed to last time and how it went, the real root-cause insight that emerged, any pivot/decision, the founder\'s emotional state and energy, what the coach will watch for next.',
+        '  This is the COACH\'S MEMORY of the session — it must preserve nuance, specifics, and the arc of the conversation, not just keywords.',
+        '  Prefer concrete details ("7 out of 10 interviews completed, 2 pilot candidates secured") over vague summaries ("made progress").',
+      ];
+
+  const memoRules = isMemo
+    ? [
+        'MEMO MODE — CONSERVATIVE EXTRACTION:',
+        '  The input is a short memo, so MOST fields being empty is the NORMAL, expected outcome.',
+        '  Fill a field ONLY if the memo gives direct evidence for it. Any field without direct',
+        '  grounding in the memo MUST be left empty ("" / 0 / [] / false).',
+        '  For every field you do fill, set confidence ≤ 0.7 (be conservative).',
+        '',
+      ]
+    : [];
+
   return [
     'You are an assistant that extracts structured coaching session data from raw Speech-to-Text (STT) transcripts.',
     'The transcript is a 1:1 startup coaching session between a coach and a founder (may be in Korean, English, or mixed).',
@@ -517,11 +560,7 @@ function buildSystemPrompt() {
     '  After producing the transcript, treat it AS IF it were the user-provided text',
     '  for PASS 1 & 2 below.',
     '',
-    'PASS 1 — NARRATIVE SUMMARY (narrative_summary)',
-    '  Write an 8-15 sentence rich prose summary of the session in the dominant language of the transcript.',
-    '  Capture: what was discussed, what the founder committed to last time and how it went, the real root-cause insight that emerged, any pivot/decision, the founder\'s emotional state and energy, what the coach will watch for next.',
-    '  This is the COACH\'S MEMORY of the session — it must preserve nuance, specifics, and the arc of the conversation, not just keywords.',
-    '  Prefer concrete details ("7 out of 10 interviews completed, 2 pilot candidates secured") over vague summaries ("made progress").',
+    ...pass1,
     '',
     'PASS 2 — STRUCTURED FIELDS (fields.*)',
     '  Based on the narrative you just wrote AND the raw transcript, fill each structured field.',
@@ -531,6 +570,7 @@ function buildSystemPrompt() {
     '  - confidence: your self-assessed confidence that the value is correct, 0.0 to 1.0.',
     '  List every field with confidence < 0.7 in the top-level "low_confidence" array so the UI highlights it.',
     '',
+    ...memoRules,
     'VALUE RULES:',
     '  - stage: "I" (Ideation) | "M" (Market) | "P" (Product/Prototype) | "A" (Acquisition) | "C" (Commercialization) | "T" (Traction) | "".',
     '  - stage_detail: short phrase describing the founder\'s specific position within the stage.',
@@ -600,7 +640,7 @@ function buildSystemPrompt() {
   ].join('\n');
 }
 
-function buildUserPrompt(transcript, ctx, prev, isFirst) {
+function buildUserPrompt(transcript, ctx, prev, isFirst, isMemo) {
   const header = [
     '## Session context (provided by coach app)',
     `- date: ${ctx.date || '(unknown)'}`,
@@ -609,8 +649,10 @@ function buildUserPrompt(transcript, ctx, prev, isFirst) {
     `- founder_name: ${ctx.founder_name || '(unknown)'}`,
     `- session_num: ${ctx.session_num || '(unknown)'}`,
     `- expected session_type: ${isFirst ? 'first' : 'regular (continuing)'}`,
-    ''
   ];
+  // Q2 (2026-06-10): memo mode marker — one line only, schema untouched.
+  if (isMemo) header.push('- input type: short memo (not a full transcript)');
+  header.push('');
 
   if (prev) {
     header.push('## Previous session (for continuity)');

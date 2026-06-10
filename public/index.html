@@ -3128,7 +3128,7 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
       <div class="stt-header" onclick="toggleSttPanel()">
         <div>
           <div class="stt-title">🎙️ <span data-i18n="stt_title">STT 원문으로 초안 만들기</span></div>
-          <div class="stt-subtitle" data-i18n="stt_subtitle">세션 녹취 전문을 붙여넣으면 AI가 각 필드를 자동으로 채워줍니다. 코치는 검토·수정만 하면 됩니다.</div>
+          <div class="stt-subtitle" data-i18n="stt_subtitle">녹취 전문(50자↑)은 물론 간단 메모(20자↑)도 AI가 구조화해 필드를 채워줍니다. 코치는 검토·수정만 하면 됩니다.</div>
         </div>
         <div class="stt-toggle-arrow">▼</div>
       </div>
@@ -3149,7 +3149,7 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
           </span>
           <span class="stt-record-hint">또는 ↓ STT 텍스트를 붙여넣으세요</span>
         </div>
-        <textarea class="stt-textarea" id="sttTranscript" data-i18n-ph="stt_placeholder" placeholder="세션 녹취/스크립트를 여기에 붙여넣으세요. 한국어·영어 모두 가능합니다."></textarea>
+        <textarea class="stt-textarea" id="sttTranscript" data-i18n-ph="stt_placeholder" placeholder="녹취 원문(50자↑) 또는 간단 메모(20자↑) — 메모는 핵심만 적어도 AI가 구조화합니다. 한국어·영어 모두 가능합니다."></textarea>
         <div class="stt-actions">
           <button class="stt-btn" id="sttExtractBtn" onclick="runSttExtract()"><span data-i18n="stt_extract">붙여넣은 텍스트로 초안 생성</span></button>
           <span class="stt-hint" data-i18n="stt_hint">⚠ 표시된 필드는 확신도가 낮아 검토가 필요합니다.</span>
@@ -3912,6 +3912,18 @@ const i18n = {
     authErrName: '이름을 입력해주세요.',
     authErrShort: '비밀번호는 6자 이상이어야 합니다.',
     authSignupSuccess: '가입 완료! 이메일 확인 후 로그인해주세요.',
+    stt_subtitle: '녹취 전문(50자↑)은 물론 간단 메모(20자↑)도 AI가 구조화해 필드를 채워줍니다. 코치는 검토·수정만 하면 됩니다.',
+    stt_placeholder: '녹취 원문(50자↑) 또는 간단 메모(20자↑) — 메모는 핵심만 적어도 AI가 구조화합니다. 한국어·영어 모두 가능합니다.',
+    narrative_ph: '내러티브 요약이 여기에 표시됩니다. 초안 생성 후 자유롭게 수정할 수 있습니다.',
+    stt_title: 'STT 원문으로 초안 만들기',
+    stt_extract: '붙여넣은 텍스트로 초안 생성',
+    stt_hint: '⚠ 표시된 필드는 확신도가 낮아 검토가 필요합니다.',
+    stt_save_raw: '저장 시 원문도 함께 보관 (검수·재분석용)',
+    narrative_title: '세션 내러티브',
+    narrative_sub: 'AI가 전사본 전체를 읽고 작성한 풍부한 세션 요약입니다. 아래 구조화 필드는 이 내러티브에 기반해 채워집니다. 직접 수정해도 됩니다.',
+    checkin_date: '체크인 날짜',
+    checkin_channel: '체크인 방식',
+    checkin_memo: '체크인 메모 (선택)',
   },
   en: {
     nav_teams: 'Projects',
@@ -4024,6 +4036,18 @@ const i18n = {
     authErrName: 'Please enter your name.',
     authErrShort: 'Password must be at least 6 characters.',
     authSignupSuccess: 'Signed up! Please check your email to confirm.',
+    stt_subtitle: 'AI structures full transcripts (50+ chars) and even quick memos (20+ chars) to fill in the fields. Coaches only need to review and edit.',
+    stt_placeholder: 'Paste a transcript (50+ chars) or a quick memo (20+ chars) — even just the key points will be structured by AI. Korean and English both work.',
+    narrative_ph: 'The narrative summary will appear here. You can edit it freely after the draft is generated.',
+    stt_title: 'Create a draft from an STT transcript',
+    stt_extract: 'Generate draft from pasted text',
+    stt_hint: 'Fields marked with ⚠ have low confidence and need review.',
+    stt_save_raw: 'Keep the original text when saving (for review & re-analysis)',
+    narrative_title: 'Session Narrative',
+    narrative_sub: 'A rich session summary written by AI from the full transcript. The structured fields below are filled based on this narrative. You can edit it directly.',
+    checkin_date: 'Check-in date',
+    checkin_channel: 'Check-in channel',
+    checkin_memo: 'Check-in memo (optional)',
   },
   ja: {
     nav_teams: 'プロジェクト',
@@ -4136,6 +4160,18 @@ const i18n = {
     authErrName: '名前を入力してください。',
     authErrShort: 'パスワードは6文字以上必要です。',
     authSignupSuccess: '登録完了！メールを確認してログインしてください。',
+    stt_subtitle: '文字起こし全文（50文字以上）はもちろん、簡単なメモ（20文字以上）もAIが構造化してフィールドを埋めます。コーチは確認・修正するだけです。',
+    stt_placeholder: '文字起こし原文（50文字以上）または簡単なメモ（20文字以上） — メモは要点だけでもAIが構造化します。韓国語・英語どちらも可能です。',
+    narrative_ph: 'ナラティブ要約がここに表示されます。ドラフト生成後、自由に編集できます。',
+    stt_title: 'STT原文からドラフトを作成',
+    stt_extract: '貼り付けたテキストからドラフト生成',
+    stt_hint: '⚠ マークの付いたフィールドは確信度が低いため確認が必要です。',
+    stt_save_raw: '保存時に原文も一緒に保管（検収・再分析用）',
+    narrative_title: 'セッションナラティブ',
+    narrative_sub: 'AIが文字起こし全文を読んで作成した充実したセッション要約です。下の構造化フィールドはこのナラティブに基づいて埋められます。直接編集しても構いません。',
+    checkin_date: 'チェックイン日付',
+    checkin_channel: 'チェックイン方法',
+    checkin_memo: 'チェックインメモ（任意）',
   }
 };
 
@@ -6941,13 +6977,17 @@ async function runSttExtract(opts) {
   const transcript = audioMode
     ? '' // server skips transcript check when audio is provided
     : (document.getElementById('sttTranscript').value || '').trim();
-  if (!audioMode && transcript.length < 50) {
-    setSttStatus('원문이 너무 짧습니다 (최소 50자).', 'error');
+  // Q2 (2026-06-10): memo mode — 20~49자 텍스트는 inputMode:'memo' 로 자동 전송.
+  //   서버가 보수적 프롬프트(2-4문장 내러티브, 근거 없는 필드 빈 값)로 처리한다.
+  //   50자 이상은 기존 transcript 경로 그대로. 명시 토글 없음 (자동 판정).
+  const memoMode = !audioMode && transcript.length >= 20 && transcript.length < 50;
+  if (!audioMode && transcript.length < 20) {
+    setSttStatus('원문이 너무 짧습니다 (최소 20자 — 간단 메모도 가능합니다).', 'error');
     return;
   }
   lastTranscriptRaw = transcript; // audio mode 일 땐 빈 문자열 (필요시 서버가 transcribe해서 별도 반환 가능)
   btn.disabled = true;
-  setSttStatus(audioMode ? '🎙️ 음성 → transcript + 구조화 중…' : 'AI 분석 중…', null);
+  setSttStatus(audioMode ? '🎙️ 음성 → transcript + 구조화 중…' : (memoMode ? '메모 모드로 분석 중…' : 'AI 분석 중…'), null);
   showSttProgress(true, 0);
   clearSttLowConfidence();
 
@@ -6976,7 +7016,10 @@ async function runSttExtract(opts) {
   try {
     const reqBody = audioMode
       ? { audio: opts.audio, audioMimeType: opts.audioMimeType, context: Object.assign({}, ctx, { prev }), stream: true }
-      : { transcript, context: Object.assign({}, ctx, { prev }), stream: true };
+      : Object.assign(
+          { transcript, context: Object.assign({}, ctx, { prev }), stream: true },
+          memoMode ? { inputMode: 'memo' } : {} // 기본은 transcript — 서버 기본값과 동일하므로 생략
+        );
     const { data: sess } = await supabaseClient.auth.getSession();
     const token = sess?.session?.access_token;
     const res = await fetch('/api/extract-session', {
@@ -7043,7 +7086,7 @@ async function runSttExtract(opts) {
             // Narrative is ~800 chars, fields ~1500 chars → total ~2400
             const pct = Math.min(92, Math.round((accumulated.length / 2400) * 100));
             showSttProgress(true, pct);
-            setSttStatus(partialNarrative ? '내러티브 작성 후 필드 채우는 중…' : '분석 중…', null);
+            setSttStatus(partialNarrative ? '내러티브 작성 후 필드 채우는 중…' : (memoMode ? '메모 모드로 분석 중…' : '분석 중…'), null);
           }
         }
       }
@@ -7070,7 +7113,9 @@ async function runSttExtract(opts) {
       setSttStatus(
         audioMode
           ? '✓ 음성 → transcript 추출 + 초안 반영 완료. 위 textarea 에 transcript 가 채워졌어요 — 수정 후 다시 분석도 가능.'
-          : '초안 반영 완료. 💬 아이콘으로 각 필드의 원문 근거를 확인하세요.',
+          : memoMode
+            ? '메모 기반 초안 — 빈 필드는 직접 채워주세요. 💬 아이콘으로 채워진 필드의 근거를 확인하세요.'
+            : '초안 반영 완료. 💬 아이콘으로 각 필드의 원문 근거를 확인하세요.',
         'success'
       );
     } else {
