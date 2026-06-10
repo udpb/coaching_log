@@ -9,8 +9,9 @@
 
 이 저장소는 프레임워크/빌드가 **없습니다.**
 
-1. 프론트엔드 = **단일 `public/index.html` (12,090줄)**. 바닐라 JS · CDN 스크립트 · 해시 라우팅 · `innerHTML` 템플릿. React/Vue/번들러 도입은 ADR 필요 (임의 금지).
+1. 프론트엔드 = **단일 `public/index.html` (~10,500줄 · 2026-06-10 기준)**. 바닐라 JS · CDN 스크립트 · 해시 라우팅 · `innerHTML` 템플릿. React/Vue/번들러 도입은 ADR 필요 (임의 금지).
 2. `public/index.html` 수정 시: **반드시 `escHtml()`/`escAttr()` 로 사용자/코치 입력 이스케이프** (~87개 `innerHTML` sink — 한 곳만 빠져도 stored XSS). 전역 변수(~60개) 추가 신중.
+   - escape 규칙 (2026-06-10 단일화): **텍스트 컨텍스트 = `escHtml()` · 속성 컨텍스트 = `escAttr()`** (escHtml 은 `'` 미이스케이프 — 속성에 쓰지 말 것). `escapeHtml`/`_esc` 는 DEPRECATED 위임 래퍼 — 신규 사용 금지. 에러 메시지(`error.message`)도 innerHTML 에 넣을 땐 sink 로 취급.
 3. serverless = `api/*.js` (Vercel Node). `export default` 또는 `module.exports` 핸들러 — 기존 `api/extract-session.js` shape 따름.
 4. DB 변경 = `supabase/migrations/` 에 **새 SQL 파일만** (`YYYYMMDD_phase_*.sql`). **기존 적용 파일 수정 금지.** 모든 신규 테이블 RLS 기본 deny.
 5. 브라우저에 **service-role 키 절대 금지** — anon 키 + RLS 만.
