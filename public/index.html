@@ -11,6 +11,8 @@
 <script src="https://cdn.jsdelivr.net/npm/pizzip@3.2.0/dist/pizzip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3.68.7/build/docxtemplater.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+<!-- ADR-020: coaching_logs 22필드 정의 공유 모듈 (window.UD_FIELD_DEFS) — API 와 동일 파일 -->
+<script src="/field-defs.js"></script>
 <style>
 :root {
   --orange: #E8541A;
@@ -6893,25 +6895,8 @@ function clearSttLowConfidence() {
 }
 
 function markLowConfidence(fieldName) {
-  const map = {
-    stage: 'stageSelector',
-    stage_detail: 'fStageDetail',
-    main_topic: 'fMainTopic',
-    last_commitment: 'fLastCommitment',
-    last_done: 'doneSelector',
-    last_number: 'fLastNumber',
-    last_result: 'fLastResult',
-    real_issue: 'fRealIssue',
-    blocker_type: 'blockerSelector',
-    next_action: 'fNextAction',
-    next_deadline: 'fNextDeadline',
-    next_evidence: 'fNextEvidence',
-    next_checkin: 'fNextCheckin',
-    session_note: 'fSessionNote',
-    watch_next: 'fWatchNext',
-    energy: 'energySelector',
-    metrics: 'metricGrid'
-  };
+  // ADR-020: field → 요소 id 맵은 field-defs.js 에서 생성 (구 하드코딩과 동일)
+  const map = UD_FIELD_DEFS.LOW_CONF_ELEMENT_MAP;
   const id = map[fieldName];
   if (!id) return;
   const node = document.getElementById(id);
@@ -7271,14 +7256,17 @@ function partialParseFields(raw) {
   // and object shapes ("stage":{"value":"M",...}) by extracting via a single
   // pattern that looks for either.
   const out = {};
-  const scalarRe = /"(stage|stage_detail|main_topic|last_commitment|last_done|last_number|last_result|real_issue|blocker_type|next_action|next_deadline|next_evidence|next_checkin|session_note|watch_next)"\s*:\s*("(?:[^"\\]|\\.)*")/g;
+  // ADR-020: 문자열 스칼라 키 alternation 은 field-defs.js 에서 생성
+  // (energy/ai_used 는 아래 전용 regex, metrics 는 partial 미적용 — 기존과 동일)
+  const streamKeys = UD_FIELD_DEFS.STREAM_SCALAR_KEYS.join('|');
+  const scalarRe = new RegExp('"(' + streamKeys + ')"\\s*:\\s*("(?:[^"\\\\]|\\\\.)*")', 'g');
   let m;
   while ((m = scalarRe.exec(body))) {
     try { out[m[1]] = JSON.parse(m[2]); }
     catch { out[m[1]] = m[2].slice(1, -1); }
   }
   // Object-form: "stage": { "value": "M", "evidence": "..." }
-  const objRe = /"(stage|stage_detail|main_topic|last_commitment|last_done|last_number|last_result|real_issue|blocker_type|next_action|next_deadline|next_evidence|next_checkin|session_note|watch_next)"\s*:\s*\{\s*"value"\s*:\s*("(?:[^"\\]|\\.)*"|true|false|-?\d+(?:\.\d+)?)/g;
+  const objRe = new RegExp('"(' + streamKeys + ')"\\s*:\\s*\\{\\s*"value"\\s*:\\s*("(?:[^"\\\\]|\\\\.)*"|true|false|-?\\d+(?:\\.\\d+)?)', 'g');
   while ((m = objRe.exec(body))) {
     const key = m[1]; let v = m[2];
     if (v.startsWith('"')) {
@@ -7546,25 +7534,9 @@ function fieldLabelNode(fieldKey) {
     const special = document.getElementById('commitmentLabel');
     if (special) return special;
   }
-  const idMap = {
-    stage: 'stageSelector',
-    stage_detail: 'fStageDetail',
-    main_topic: 'fMainTopic',
-    last_done: 'doneSelector',
-    last_number: 'fLastNumber',
-    last_result: 'fLastResult',
-    real_issue: 'fRealIssue',
-    blocker_type: 'blockerSelector',
-    ai_used: 'fAiUsed',
-    next_action: 'fNextAction',
-    next_deadline: 'fNextDeadline',
-    next_evidence: 'fNextEvidence',
-    next_checkin: 'fNextCheckin',
-    session_note: 'fSessionNote',
-    watch_next: 'fWatchNext',
-    energy: 'energySelector',
-    metrics: 'metricGrid'
-  };
+  // ADR-020: evidence 배지 앵커 맵은 field-defs.js 에서 생성 (구 하드코딩과 동일;
+  // last_commitment 는 위의 #commitmentLabel 특례라 맵에 없음)
+  const idMap = UD_FIELD_DEFS.EVIDENCE_ELEMENT_MAP;
   const id = idMap[fieldKey];
   if (!id) return null;
   const anchor = document.getElementById(id);

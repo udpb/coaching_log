@@ -31,6 +31,11 @@
 //   event: done
 //   data: { narrative_summary, fields, low_confidence, raw, usage, modelUsed, extraction_version }
 
+// ADR-020 (2026-06-10): 22필드 정의 단일 진실원본 — public/field-defs.js 를
+// 프론트(window.UD_FIELD_DEFS)와 공유한다. @vercel/nft 가 require 를 추적하므로
+// 서버리스 번들에 자동 포함된다 (vercel.json 수정 불필요).
+const { STRUCTURED_FIELD_KEYS, VALUE_RULES_LINES } = require('../public/field-defs.js');
+
 // PRIMARY model — env override allowed. Don't use bare 'gemini-3.1-pro' (404
 // in v1beta); preview IDs need a dated suffix.
 const PRIMARY_MODEL  = process.env.GEMINI_CHAT_MODEL || 'gemini-2.5-pro';
@@ -427,16 +432,9 @@ function extractGeminiText(data) {
 
 // -----------------------------------------------------------------------
 // Output normalization → canonical { narrative_summary, fields, low_confidence }
+// STRUCTURED_FIELD_KEYS 는 public/field-defs.js 에서 가져온다 (ADR-020) —
+// 키 집합·순서는 기존 하드코딩과 동일 (23키, metrics 포함).
 // -----------------------------------------------------------------------
-const STRUCTURED_FIELD_KEYS = [
-  'stage', 'stage_detail', 'main_topic',
-  'last_commitment', 'last_done', 'last_number', 'last_result',
-  'last_done_numerator', 'last_done_denominator', 'last_done_rate',
-  'real_issue', 'blocker_type', 'ai_used',
-  'next_action', 'next_deadline', 'next_evidence',
-  'next_checkin', 'next_checkin_date', 'next_checkin_channel',
-  'session_note', 'watch_next', 'energy', 'metrics'
-];
 
 function toFieldEntry(v) {
   if (v && typeof v === 'object' && !Array.isArray(v) && ('value' in v || 'evidence' in v)) {
@@ -572,32 +570,9 @@ function buildSystemPrompt(isMemo) {
     '',
     ...memoRules,
     'VALUE RULES:',
-    '  - stage: "I" (Ideation) | "M" (Market) | "P" (Product/Prototype) | "A" (Acquisition) | "C" (Commercialization) | "T" (Traction) | "".',
-    '  - stage_detail: short phrase describing the founder\'s specific position within the stage.',
-    '  - main_topic: the SURFACE topic — what the session nominally discussed.',
-    '  - last_commitment: what the founder committed to last session. "" on first session.',
-    '  - last_done: "done" | "partial" | "not_done" | "". Only for non-first sessions.',
-    '  - last_number: concrete numeric outcome of last commitment (e.g. "7 interviews out of 10").',
-    '  - last_done_numerator: the completed count (number, e.g. 7). Same source as last_number but isolated for aggregation. "" if not quantifiable.',
-    '  - last_done_denominator: the target count (number, e.g. 10). "" if the commitment wasn\'t numeric (e.g. "finish the deck") or if not given.',
-    '  - last_result: what was learned from last commitment — the insight, not just the fact.',
-    '  - real_issue: the ROOT-CAUSE issue discovered today. Must differ from main_topic. If the session stayed at surface level, leave "".',
-    '  - blocker_type: one of "모르겠음" | "뭘 해야 할지 모름" | "방법을 모름" | "두려움/회피" | "시간/자원 부족" | "방향이 틀림" | "팀 내부 갈등", or "" if unclear.',
-    '  - ai_used: boolean — did the founder or coach discuss using AI tools during execution?',
-    '  - next_action: WHAT the founder commits to do next.',
-    '  - next_deadline: WHEN — MUST be a single ISO date in YYYY-MM-DD format.',
-    '      · Use the session "date" from context as today\'s reference when resolving natural-language dates ("다음주 금요일", "next Friday", "이번주까지").',
-    '      · If the transcript only gives a range (e.g. "월-수요일 사이에", "이번주 내로", "Monday to Wednesday"), pick the LAST day of the range — this is the conservative deadline that locks in the commitment.',
-    '      · If the transcript says "before next session" or similar relative-to-session phrasing and no concrete date is given, leave "" and flag low_confidence.',
-    '      · NEVER return natural language like "다음주 금요일" or a range like "2026-04-21 ~ 2026-04-24" — always a single YYYY-MM-DD.',
-    '  - next_evidence: HOW to verify completion (concrete artifact/number).',
-    '  - next_checkin: free-text natural-language summary ("목요일에 메시지로 점검"). Keep this as a human-readable sentence.',
-    '  - next_checkin_date: same check-in as above but as a single YYYY-MM-DD. Range → latest day. "" if no specific date given.',
-    '  - next_checkin_channel: how the coach will check in. One of: "message" | "call" | "video" | "email" | "inperson" | "other" | "". Pick the best match; leave "" only if truly ambiguous.',
-    '  - session_note: the coach\'s reflection / takeaway on this session.',
-    '  - watch_next: what the coach will specifically watch for next session.',
-    '  - energy: integer 1-5 for founder\'s emotional state, or 0 if not inferable.',
-    '  - metrics: array of { "name": snake_case, "value": "..." } for numeric business metrics mentioned (customers, revenue, conversions). value is the object\'s `value` field (the outer metrics.value is this array).',
+    // ADR-020: 필드별 규칙 줄은 public/field-defs.js 의 valueRule 에서 생성.
+    // 기존 하드코딩 26줄과 문자 단위 동일 (M1 브리프에서 diff 0 검증).
+    ...VALUE_RULES_LINES,
     '',
     'IMPORTANT:',
     '  1. Output a single valid JSON object — nothing else. No prose before/after, no markdown fences. The response MIME is set to application/json.',
