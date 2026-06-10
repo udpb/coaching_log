@@ -33,13 +33,20 @@
   Q4  체크인 예정 카드 — 대시보드 picker+타임라인 양쪽. 라이브 검증: UCA프로젝트 D+19·D+5
       2건 정상 렌더, 클릭→#detail 이동
 
+✅ 1.5단계 보안 소소 (S1, 2026-06-10 저녁): error.message escape 4곳(전수 grep 0건) ·
+   edit/delete 진입 가드(본인/admin) · escape 4중 정의 단일화(escAttr 위임, AGENTS.md 규칙 명문화)
+   · i18n 전수 점검(누락 0 확인). 배포·라이브 확인 완료.
+✅ 2단계 필드 정의 중앙화 (M1, ADR-020): public/field-defs.js UMD 공유 모듈 — 브라우저
+   <script src> + API require() 단일 소스. 프롬프트 문자단위 동일 증명(버전 2026-06-10.2 유지),
+   프론트 맵 deep-equal, 배포 후 실추출 200 확인 (서버리스 번들 포함 검증됨).
+   ⚠️ field-defs.js 의 valueRule 수정 = 프롬프트 변경 → EXTRACTION_VERSION 범프 의무.
+
 📌 다음 (우선순위 — AUDIT-2026-06-10 §4):
-  1.5 error.message escape 4곳 · editRecord/deleteRecord 진입 가드 · escape 함수 단일화
-      · (신규) i18n 사전 부재 키 전수 점검 — 12건은 보강했으나 다른 뷰에 잔존 가능
-  2   필드 메타데이터 중앙화 (22필드 5곳 하드코딩 → 단일 config) — 템플릿화 선행조건
-  3   프로젝트별 템플릿 (projects.template_config — 코어 고정 + 섹션 토글 + 커스텀 jsonb)
-  4   ADR 필요 결정: RAG/embedding 거취 · 죽은 컬럼 11개 처분 · 문서 드리프트 일괄 정정
-      (CLAUDE.md 줄수/마이그레이션 수/데드레이어/검증지침, README 死파일, phase4e "OpenAI" 주석)
+  3   프로젝트별 템플릿 (projects.template_config — 코어 고정 + 섹션 토글 + 커스텀 jsonb).
+      설계 ADR 필요 (사용자 승인) — field-defs 기반. 잔여 하드코딩 참고: gatherFormData ·
+      applyExtractedFields setText 분기 · hydrateFormFromRecord (M1 보고 §위험신호)
+  4   ADR 필요 결정: RAG/embedding 거취 · 죽은 컬럼 11개 처분 · 문서 드리프트 잔여
+      (README 死파일 참조, phase4e OpenAI 주석 — CLAUDE.md 는 06-10 정정됨)
 ```
 
 **최근 ADR:** 011·013·014·018·019 (소급, 06-10). ADR-004(captcha) 는 여전히 미작성·대기.
@@ -76,4 +83,4 @@
 
 ## 다음 세션 진입 한 줄
 
-> **1.5단계 보안 소소(escape 4곳·진입 가드·escape 단일화·i18n 잔여 키) 브리프 → 위임, 또는 2단계 필드 메타데이터 중앙화 설계 착수. (0단계 위생 + 1단계 퀵윈 4종 전부 배포·라이브 검증 완료)**
+> **3단계 프로젝트별 템플릿 설계 (ADR 작성 → 사용자 승인 → 브리프). 코어(약속-이행 루프·stage·energy)는 고정, 섹션 토글 + 커스텀 필드 jsonb 만 가변 — AUDIT-2026-06-10 §3 원칙. (0~2단계 전부 배포·라이브 검증 완료)**

@@ -92,17 +92,17 @@
 
 | Layer | 선택 | 비고 |
 |-------|------|------|
-| Frontend | **바닐라 JS · 단일 `public/index.html` (12,090줄 모놀리식)** | 빌드 없음 · CDN 스크립트 (supabase-js · pizzip · docxtemplater) · 해시 라우팅 · ~87 `innerHTML` |
-| AI serverless | `api/extract-session.js` (Vercel) | Gemini `gemini-2.5-pro` PRIMARY → `gemini-2.5-flash` FALLBACK |
-| DB | Supabase (Postgres + pgvector + Auth + RLS) | **`supabase/migrations/` = 스키마 SoT (28 파일)** |
+| Frontend | **바닐라 JS · `public/index.html` (~10,600줄) + `public/field-defs.js` (필드 정의 SoT, ADR-020)** | 빌드 없음 · CDN 스크립트 (supabase-js · pizzip · docxtemplater) · 해시 라우팅 (2026-06-10 pushState 기본) · ~87 `innerHTML` |
+| AI serverless | `api/extract-session.js` (Vercel) | Gemini `gemini-2.5-pro` PRIMARY → `gemini-2.5-flash` FALLBACK · 22필드 규칙은 field-defs.js 에서 생성 · EXTRACTION_VERSION 기록 |
+| DB | Supabase (Postgres + pgvector + Auth + RLS) | **`supabase/migrations/` = 스키마 SoT (38 파일)** · ⚠️ 제로베이스 재생 한계는 phase_z 헤더 참조 |
 | 배포 | Vercel (`public/` 정적 + 1 serverless) | |
 | Auth | 브라우저 anon 키 + RLS | service-role 키 클라이언트 노출 없음 |
 
-⚠️ **데드 레이어**: `server.js` · `lib/csv-manager.js` · `lib/backup.js` (로컬 파일기반 프로토타입 · Vercel 미배포 · node-cron 안 돎) — 감사 REMOVE 대상.
+(구 데드 레이어 `server.js` · `lib/` 는 2026-06-01 CLEAN 에서 삭제 완료 — 현존하지 않음.)
 
 ### 검증 방식 (빌드/lint/tsc 없음 — 정직하게)
 - **자동 빌드 없음.** TypeScript 아님. lint 없음.
-- 검증 = ① 로컬 `node server.js` 또는 배포 엔드포인트 HTTP 호출 ② RLS 는 마이그레이션의 `-- 검증` SQL 스니펫 실행 ③ `public/index.html` 변경은 브라우저 육안.
+- 검증 = ① 배포 엔드포인트 HTTP 호출 (또는 핸들러 mock 실호출) ② RLS 는 마이그레이션의 `-- 검증` SQL 스니펫 실행 ③ `public/index.html` 변경은 브라우저 육안 + 인라인 스크립트 `node --check`.
 - ⚠️ 현재 **자동 테스트 0건** — extract→save + RLS 매트릭스 테스트 추가가 ADD 후보.
 
 ---
@@ -136,3 +136,4 @@ ADR 없이 변경 금지:
 ## 변경 이력
 
 - **2026-06-01** — 운영 인프라 셋업 (ADR-001). ActBot 일하는 방식 이식 + 감사(AUDIT-2026-06-01) + **공유 계약 원본 작성**(`docs/contracts/coaches-directory.md`). 코드 변경 없음.
+- **2026-06-10** — 고도화 0~2단계 (AUDIT-2026-06-10). coach_id SoT 복구(phase_z) · 뒤로가기 라우팅 · 퀵윈 4종(초안 자동저장·메모 모드·추출 메타 phase_aa·체크인 카드) · 보안 소소(S1) · **필드 정의 중앙화 `public/field-defs.js`** (ADR-020) · ADR 011/013/014/018/019 소급. 스택 표·검증 지침 본 파일 정정.
