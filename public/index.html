@@ -4984,6 +4984,13 @@ function editRecord(id) {
     showToast('레코드를 찾을 수 없습니다.');
     return;
   }
+  // 진입 가드 — 세션 기록 수정은 본인 기록 또는 admin 만 (:_canEditLog 버튼 정책과 동일).
+  // RLS 가 DB는 막지만, 함수 직접 호출 시 UI 상태 오염 방지 (2026-06-10 S1).
+  const own = currentUser && String(record.coach_id) === String(currentUser.id);
+  if (!own && currentUserRole !== 'admin') {
+    showToast('본인 기록 또는 관리자만 가능합니다.');
+    return;
+  }
   // Reset to baseline (clears all inputs + AI state, sets editingRecordId=null)
   prepareForm(false);
 
@@ -5262,6 +5269,16 @@ async function submitRecord() {
 }
 
 async function deleteRecord(id) {
+  // 진입 가드 — 세션 기록 삭제는 본인 기록 또는 admin 만 (:_canEditLog 버튼 정책과 동일).
+  // RLS 가 DB delete 는 막지만, 아래 로컬 logs 배열 변형이 먼저 일어나면
+  // 화면-DB 불일치가 생기므로 가드 통과 후에만 진행 (2026-06-10 S1).
+  const rec = logs.find(r => String(r.id) === String(id));
+  if (!rec) return;
+  const own = currentUser && String(rec.coach_id) === String(currentUser.id);
+  if (!own && currentUserRole !== 'admin') {
+    showToast('본인 기록 또는 관리자만 가능합니다.');
+    return;
+  }
   if (!confirm(t('delete_confirm'))) return;
   if (supabaseAvailable) {
     try {
@@ -7959,7 +7976,7 @@ async function loadMyContractPreviewList() {
     .order('joined_at', { ascending: false });
 
   if (error) {
-    host.innerHTML = `<p style="font-size:12px; color:var(--red); padding:12px;">조회 실패: ${error.message}</p>`;
+    host.innerHTML = `<p style="font-size:12px; color:var(--red); padding:12px;">조회 실패: ${escHtml(error.message)}</p>`;
     return;
   }
   const rows = (data || []).map((m) => m.project).filter(Boolean);
@@ -7992,13 +8009,8 @@ async function loadMyContractPreviewList() {
   host.innerHTML = html;
 }
 
-function escapeHtml(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
+// (escapeHtml 첫 정의 삭제됨 — :8371 의 동명 function 선언이 호이스팅으로 항상 이겨
+//  이 위치의 정의는 실행된 적 없는 데드 코드였음. 2026-06-10 단일화)
 
 // 한국어 날짜 포맷 (YYYY-MM-DD → YYYY년 M월 D일)
 function _fmtKDate(iso) {
@@ -8102,7 +8114,7 @@ async function loadMyInfoProjects() {
     .order('joined_at', { ascending: false });
 
   if (error) {
-    host.innerHTML = `<p style="color:var(--red);">조회 실패: ${error.message}</p>`;
+    host.innerHTML = `<p style="color:var(--red);">조회 실패: ${escHtml(error.message)}</p>`;
     return;
   }
   if (!data || data.length === 0) {
@@ -8146,7 +8158,7 @@ async function loadMyInfoLogs() {
     .order('session_date', { ascending: false })
     .limit(50);
   if (error) {
-    host.innerHTML = `<p style="color:var(--red);">조회 실패: ${error.message}</p>`;
+    host.innerHTML = `<p style="color:var(--red);">조회 실패: ${escHtml(error.message)}</p>`;
     return;
   }
   if (!data || data.length === 0) {
@@ -8197,7 +8209,7 @@ async function loadMyInfoProfile() {
     .eq('id', cdId)
     .maybeSingle();
   if (error || !data) {
-    host.innerHTML = `<p style="color:var(--red);">조회 실패: ${error?.message || '데이터 없음'}</p>`;
+    host.innerHTML = `<p style="color:var(--red);">조회 실패: ${escHtml(error?.message || '데이터 없음')}</p>`;
     return;
   }
   _myInfoProfileData = data;
@@ -8367,10 +8379,12 @@ function escapeAttr(s) {
   return escapeHtml(s);
 }
 
-// 간단한 HTML escape (XSS 방지)
+// DEPRECATED — 신규 코드는 escHtml/escAttr 사용 (2026-06-10 단일화).
+// 작은따옴표(')까지 이스케이프하므로 escAttr 에 위임 (escHtml 은 ' 미처리).
+// String() 선적용으로 기존 null/0/false 처리 동일 유지 (0→'0', null→'').
 function escapeHtml(s) {
   if (s == null) return '';
-  return String(s).replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
+  return escAttr(String(s));
 }
 
 // ─── Phase G2-B: 신규 코치 온보딩 환영 모달 ───
@@ -8890,10 +8904,12 @@ function renderCommitmentHistory(teamLogs) {
 
 function fmtDate(d) { return d || '-'; }
 
+// DEPRECATED — 신규 코드는 escHtml/escAttr 사용 (2026-06-10 단일화).
+// 작은따옴표(')까지 이스케이프하므로 escAttr 에 위임 (escHtml 은 ' 미처리).
+// String() 선적용으로 기존 null/0/false 처리 동일 유지 (0→'0', null→'').
 function _esc(s) {
-  return String(s == null ? '' : s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  if (s == null) return '';
+  return escAttr(String(s));
 }
 
 function _doneBadgeHtml(record) {
