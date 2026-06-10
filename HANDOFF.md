@@ -1,62 +1,58 @@
 # HANDOFF — 세션 핸드오버 (라이브 문서 · coaching-log)
 
 > **갱신 룰:** 매 세션 끝, 메인 세션이 전체 덮어쓰기. Git 으로 히스토리 추적.
-> **읽는 순서:** 본 파일 → [CLAUDE.md](CLAUDE.md) → [AGENTS.md](AGENTS.md) → [docs/glossary.md](docs/glossary.md) → [docs/AUDIT-2026-06-01-verification.md](docs/AUDIT-2026-06-01-verification.md) → [docs/AUDIT-2026-06-01.md](docs/AUDIT-2026-06-01.md)
+> **읽는 순서:** 본 파일 → [CLAUDE.md](CLAUDE.md) → [AGENTS.md](AGENTS.md) → [docs/glossary.md](docs/glossary.md) → [docs/AUDIT-2026-06-10.md](docs/AUDIT-2026-06-10.md)
 
 ---
 
-> ⚠️ **2026-06-01 독립 재검증(v2):** [docs/AUDIT-2026-06-01-verification.md](docs/AUDIT-2026-06-01-verification.md). 이전 "완료" 보고를 코드와 대조해 정정.
-> - coaching-log 자체는 양호하나 **위험한 死 DDL `getCreateTableSQL()`**(`index.html:5159-5197`, `USING(true)` 반환) 즉시 삭제 + **`.or()` 필터 인젝션**(`index.html:11403`) 정정 필요.
-> - "死 GEMINI_KEY 제거"는 **실재 안 했던 항목**(오탐). "평가 Gap 3 = 다른 스키마"는 **틀림**(단일 스키마) → glossary:66 정정.
-> - 문서 drift 잔존: `README.md:41,79`(없는 `match-coaches`·`lib/`·`server.js`) · `ARCHITECTURE.md` "Gemini 3.1 Pro".
+## 📍 현재 상태 (2026-06-10)
 
----
-
-## 📍 현재 상태 (2026-06-01)
-
-**Phase:** 운영 인프라(ADR-001) + P0/P1 보안·정리 완료 → **배포 라이브** (SEC1 무인증 401 프로덕션 검증). SEC1·SEC2·D1·DOCS·CLEAN 커밋·푸시 완료.
+**Phase:** To-Be 2단계 봉인까지 배포 라이브 → **고도화 착수.** 2026-06-10 종합 감사([AUDIT-2026-06-10](docs/AUDIT-2026-06-10.md)) 완료, 0단계 위생 + 라우팅 수정 완료.
 
 ```
-✅ 완료·배포 (메인 검증):
-  SEC1  extract-session JWT 인증(401) + CORS allowlist + 클라 토큰 + anon 공개 폴백  (ADR-002) — 라이브 401 확인
-  SEC2  coach_applications 페이로드 상한 마이그레이션 (phase_r, NOT VALID×10)  (ADR-003)
-  D1    공유 coaches_directory 계약 drift 해소 (ud-ops 4컬럼 parity + 계약 포인터)
-  DOCS  README/HANDOVER 정정(모델명·extract-session·마이그레이션29) + 死 GEMINI_KEY 제거
-  CLEAN 레거시 로컬 스택 제거 (server.js·lib/*·死 deps, 로컬서빙 npx serve)
+✅ 이번 세션 완료 (2026-06-10):
+  AUDIT   종합 감사 — 외부 피드백(06-09) 재검증 + UX/필드모델/파이프라인 탐색 3건
+  Phase Z coaching_logs.coach_id SoT 복구 마이그레이션 (20260610_phase_z_coach_id_sot.sql)
+          ⚠️ 파일만 작성됨 — 라이브 적용(멱등·no-op 예상) + 검증 SQL 실행 필요
+  ROUTING 뒤로가기/탭 URL 수정 — pushState 기본화 + #detail/<id> 복원 (B-20260610-routing-history)
+          ⚠️ node --check 통과·코드경로 검증 완료, 실브라우저 시나리오 (a)(b)(d) 확인 권장
+  ADR     011·013·014·018·019 소급 작성 (docs/decisions/)
+  HANDOFF 본 파일 갱신 (06-01 정체 해소)
 
-다음 (대기 — 결정/대형):
-  H1    public/index.html 모듈화 착수 (renderBPDetailBody 940줄부터)  [대형]
-  CI    coaches_directory 3사본 일치 검사 (재발 방지)  [크로스레포 방식 결정]
-  ADR-004 — coach_applications captcha anti-spam (provider 결정 필요)
-  데이터: coaching_logs 114건 적재 확인(최근 5/14·저사용). 로그인 happy-path 실사용 확인 권장.
+📌 다음 (우선순위 — AUDIT-2026-06-10 §4):
+  1   퀵윈: draft 자동저장(localStorage) · 메모 모드(50자 완화+프롬프트 분기)
+      · extraction_version/model DB 기록 · "오늘 체크인할 팀" 뷰 (next_checkin_date 활용)
+  1.5 error.message escape 4곳 · editRecord/deleteRecord 진입 가드 · escape 함수 단일화
+  2   필드 메타데이터 중앙화 (22필드 5곳 하드코딩 → 단일 config) — 템플릿화 선행조건
+  3   프로젝트별 템플릿 (projects.template_config — 코어 고정 + 섹션 토글 + 커스텀 jsonb)
+  4   ADR 필요 결정: RAG/embedding 거취 · 죽은 컬럼 11개 처분 · 문서 드리프트 일괄 정정
+      (CLAUDE.md 줄수/마이그레이션 수/데드레이어/검증지침, README 死파일, phase4e "OpenAI" 주석)
 ```
 
-**마이그레이션 드리프트 (2026-06-01 · Journey #3) — 해소 중**: Phase J(`coach_applications`) 가 실DB 미적용이었음(coach-finder `/register`·`/applications` 비동작 원인). Phase L 은 적용돼 있었음(coach_contract_info 컬럼).
-- ✅ **Phase J 적용·검증 완료** (2026-06-01) — `20260515_phase_j_*.sql` 실행 성공, service-role 로 coach_applications 테이블+컬럼 생성 확인. PostgREST 인식됨 → /register 동작.
-- ✅ **phase_r (SEC2 페이로드 상한) 적용·검증 완료** (2026-06-01) — `20260601_phase_r_*.sql` 실행. 행동 검증: name 150자·expertise 40개 INSERT 가 각각 `name_len_chk`·`expertise_card_chk` 로 거부됨(테이블 0행 유지). **드리프트 완전 해소.**
-
-**최근 ADR:** [ADR-002](docs/decisions/002-extract-session-auth.md) Accepted.
-**최근 Journey:** [2026-06-01 #2](docs/journey/2026-06-01-p0-security-fixes.md).
-**감사 백로그:** [docs/AUDIT-2026-06-01.md](docs/AUDIT-2026-06-01.md).
-**공유 계약 (본 레포 원본):** [docs/contracts/coaches-directory.md](docs/contracts/coaches-directory.md).
+**최근 ADR:** 011·013·014·018·019 (소급, 06-10). ADR-004(captcha) 는 여전히 미작성·대기.
+**감사:** [docs/AUDIT-2026-06-10.md](docs/AUDIT-2026-06-10.md) (최신) · [docs/AUDIT-2026-06-01.md](docs/AUDIT-2026-06-01.md)
+**공유 계약 (본 레포 원본):** [docs/contracts/coaches-directory.md](docs/contracts/coaches-directory.md)
 
 ---
 
 ## 활성 브리프
 | 브리프 | 상태 |
 |--------|------|
-| (없음 — SEC1 archive 이동 완료) | — |
+| B-20260610-coach-id-sot | ✅ 완료 → _archive |
+| B-20260610-routing-history | ✅ 완료 → _archive (실브라우저 확인 잔여) |
 
 ---
 
 ## 함정 / 알아둘 것
 
-1. 프론트 = **바닐라 JS 단일 `public/index.html` 12,090줄.** 빌드 없음. `escHtml` 의무.
-2. **본 레포가 Supabase 스키마 SoT** (`supabase/migrations/`). 적용된 마이그레이션 수정 금지 — 새 파일만.
-3. 역할 = `admin`/`pm`/`coach`. ud-ops 6역할과 다름.
-4. RLS = 진짜 보안 경계. UI 체크는 보조.
-5. 빌드/lint/tsc 없음 — 검증 = 엔드포인트 호출 / SQL / 브라우저 / RLS 매트릭스.
-6. 메인은 **코드 직접 구현 금지** — 전부 브리프 → 서브 에이전트.
+1. 프론트 = **바닐라 JS 단일 `public/index.html` 9,330줄** (06-10 기준 — 문서 곳곳의 12,090줄은 stale). 빌드 없음. `escHtml` 의무.
+2. **본 레포가 Supabase 스키마 SoT** (`supabase/migrations/` 37파일). 적용된 파일 수정 금지 — 새 파일만.
+   ⚠️ **재현성 한계:** 빈 DB 시간순 재생은 phase4a(coach_id 참조)가 Phase Z(coach_id 추가)보다 먼저라 실패 — Phase Z 헤더 주석 참조.
+3. 역할 = `admin`/`pm`/`coach`. RLS = 진짜 보안 경계, UI 체크는 보조.
+4. 빌드/lint/tsc 없음 — 검증 = 엔드포인트 호출 / SQL / 브라우저 / RLS 매트릭스. (CLAUDE.md 의 "node server.js" 지침은 stale — server.js 는 삭제됨)
+5. 메인은 **코드 직접 구현 금지** — 전부 브리프 → 서브 에이전트.
+6. To-Be 봉인 후: 프로젝트는 coach-finder 수주(bp_on_won)에서만 생성. coaching-log 의 BP/프로젝트 직접생성/코치쓰기 없음 (ADR-019).
+7. 라우팅(06-10 이후): `switchView` 는 pushState 기본. 게이트 리다이렉트·부트 초기화는 `{ replaceHistory: true }`. 상세는 `#detail/<id>`.
 
 ---
 
@@ -67,4 +63,4 @@
 
 ## 다음 세션 진입 한 줄
 
-> **사용자 GO 확인 → SEC1 브리프 작성 → Agent 호출 → 메인이 엔드포인트 호출+`git diff` 검증 → 5섹션 보고 → ADR-002 작성.**
+> **Phase Z 라이브 적용+검증 SQL 확인 → 라우팅 실브라우저 시나리오 확인 → 퀵윈 4종(draft 자동저장·메모 모드·extraction_version·체크인 뷰) 브리프 작성 → 위임.**
