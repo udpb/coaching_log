@@ -4144,6 +4144,9 @@ let currentTeam = null; // null = new team
 let previousSession = null;
 let currentMetrics = [];
 let currentView = 'teams';
+// 라우팅(2026-06-10): 현재 detail 뷰가 보여주는 record id. switchView 가
+// detail 의 해시를 #detail/<id> 로 만들 때 사용 (새로고침/뒤로가기 복원).
+let currentDetailId = null;
 let listFilter = null; // null = all
 let currentUser = null;
 
@@ -4531,7 +4534,14 @@ function showApp() {
       // hash so deep links / refresh / back-button land you on the right tab.
       // restoreViewFromHash respects role and project gating; if it returns
       // false (no hash or gated out) we stay on the default 'teams' view.
-      try { restoreViewFromHash(); } catch (e) { console.warn('hash restore skipped', e); }
+      try {
+        const restored = restoreViewFromHash();
+        // 라우팅(2026-06-10): 복원 안 됐으면(해시 없음/게이트/잘못된 detail id)
+        // 해시를 기본 뷰 #teams 로 정규화(replace) — 이후 탭 전환이 pushState 라
+        // 뒤로가기의 기준점(첫 엔트리)이 필요하다. 첫 진입 후 뒤로가기 1번이
+        // 사이트 이탈이 되는 건 의도된 동작.
+        if (!restored && window.history) window.history.replaceState(null, '', '#teams');
+      } catch (e) { console.warn('hash restore skipped', e); }
     })
     .catch(e => {
       console.error('Load logs failed:', e);
@@ -4653,7 +4663,8 @@ async function loadCurrentUserRole() {
           void fetchCoachOnboardingStatus().then(() => {
             if (coachNeedsOnboarding === true) {
               // 어디에 있든 강제로 myinfo 로 보내고 모달 표시
-              try { switchView('myinfo'); } catch (_) { /* DOM 미준비 — 무시 */ }
+              // (라우팅 2026-06-10: 강제 이동이라 히스토리 push 안 함)
+              try { switchView('myinfo', { replaceHistory: true }); } catch (_) { /* DOM 미준비 — 무시 */ }
             }
           });
         }
@@ -5182,6 +5193,9 @@ function switchView(name, opts) {
   if (coachNeedsOnboarding === true && name !== 'myinfo') {
     showToast('먼저 "내 정보 > 계약 정보" 를 등록해주세요.');
     name = 'myinfo';
+    // 라우팅(2026-06-10): 강제 리다이렉트는 사용자가 의도한 네비게이션이
+    // 아니므로 히스토리 엔트리를 새로 쌓지 않는다 (replaceState).
+    opts = Object.assign({}, opts, { replaceHistory: true });
   }
 
   // Phase 4-B gate: new-session recording only makes sense inside a real
@@ -5190,6 +5204,8 @@ function switchView(name, opts) {
   if (name === 'form' && (!currentProject || currentProject.__virtual)) {
     showToast('먼저 프로젝트를 선택하세요.');
     name = 'teams';
+    // 라우팅(2026-06-10): 게이트 리다이렉트 — 위와 동일하게 replace.
+    opts = Object.assign({}, opts, { replaceHistory: true });
   }
 
   currentView = name;
@@ -5224,16 +5240,21 @@ function switchView(name, opts) {
   }
 
   // Sync URL hash so the active tab is bookmarkable / refresh-stable / back-
-  // button-friendly. Use replaceState by default (no history pollution); pass
-  // {pushHistory:true} to push a new entry (e.g., navigation from a deep link).
-  // Skip the sync when the change originated from a hashchange event itself
-  // (suppressHashUpdate) to avoid an update loop.
+  // button-friendly.
+  // 라우팅(2026-06-10): pushState 가 기본 — 탭 전환이 히스토리에 쌓여 브라우저
+  // 뒤로/앞으로가 앱 내 뷰 이동으로 동작한다.
+  //   - opts.suppressHashUpdate: hashchange 발원 호출 → 동기화 스킵 (루프 방지)
+  //   - opts.replaceHistory: 부트 초기화·게이트 리다이렉트 → replaceState
+  //   - detail 뷰는 record id 를 포함해 #detail/<id> 로 (새로고침/뒤로가기 복원)
+  //   - 해시가 이미 같으면 아무것도 안 함 (중복 엔트리 방지)
   try {
     if (typeof window !== 'undefined' && window.history && !(opts && opts.suppressHashUpdate)) {
-      const newHash = '#' + name;
+      const newHash = (name === 'detail' && currentDetailId)
+        ? '#detail/' + encodeURIComponent(String(currentDetailId))
+        : '#' + name;
       if (window.location.hash !== newHash) {
-        if (opts && opts.pushHistory) window.history.pushState(null, '', newHash);
-        else window.history.replaceState(null, '', newHash);
+        if (opts && opts.replaceHistory) window.history.replaceState(null, '', newHash);
+        else window.history.pushState(null, '', newHash);
       }
     }
   } catch (_) { /* history API may be unavailable in some contexts; non-fatal */ }
@@ -5241,14 +5262,21 @@ function switchView(name, opts) {
   window.scrollTo(0, 0);
 }
 
-// Read the current view from the URL hash. Returns null if the hash is empty
-// or doesn't correspond to a known view.
+// Read the current view from the URL hash. Returns { view, id } or null if
+// the hash is empty / doesn't correspond to a known view.
+// 라우팅(2026-06-10): #detail/<id> 패턴은 { view:'detail', id } 로 파싱.
+// Supabase recovery 해시(#access_token=...&type=recovery)는 VALID_VIEWS 에도
+// 'detail/' 프리픽스에도 안 걸리므로 그대로 null — 뷰 해시로 오인하지 않는다.
 function viewFromLocationHash() {
   try {
     const raw = (window.location.hash || '').replace(/^#/, '').trim();
     if (!raw) return null;
-    if (VALID_VIEWS.has(raw)) return raw;
-  } catch (_) { /* ignore */ }
+    if (VALID_VIEWS.has(raw)) return { view: raw, id: null };
+    if (raw.startsWith('detail/')) {
+      const id = decodeURIComponent(raw.slice('detail/'.length));
+      if (id) return { view: 'detail', id };
+    }
+  } catch (_) { /* ignore (malformed URI 포함) */ }
   return null;
 }
 
@@ -5256,8 +5284,9 @@ function viewFromLocationHash() {
 // sense given the current auth/project state. Returns true if a non-default
 // view was activated.
 function restoreViewFromHash() {
-  const target = viewFromLocationHash();
-  if (!target) return false;
+  const parsed = viewFromLocationHash();
+  if (!parsed) return false;
+  const target = parsed.view;
   if (target === 'teams') return false;  // default; nothing to do
   // Role-gated views: don't activate if the user isn't allowed there.
   if ((target === 'users' || target === 'coaches' || target === 'plans') &&
@@ -5269,22 +5298,48 @@ function restoreViewFromHash() {
   if (target === 'form' && (!currentProject || currentProject.__virtual)) {
     return false;
   }
-  // 'detail' requires a record id we don't track here; punt to teams.
-  if (target === 'detail') return false;
-  switchView(target, { suppressHashUpdate: true });
+  // 라우팅(2026-06-10): #detail/<id> 복원 — 본 함수는 showApp 체인에서
+  // loadLogs() 완료 후에만 호출되므로 logs 조회 가능. logs 에 없으면
+  // (삭제됨 / RLS 밖 = 접근 불가) 복원 포기 → 호출측이 teams 로 정규화.
+  if (target === 'detail') {
+    if (parsed.id && logs.some(r => String(r.id) === String(parsed.id))) {
+      showDetail(parsed.id);  // 내부 switchView 는 같은 해시라 push 안 함
+      return true;
+    }
+    return false;
+  }
+  // 부트 초기 진입 — 이중 히스토리 엔트리를 만들지 않도록 replace.
+  // (switchView 내부 게이트가 리다이렉트해도 해시가 따라가도록 suppress 대신 replace)
+  switchView(target, { replaceHistory: true });
   return true;
 }
 
 // Browser back/forward should follow URL hash too.
 window.addEventListener('hashchange', () => {
-  const target = viewFromLocationHash();
-  if (target && target !== currentView && VALID_VIEWS.has(target)) {
+  // 로그인 전(auth 화면)에는 해시 네비게이션 비활성 — 현행 부트 순서 유지.
+  if (!currentUser) return;
+  const parsed = viewFromLocationHash();
+  if (!parsed) return;
+  const target = parsed.view;
+  // 라우팅(2026-06-10): #detail/<id> — logs 에서 찾아 상세 재렌더 후 진입.
+  // #detail/A ↔ #detail/B 처럼 같은 뷰 내 이동도 재렌더가 필요하므로
+  // currentView 비교보다 먼저 처리한다. 못 찾으면 teams 폴백 (replace).
+  if (target === 'detail') {
+    if (parsed.id && logs.some(r => String(r.id) === String(parsed.id))) {
+      if (currentView !== 'detail' || String(parsed.id) !== String(currentDetailId)) {
+        showDetail(parsed.id);  // 해시는 이미 #detail/<id> 라 추가 push 없음
+      }
+    } else {
+      switchView('teams', { replaceHistory: true });
+    }
+    return;
+  }
+  if (target !== currentView && VALID_VIEWS.has(target)) {
     // Same role/project gating as on-boot restore
     if ((target === 'users' || target === 'coaches' || target === 'plans') &&
         currentUserRole !== 'admin' && currentUserRole !== 'pm') return;
     if (target === 'users' && currentUserRole !== 'admin') return;
     if (target === 'form' && (!currentProject || currentProject.__virtual)) return;
-    if (target === 'detail') return;
     switchView(target, { suppressHashUpdate: true });
   }
 });
@@ -9445,7 +9500,8 @@ async function renderUsersView() {
   // Hard gate: admin only
   if (currentUserRole !== 'admin') {
     showToast('관리자 전용');
-    switchView('teams');
+    // 라우팅(2026-06-10): 권한 게이트 리다이렉트 — 히스토리 push 안 함.
+    switchView('teams', { replaceHistory: true });
     return;
   }
   if (allProfiles.length === 0) {
@@ -9681,6 +9737,9 @@ async function quickAddPM(email) {
 function showDetail(id) {
   const record = logs.find(r => String(r.id) === String(id));
   if (!record) return;
+  // 라우팅(2026-06-10): switchView('detail') 이 해시를 #detail/<id> 로 만들 수
+  // 있도록 현재 record id 를 먼저 기록 (뒤로가기/새로고침 복원용).
+  currentDetailId = String(record.id);
 
   const content = document.getElementById('detailContent');
   const energyVal = parseInt(record.energy) || 0;
