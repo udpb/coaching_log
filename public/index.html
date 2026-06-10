@@ -3119,6 +3119,10 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
     <!-- Project context banner (rendered by JS in prepareForm/editRecord) -->
     <div id="formProjectBanner"></div>
 
+    <!-- 초안 복원 배너 (2026-06-10): localStorage 에 작성 중 초안이 있으면 JS(renderDraftBanner)가 렌더.
+         자동 복원하지 않음 — 코치가 [복원] 클릭 시에만 적용. -->
+    <div id="draftBanner" style="display:none;"></div>
+
     <!-- STT Draft Panel -->
     <div class="stt-panel" id="sttPanel">
       <div class="stt-header" onclick="toggleSttPanel()">
@@ -4787,17 +4791,14 @@ async function loadLogs() {
 // -----------------------------------------------------------------------
 // Edit existing record
 // -----------------------------------------------------------------------
-function editRecord(id) {
-  const record = logs.find(r => String(r.id) === String(id));
-  if (!record) {
-    showToast('레코드를 찾을 수 없습니다.');
-    return;
-  }
-  // Reset to baseline (clears all inputs + AI state, sets editingRecordId=null)
-  prepareForm(false);
-
-  // Now flip into edit mode and hydrate from the record.
-  editingRecordId = record.id;
+// 폼 채움 공통 로직 (2026-06-10): editRecord(수정 모드)와 초안 복원
+// (restoreCoachingDraft)이 공유한다. record 는 coaching_logs 행 또는
+// gatherFormData() 결과 — 두 객체의 키 스키마가 동일하다.
+// opts.hidePrevBanner === false 면 prevBanner 표시 상태를 건드리지 않는다
+// (초안 복원 시 prepareForm 이 세팅한 이전 세션 배너 유지).
+function hydrateFormFromRecord(record, opts) {
+  opts = opts || {};
+  const touchPrevBanner = opts.hidePrevBanner !== false;
 
   // Basic info
   document.getElementById('fDate').value = record.date || '';
@@ -4810,7 +4811,7 @@ function editRecord(id) {
   const sessionNum = parseInt(record.session_num) || 0;
   const isFirst = sessionNum === 1 || record.session_type === 'first';
   if (isFirst) {
-    document.getElementById('prevBanner').style.display = 'none';
+    if (touchPrevBanner) document.getElementById('prevBanner').style.display = 'none';
     document.getElementById('commitmentSectionTitle').setAttribute('data-i18n', 'first_session_action');
     document.getElementById('commitmentSectionTitle').textContent = t('first_session_action');
     document.getElementById('commitmentLabel').setAttribute('data-i18n', 'first_meaningful_action');
@@ -4818,7 +4819,7 @@ function editRecord(id) {
     document.getElementById('doneGroup').style.display = 'none';
     document.getElementById('resultRow').style.display = 'none';
   } else {
-    document.getElementById('prevBanner').style.display = 'none';  // edit mode hides prev banner
+    if (touchPrevBanner) document.getElementById('prevBanner').style.display = 'none';  // edit mode hides prev banner
     document.getElementById('commitmentSectionTitle').setAttribute('data-i18n', 'last_commitment_check');
     document.getElementById('commitmentSectionTitle').textContent = t('last_commitment_check');
     document.getElementById('commitmentLabel').setAttribute('data-i18n', 'last_commitment');
@@ -4872,6 +4873,22 @@ function editRecord(id) {
     const sttBox = document.getElementById('sttTranscript');
     if (sttBox) sttBox.value = record.transcript_raw;
   }
+}
+
+function editRecord(id) {
+  const record = logs.find(r => String(r.id) === String(id));
+  if (!record) {
+    showToast('레코드를 찾을 수 없습니다.');
+    return;
+  }
+  // Reset to baseline (clears all inputs + AI state, sets editingRecordId=null)
+  prepareForm(false);
+
+  // Now flip into edit mode and hydrate from the record.
+  editingRecordId = record.id;
+
+  // 기본정보 · 선택형 버튼 상태 · 텍스트 필드 · 내러티브 · transcript (공통 로직)
+  hydrateFormFromRecord(record);
 
   // Evidence map — restore badges so the coach sees which fields were AI-sourced
   if (record.extraction_evidence && typeof record.extraction_evidence === 'object') {
@@ -4902,6 +4919,9 @@ function editRecord(id) {
   updateEditBanner(record);
   updateSubmitButtonLabel();
   renderFormProjectBanner();
+  // 초안 자동저장 (2026-06-10): editingRecordId 확정 후 배너 재평가 —
+  // 이 레코드를 수정하던 초안(editingId 일치)이 있으면 복원 제안.
+  renderDraftBanner();
   switchView('form');
 }
 
@@ -5073,6 +5093,8 @@ async function submitRecord() {
           logs.push(flat);
         }
         localStorage.setItem('ud-coaching-logs', JSON.stringify(logs));
+        // 초안 자동저장 (2026-06-10): 저장 성공 → 작성 중 초안 폐기
+        clearCoachingDraft();
         showToast(isEditing ? '수정되었습니다' : t('saved_success'));
         const savedId = flat.id;
         editingRecordId = null;
@@ -5117,6 +5139,8 @@ async function submitRecord() {
     logs.push(flat);
   }
   localStorage.setItem('ud-coaching-logs', JSON.stringify(logs));
+  // 초안 자동저장 (2026-06-10): 오프라인 폴백 저장도 성공이므로 초안 폐기
+  clearCoachingDraft();
   showToast(isEditing ? '수정되었습니다 (오프라인)' : t('offline_saved'));
   const savedId = flat.id;
   editingRecordId = null;
@@ -6278,6 +6302,9 @@ function prepareForm(isNew) {
   renderFormSelectors();
   renderMetricGrid();
   renderFormProjectBanner();
+  // 초안 자동저장 (2026-06-10): 폼 진입 시 작성 중 초안이 있으면 복원 배너 표시.
+  // editRecord 경로에선 이 시점 editingRecordId=null → editRecord 끝에서 재평가됨.
+  renderDraftBanner();
 }
 
 // Compute delta/percent change for a single metric value vs a previous one.
@@ -6517,6 +6544,199 @@ function gatherFormData() {
     narrative_summary: narrative
   };
 }
+
+// ============================================================
+// 작성 중 초안 자동저장 (2026-06-10, AUDIT-2026-06-10 §2 P0)
+// ------------------------------------------------------------
+// 폼 작성 중 상태(필드 + STT transcript + 선택형 버튼 + 메트릭)를
+// localStorage('ud-coaching-draft-v1')에 debounce 1초로 자동 저장.
+// 폼 재진입 시 배너로 복원 "제안"만 — 자동 복원하지 않는다.
+// 저장 성공(submitRecord 온라인·오프라인 폴백) 시 초안 폐기.
+// ============================================================
+const DRAFT_STORAGE_KEY = 'ud-coaching-draft-v1';
+const DRAFT_MAX_AGE_MS = 24 * 60 * 60 * 1000;   // 24시간 지난 초안은 무시·삭제
+const DRAFT_MAX_JSON_BYTES = 200 * 1024;         // 200KB 초과 시 transcript 잘라서 저장
+let _draftSaveTimer = null;   // debounce 단일 타이머
+let _draftRestoring = false;  // 복원 적용 중 재저장/배너 재렌더 방지 플래그
+
+// 입력 이벤트 → 1초 debounce 후 저장 (단일 타이머)
+function scheduleDraftSave() {
+  if (_draftRestoring) return;
+  if (_draftSaveTimer) clearTimeout(_draftSaveTimer);
+  _draftSaveTimer = setTimeout(() => {
+    _draftSaveTimer = null;
+    saveCoachingDraftNow();
+  }, 1000);
+}
+
+// 현재 폼 상태를 즉시 직렬화해 localStorage 에 기록.
+// 직렬화는 gatherFormData() 재사용 — 필드 목록 하드코딩 금지 (브리프 스펙).
+function saveCoachingDraftNow() {
+  if (_draftRestoring) return;
+  // 폼 뷰가 활성일 때만 저장 — 취소/수정취소로 떠난 직후 debounce 타이머가
+  // 뒤늦게 발화해 stale 폼 내용을 초안으로 남기는 것 방지
+  const formView = document.getElementById('viewForm');
+  if (!formView || !formView.classList.contains('active')) return;
+  let fields;
+  try { fields = gatherFormData(); } catch (_) { return; } // 폼 DOM 미존재 등
+  const sttBox = document.getElementById('sttTranscript');
+  const transcript = sttBox ? sttBox.value : '';
+
+  // 빈 폼 보호: 코치가 "실제 내용"을 입력하기 전엔 저장하지 않는다
+  // (폼 진입 직후 셀렉터 한 번 클릭으로 기존 초안이 빈 초안으로 덮이는 것 방지).
+  // 기본정보(팀/코치/날짜/회차)는 prepareForm 이 prefill 하므로 내용으로 안 침.
+  const hasContent = !!(
+    fields.main_topic || fields.stage_detail || fields.real_issue ||
+    fields.last_commitment || fields.last_number || fields.last_result ||
+    fields.next_action || fields.next_evidence || fields.next_checkin ||
+    fields.session_note || fields.watch_next ||
+    fields.narrative_summary || transcript.trim() ||
+    (currentMetrics || []).some(m => m && m.value !== '' && m.value !== undefined && m.value !== null)
+  );
+  if (!hasContent) return;
+
+  const draft = {
+    savedAt: new Date().toISOString(),
+    editingId: (typeof editingRecordId !== 'undefined' && editingRecordId !== null) ? editingRecordId : null,
+    projectId: (currentProject && !currentProject.__virtual) ? currentProject.id : null,
+    teamName: fields.team_name || '',
+    fields: fields,
+    sttTranscript: transcript,
+    metrics: (currentMetrics || []).map(m => Object.assign({}, m)),
+    transcriptTruncated: false
+  };
+
+  let json;
+  try { json = JSON.stringify(draft); } catch (_) { return; }
+  // 용량 방어: 200KB 초과분만큼 transcript 꼬리를 잘라내고 플래그 기록
+  if (json.length > DRAFT_MAX_JSON_BYTES) {
+    const overflow = json.length - DRAFT_MAX_JSON_BYTES;
+    draft.sttTranscript = draft.sttTranscript.slice(0, Math.max(0, draft.sttTranscript.length - overflow));
+    draft.transcriptTruncated = true;
+    json = JSON.stringify(draft);
+  }
+  try {
+    localStorage.setItem(DRAFT_STORAGE_KEY, json);
+  } catch (e) {
+    // QuotaExceeded 등 — transcript 포기 후 1회 재시도, 그래도 실패면 조용히 포기
+    try {
+      draft.sttTranscript = '';
+      draft.transcriptTruncated = true;
+      localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
+    } catch (_) {}
+  }
+  // 초안이 현재 폼 상태와 동기화됐으므로 "이전 초안 복원" 배너는 의미 없음 → 숨김
+  const banner = document.getElementById('draftBanner');
+  if (banner && banner.style.display !== 'none') banner.style.display = 'none';
+}
+
+// 초안 읽기 + 유효성 검사. 손상/만료(24h) 초안은 즉시 삭제하고 null 반환.
+function readCoachingDraft() {
+  let raw = null;
+  try { raw = localStorage.getItem(DRAFT_STORAGE_KEY); } catch (_) { return null; }
+  if (!raw) return null;
+  let draft = null;
+  try { draft = JSON.parse(raw); } catch (_) { clearCoachingDraft(); return null; }
+  if (!draft || typeof draft !== 'object' || !draft.savedAt || !draft.fields) {
+    clearCoachingDraft();
+    return null;
+  }
+  const age = Date.now() - new Date(draft.savedAt).getTime();
+  if (!Number.isFinite(age) || age > DRAFT_MAX_AGE_MS) { clearCoachingDraft(); return null; }
+  return draft;
+}
+
+// 초안 삭제 (+ 대기 중인 debounce 타이머 취소 — 저장 직후 stale 재저장 방지)
+function clearCoachingDraft() {
+  if (_draftSaveTimer) { clearTimeout(_draftSaveTimer); _draftSaveTimer = null; }
+  try { localStorage.removeItem(DRAFT_STORAGE_KEY); } catch (_) {}
+  const banner = document.getElementById('draftBanner');
+  if (banner) { banner.style.display = 'none'; banner.innerHTML = ''; }
+}
+
+// 복원 배너 렌더. 조건: 초안 존재 + 24h 이내 + editingId 일치(또는 둘 다 신규).
+// prepareForm() 끝과 editRecord() 끝에서 호출된다.
+function renderDraftBanner() {
+  const host = document.getElementById('draftBanner');
+  if (!host || _draftRestoring) return;
+  const draft = readCoachingDraft();
+  const curEditing = (typeof editingRecordId !== 'undefined' && editingRecordId !== null) ? editingRecordId : null;
+  const draftEditing = (draft && draft.editingId !== undefined && draft.editingId !== null) ? draft.editingId : null;
+  if (!draft || String(draftEditing) !== String(curEditing)) {
+    host.style.display = 'none';
+    host.innerHTML = '';
+    return;
+  }
+  const d = new Date(draft.savedAt);
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  // 다른 팀 컨텍스트의 초안이면 표기하되 복원은 허용 (코치 판단) — 팀명은 escHtml 필수
+  const curTeam = ((document.getElementById('fTeam') || {}).value || '').trim();
+  const otherTeamNote = (draft.teamName && curTeam && draft.teamName !== curTeam)
+    ? ` <span style="color:var(--gray500);font-weight:400;">(다른 팀: ${escHtml(draft.teamName)})</span>`
+    : '';
+  const truncNote = draft.transcriptTruncated
+    ? ' <span style="color:var(--gray500);font-weight:400;">· 용량 제한으로 원문 일부 잘림</span>'
+    : '';
+  host.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 16px;padding:10px 14px;border:1px solid var(--gray300);background:var(--white);font-size:13px;">
+      <span>📝 작성 중이던 초안이 있습니다 (${hh}:${mm} 저장)${otherTeamNote}${truncNote}</span>
+      <span style="margin-left:auto;display:flex;gap:6px;">
+        <button type="button" class="btn btn-primary" style="padding:6px 14px;font-size:12px;" onclick="restoreCoachingDraft()">복원</button>
+        <button type="button" class="btn btn-ghost" style="padding:6px 14px;font-size:12px;" onclick="discardCoachingDraft()">삭제</button>
+      </span>
+    </div>`;
+  host.style.display = 'block';
+}
+
+// [복원] 클릭 — 초안을 폼에 적용. 채움 로직은 수정 모드와 동일한
+// hydrateFormFromRecord() 재사용 (gatherFormData 결과 = record 키 스키마 동일).
+// 선택형 버튼(session_type/stage/done/blocker/energy)은 전역 상태 갱신 후
+// renderFormSelectors() 가 active 클래스를 동기화한다. 초안은 저장 성공
+// 전까지 유지 (복원 직후 새로고침해도 다시 복원 가능).
+function restoreCoachingDraft() {
+  const draft = readCoachingDraft();
+  if (!draft) { renderDraftBanner(); return; }
+  _draftRestoring = true;
+  try {
+    const rec = Object.assign({}, draft.fields);
+    if (draft.sttTranscript) rec.transcript_raw = draft.sttTranscript;
+    // prepareForm 이 세팅한 이전 세션 배너는 유지 (hidePrevBanner:false)
+    hydrateFormFromRecord(rec, { hidePrevBanner: false });
+    if (Array.isArray(draft.metrics) && draft.metrics.length > 0) {
+      currentMetrics = draft.metrics.map(m => Object.assign({}, m));
+    }
+    renderFormSelectors();
+    renderMetricGrid();
+  } finally {
+    _draftRestoring = false;
+  }
+  const host = document.getElementById('draftBanner');
+  if (host) { host.style.display = 'none'; host.innerHTML = ''; }
+  showToast('초안을 복원했습니다');
+}
+
+// [삭제] 클릭 — 초안 폐기 + 배너 제거
+function discardCoachingDraft() {
+  clearCoachingDraft();
+  showToast('초안을 삭제했습니다');
+}
+
+// 저장 트리거 배선: 폼 뷰 전체에 이벤트 위임 (input/change = 텍스트·메트릭·
+// STT textarea·체크박스·셀렉트, click = 선택형 버튼·메트릭 추가/삭제).
+// 배너 자신의 [복원]/[삭제] 버튼은 저장 트리거에서 제외.
+(function initDraftAutosave() {
+  const formView = document.getElementById('viewForm');
+  if (!formView) return;
+  formView.addEventListener('input', scheduleDraftSave);
+  formView.addEventListener('change', scheduleDraftSave);
+  formView.addEventListener('click', function (e) {
+    const btn = e.target && e.target.closest ? e.target.closest('button') : null;
+    if (!btn) return;
+    if (btn.closest('#draftBanner')) return;
+    scheduleDraftSave();
+  });
+})();
 
 // ============================================================
 // STT Draft — transcript → auto-fill form via /api/extract-session
@@ -7158,6 +7378,10 @@ function applyExtractedFields(f, lowConf, isPartial) {
     catch (err) { console.error('[STT] markLowConfidence failed', err); }
     try { renderEvidenceBadges(); }
     catch (err) { console.error('[STT] renderEvidenceBadges failed', err); }
+    // 초안 자동저장 (2026-06-10): AI 추출 결과는 가장 비싼 데이터 —
+    // 최종 반영(isPartial=false) 직후 debounce 없이 즉시 1회 저장.
+    try { saveCoachingDraftNow(); }
+    catch (err) { console.error('[draft] saveCoachingDraftNow failed', err); }
   }
 }
 
