@@ -18,13 +18,15 @@
 //     fields: { stage: { value, evidence, confidence }, ..., metrics: {...} },
 //     low_confidence: [...],
 //     raw: "...",
-//     usage: {...}
+//     usage: {...},
+//     modelUsed: "gemini-2.5-pro",
+//     extraction_version: "2026-06-10.1"
 //   }
 //
 // Streaming response (when `stream: true`):
 //   data: { type: "delta", text, accumulated } ...
 //   event: done
-//   data: { narrative_summary, fields, low_confidence, raw, usage }
+//   data: { narrative_summary, fields, low_confidence, raw, usage, modelUsed, extraction_version }
 
 // PRIMARY model — env override allowed. Don't use bare 'gemini-3.1-pro' (404
 // in v1beta); preview IDs need a dated suffix.
@@ -37,6 +39,12 @@ const FALLBACK_MODEL = process.env.GEMINI_CHAT_FALLBACK_MODEL || 'gemini-2.5-fla
 // (initial + 3 retries) — worst case ~11s per model before falling back.
 const RETRY_DELAYS_MS = [1000, 3000, 7000];
 const API_BASE     = 'https://generativelanguage.googleapis.com/v1beta';
+
+// Phase AA (2026-06-10): extraction prompt/schema version, persisted to
+// coaching_logs.extraction_version by the client. Bump on every change that
+// alters the MEANING of the output (prompt body, field semantics, schema) —
+// format: 'YYYY-MM-DD.<serial>' (serial increments for same-day changes).
+const EXTRACTION_VERSION = '2026-06-10.1';
 
 function isRetryableStatus(status) {
   return status === 429 || status === 500 || status === 502 || status === 503 || status === 504;
@@ -266,7 +274,8 @@ module.exports = async function handler(req, res) {
     return res.status(200).json(Object.assign({}, normalized, {
       raw,
       usage: data.usageMetadata || null,
-      modelUsed
+      modelUsed,
+      extraction_version: EXTRACTION_VERSION
     }));
   } catch (err) {
     return res.status(500).json({ error: err.message });
@@ -387,6 +396,7 @@ async function handleStream(res, body, apiKey, prev) {
     raw: fullText,
     usage,
     modelUsed,
+    extraction_version: EXTRACTION_VERSION,
     finishReason: lastFinishReason,
     chunkCount
   }));

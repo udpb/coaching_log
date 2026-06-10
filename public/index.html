@@ -5016,6 +5016,13 @@ async function submitRecord() {
     dbRecord.ai_extracted = true;
   }
 
+  // Phase AA (2026-06-10): AI 추출로 만들어진 초안일 때만 모델/버전 기록.
+  //   lastExtractionModel 은 runSttExtract 성공 시에만 세팅되고 폼 리셋 시
+  //   비워지므로, 수기 작성 세션에는 두 키가 아예 포함되지 않는다(NULL 유지).
+  //   (편집 시에도 이번 세션에서 재추출하지 않았다면 키 미포함 → 기존 값 보존.)
+  if (lastExtractionModel) dbRecord.extraction_model = lastExtractionModel;
+  if (lastExtractionVersion) dbRecord.extraction_version = lastExtractionVersion;
+
   // Persist the per-field evidence map (only non-empty entries)
   if (currentEvidence && Object.keys(currentEvidence).length > 0) {
     const evMap = {};
@@ -5062,13 +5069,13 @@ async function submitRecord() {
 
       // Graceful fallback: if the DB hasn't had the newer columns migrated yet,
       // drop them and retry so the save still succeeds.
-      const missingColRe = /transcript_raw|ai_extracted|narrative_summary|extraction_evidence|next_checkin_date|next_checkin_channel|last_done_numerator|last_done_denominator|last_done_rate|project_id|column|schema cache/i;
+      const missingColRe = /transcript_raw|ai_extracted|narrative_summary|extraction_evidence|next_checkin_date|next_checkin_channel|last_done_numerator|last_done_denominator|last_done_rate|project_id|extraction_model|extraction_version|column|schema cache/i;
       if (error && missingColRe.test(error.message || '')) {
         const retryRecord = { ...dbRecord };
         ['transcript_raw','ai_extracted','narrative_summary','extraction_evidence',
          'next_checkin_date','next_checkin_channel',
          'last_done_numerator','last_done_denominator','last_done_rate',
-         'project_id']
+         'project_id','extraction_model','extraction_version']
           .forEach(k => delete retryRecord[k]);
         ({ data, error } = await runRequest(retryRecord));
         if (!error) console.warn('Saved without Phase 1+1.5 columns — please apply the latest Supabase migrations.');
@@ -6228,6 +6235,10 @@ function prepareForm(isNew) {
   const chChEl = document.getElementById('fNextCheckinChannel');
   if (chChEl) chChEl.value = '';
   lastTranscriptRaw = '';
+  // Phase AA (2026-06-10): 추출 메타도 함께 리셋 — 수기 작성 세션에 이전 AI
+  // 세션의 모델/버전이 따라 붙지 않도록.
+  lastExtractionModel = '';
+  lastExtractionVersion = '';
   const sttBox = document.getElementById('sttTranscript');
   if (sttBox) sttBox.value = '';
 
@@ -6787,6 +6798,11 @@ function markLowConfidence(fieldName) {
 
 // Most-recent raw transcript (so we can save it to DB when 'Save raw' is checked)
 let lastTranscriptRaw = '';
+// Phase AA (2026-06-10): which model / prompt-version produced the current AI
+// draft. Set only on a successful extraction; cleared on form reset so manual
+// (non-AI) sessions never carry stale values into the save payload.
+let lastExtractionModel = '';
+let lastExtractionVersion = '';
 
 // ─── Phase D2 (2026-05-03): MediaRecorder 기반 음성 녹음 ─────────────────
 // 흐름:
@@ -7036,6 +7052,10 @@ async function runSttExtract(opts) {
     if (finalPayload && (finalPayload.fields || finalPayload.narrative_summary)) {
       if (finalPayload.narrative_summary) applyNarrativeSummary(finalPayload.narrative_summary);
       applyExtractedFields(finalPayload.fields || {}, finalPayload.low_confidence || [], false);
+      // Phase AA (2026-06-10): 어떤 모델/프롬프트 버전이 이 초안을 만들었는지 보관.
+      //   submitRecord 가 저장 시 extraction_model / extraction_version 으로 기록.
+      lastExtractionModel = typeof finalPayload.modelUsed === 'string' ? finalPayload.modelUsed : '';
+      lastExtractionVersion = typeof finalPayload.extraction_version === 'string' ? finalPayload.extraction_version : '';
       // Phase #4 (2026-05-03): audio 모드일 때 Gemini 가 verbatim transcript 도 반환.
       //   - textarea 에 자동 채워넣어 코치가 검토/수정 가능
       //   - lastTranscriptRaw 도 갱신 (저장 시 DB 에 raw transcript 보관 옵션이 이걸 씀)
