@@ -43,6 +43,11 @@ const PRIMARY_MODEL  = process.env.GEMINI_CHAT_MODEL || 'gemini-2.5-pro';
 // retryable status (typically 503 high-demand). Flash has bigger capacity
 // and is ~10× faster; quality is close enough for STT extraction.
 const FALLBACK_MODEL = process.env.GEMINI_CHAT_FALLBACK_MODEL || 'gemini-2.5-flash';
+// ADR-021 (2026-06-12): chunked transcription model — flash FIXED, no pro
+// fallback. Transcription doesn't need pro reasoning, and a 2-hour session
+// fires up to 24 transcribe calls, so we protect pro cost/quota. Transient
+// failures still get the normal fetchWithRetry backoff (1s/3s/7s).
+const TRANSCRIBE_MODEL = 'gemini-2.5-flash';
 // Backoff schedule for retries. 4 fetches total per model
 // (initial + 3 retries) — worst case ~11s per model before falling back.
 const RETRY_DELAYS_MS = [1000, 3000, 7000];
@@ -159,6 +164,15 @@ module.exports = async function handler(req, res) {
   if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY not configured on server' });
 
   try {
+    // ADR-021 (2026-06-12): task:'transcribe' — transcribe-only path for the
+    // 5-minute audio chunks produced by the client's chunked recorder.
+    // Existing extraction requests never send `task`, so this branch is inert
+    // for them — request/response bytes of the text/audio/memo extraction
+    // paths are unchanged (verified by mock byte-diff against HEAD).
+    if (req.body && req.body.task === 'transcribe') {
+      return await handleTranscribe(req, res, apiKey);
+    }
+
     const { transcript, audio, audioMimeType, context, stream: wantStream, inputMode } = req.body || {};
 
     // Phase D2 (2026-05-03): two input modes — transcript text OR audio file.
@@ -299,6 +313,94 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: err.message });
   }
 };
+
+// -----------------------------------------------------------------------
+// ADR-021 (2026-06-12): transcribe-only handler for 5-min audio chunks.
+//   body: { task:'transcribe', audio(base64), audioMimeType,
+//           chunkIndex?, totalElapsedSec? }
+//   resp: 200 { raw_transcript, modelUsed } — non-stream JSON.
+// Model is TRANSCRIBE_MODEL (flash) fixed — no pro fallback. thinking 0.
+// Shares only fetchWithRetry / extractGeminiText / parseJsonFromText with the
+// extraction path; the extraction prompt (EXTRACTION_VERSION) is untouched —
+// changing this prompt does NOT bump EXTRACTION_VERSION (no extraction-
+// semantics change).
+// -----------------------------------------------------------------------
+function buildTranscribePrompt() {
+  return [
+    'You are a verbatim transcription engine for a 1:1 startup coaching session audio chunk (Korean/English, possibly mixed).',
+    'Transcribe the attached audio EXACTLY as spoken:',
+    '- Preserve filler words, false starts, and mixed-language switches.',
+    '- If speakers are distinguishable, prefix lines with "코치: " or "창업자: ". If unsure, omit prefixes.',
+    '- Do NOT summarize, interpret, translate, or add any meta commentary.',
+    '- If the audio contains only silence or noise, output an empty string for raw_transcript.',
+    'Output a single valid JSON object and nothing else: {"raw_transcript": "..."}'
+  ].join('\n');
+}
+
+async function handleTranscribe(req, res, apiKey) {
+  const { audio, audioMimeType, chunkIndex, totalElapsedSec } = req.body || {};
+  // audio is the only required input — no transcript/inputMode/memo logic here.
+  const hasAudio = typeof audio === 'string' && audio.length > 100;
+  if (!hasAudio) {
+    return res.status(400).json({ error: 'task "transcribe" requires `audio` (base64 inline_data).' });
+  }
+  // Same Vercel 4.5MB body guard as the extraction path (4M base64 chars ≈ 3MB raw).
+  // A 5-min 32kbps chunk is ~1.6M base64 chars — well under the cap.
+  if (audio.length > 4_000_000) {
+    return res.status(413).json({ error: 'audio chunk too large (max 4M base64 chars ≈ 3MB raw)' });
+  }
+
+  const userLines = ['Transcribe this coaching-session audio chunk verbatim. Output {"raw_transcript":"..."} only.'];
+  if (Number.isFinite(Number(chunkIndex))) {
+    const elapsedNote = Number.isFinite(Number(totalElapsedSec))
+      ? `, ~${Math.round(Number(totalElapsedSec) / 60)} min into the session`
+      : '';
+    userLines.push(`(This is chunk #${Number(chunkIndex) + 1} of an ongoing recording${elapsedNote}. It may start/end mid-sentence — transcribe it as-is.)`);
+  }
+
+  const body = {
+    system_instruction: { parts: [{ text: buildTranscribePrompt() }] },
+    contents: [{
+      role: 'user',
+      parts: [
+        { text: userLines.join('\n') },
+        { inline_data: { mime_type: audioMimeType || 'audio/webm', data: audio } }
+      ]
+    }],
+    generationConfig: {
+      temperature: 0.2,
+      // 5-min Korean speech ≈ 1-2k chars; 16384 covers fast English speech too.
+      maxOutputTokens: 16384,
+      responseMimeType: 'application/json',
+      // flash accepts 0 — transcription needs no reasoning; minimizes latency.
+      thinkingConfig: { thinkingBudget: 0 }
+    },
+    safetySettings: [
+      { category: 'HARM_CATEGORY_HARASSMENT',        threshold: 'BLOCK_NONE' },
+      { category: 'HARM_CATEGORY_HATE_SPEECH',       threshold: 'BLOCK_NONE' },
+      { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+      { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' }
+    ]
+  };
+
+  const response = await fetchWithRetry(TRANSCRIBE_MODEL, body, apiKey, false);
+  if (!response || !response.ok) {
+    const errText = response ? await response.text().catch(() => '') : 'no upstream response';
+    return res.status(response ? response.status : 502).json({ error: errText, modelTried: TRANSCRIBE_MODEL });
+  }
+  const data = await response.json();
+  const raw = extractGeminiText(data);
+  // Silence-only chunks still produce raw = '{"raw_transcript":""}' — raw
+  // itself being empty means the model emitted nothing at all.
+  if (!raw) {
+    return res.status(500).json({ error: 'Model returned no text', modelUsed: TRANSCRIBE_MODEL });
+  }
+  const parsed = parseJsonFromText(raw); // includes repairAndParse (reused as-is)
+  if (!parsed || typeof parsed.raw_transcript !== 'string') {
+    return res.status(500).json({ error: 'Model did not return valid transcription JSON', raw, modelUsed: TRANSCRIBE_MODEL });
+  }
+  return res.status(200).json({ raw_transcript: parsed.raw_transcript, modelUsed: TRANSCRIBE_MODEL });
+}
 
 // -----------------------------------------------------------------------
 // Streaming proxy: forward Gemini SSE deltas to the client as our own SSE,

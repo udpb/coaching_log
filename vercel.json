@@ -3,7 +3,7 @@
   "buildCommand": "",
   "functions": {
     "api/extract-session.js": {
-      "maxDuration": 60
+      "maxDuration": 300
     }
   },
   "rewrites": [
