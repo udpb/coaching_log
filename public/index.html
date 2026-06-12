@@ -3205,13 +3205,18 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
         <!-- Phase D2 (2026-05-03): 녹음 컨트롤 추가. 기존 textarea 붙여넣기 흐름 그대로 유지.
              - 모바일에서 휴대폰 마이크로 즉석 녹음 → 자동 분석까지 한번에.
              - PC 에서는 외부 STT 도구로 transcript 만들어서 붙여넣어도 OK (legacy).
-             - 마이크 권한 없는 브라우저 (예: 일부 webview)는 녹음 버튼 자동 숨김. -->
+             - 마이크 권한 없는 브라우저 (예: 일부 webview)는 녹음 버튼 자동 숨김.
+             ADR-021 (2026-06-12): 녹음은 5분 청크 분할 전사로 동작 — 최대 120분.
+             전사 실패 청크가 있으면 재전사 버튼이 나타난다. -->
         <div class="stt-record-row" id="sttRecordRow" style="display:none;">
           <button type="button" class="stt-record-btn" id="sttRecordBtn" onclick="startSttRecording()">
             🎙️ <span>음성 녹음 시작</span>
           </button>
           <button type="button" class="stt-record-btn stt-record-btn-stop" id="sttRecordStop" onclick="stopSttRecording()" style="display:none;">
             ■ <span>녹음 정지 · 분석</span>
+          </button>
+          <button type="button" class="stt-record-btn" id="sttChunkRetryBtn" onclick="retrySttFailedChunks()" style="display:none;">
+            ⟳ <span>실패 청크 재전사</span>
           </button>
           <span class="stt-record-time" id="sttRecordTime" style="display:none;">
             <span class="stt-record-dot"></span> <span id="sttRecordElapsed">00:00</span>
@@ -6911,22 +6916,45 @@ let lastTranscriptRaw = '';
 let lastExtractionModel = '';
 let lastExtractionVersion = '';
 
-// ─── Phase D2 (2026-05-03): MediaRecorder 기반 음성 녹음 ─────────────────
-// 흐름:
-//   사용자가 "🎙️ 녹음" 버튼 → getUserMedia 마이크 권한 → MediaRecorder 시작
-//   → 녹음 중 timer 표시
-//   → "■ 정지" 누름 → onstop → blob → base64 → runSttExtract({audio, audioMimeType})
-//   → /api/extract-session 가 audio inline_data 로 Gemini 2.5 Pro 호출
-//   → transcript + 구조화 JSON 한 번에 받음
+// ─── ADR-021 (2026-06-12): 5분 청크 분할 녹음 → 청크별 전사 (최대 120분) ───
+// 흐름 (Phase D2 의 단일샷 녹음을 대체):
+//   "🎙️ 녹음" → getUserMedia → MediaRecorder 5분마다 stop → 새 인스턴스 start
+//     (timeslice 금지: 후속 청크는 자립형 webm 이 아니라 단독 디코딩 불가 — ADR-021.
+//      stop/start 재시작 방식이 청크마다 완전한 컨테이너 헤더를 보장한다.
+//      스트림(getUserMedia)은 유지하고 recorder 인스턴스만 교체.)
+//   → 청크 blob 을 업로드 큐에 push (동시 1개 in-flight 순차 처리)
+//   → /api/extract-session { task:'transcribe' } (flash 고정·비스트림·thinking 0)
+//   → 전사 텍스트를 sttTranscript textarea 에 누적 + input 이벤트 (초안 자동저장 연동)
+//   → 정지(또는 120분 자동 종료) → 마지막 부분 청크 전사 완료 대기
+//   → 누적 텍스트 ≥20자면 기존 runSttExtract() (text 모드, pro) 자동 실행
+//     (50자 미만은 runSttExtract 의 기존 메모 모드 규칙이 그대로 적용됨)
+//   실패 청크: 자동 재시도 2회(1s/3s) → 그래도 실패면 큐에 blob 보존 +
+//   [실패 청크 재전사] 버튼으로 수동 재시도 (유실 금지).
+//
+// 기존 단일샷 audio 추출 경로(runSttExtract({audio}) / 서버 audio+extract)는
+// 호환을 위해 코드 유지 — 단 녹음 UI 는 항상 본 청크 플로우를 사용한다.
 //
 // 가용성 검사:
 //   navigator.mediaDevices.getUserMedia 가 없는 (HTTPS 아닌 환경, 또는 일부
 //   in-app webview) 경우 녹음 row 자체를 숨김. 기존 붙여넣기 흐름은 동작.
 let _sttMediaRecorder = null;
-let _sttAudioChunks = [];
 let _sttRecordStartMs = 0;
 let _sttRecordTimerId = null;
 let _sttRecordStream = null;
+let _sttSessionMime = '';          // 세션 시작 시 협상한 mimeType (청크 전체 공통)
+let _sttRecordingActive = false;   // 녹음 세션 진행 중 (recorder 교체와 무관)
+let _sttChunkTimerId = null;       // 5분 회전 타이머 (setTimeout)
+let _sttChunkSeq = 0;              // 생성된 청크 수 = 다음 청크 index
+let _sttChunksDone = 0;            // 전사 완료 청크 수
+let _sttMaxAppendedIndex = -1;     // textarea 에 마지막으로 붙은 청크 index (지연 도착 감지)
+let _sttUploadQueue = [];          // [{index, blob, mimeType, b64?, failed}] — 성공 시 제거, 실패 시 보존
+let _sttUploadInFlight = false;    // 동시 1개 업로드 보장
+let _sttWarned110 = false;         // 110분 경고 1회만
+let _sttAutoExtractPending = false; // 정지 후 큐 드레인 시 자동 추출 예약
+const STT_CHUNK_MS = 5 * 60 * 1000;          // 청크 길이 — 32kbps 기준 ~1.2MB
+const STT_WARN_SEC = 110 * 60;               // 110분 경고
+const STT_MAX_SEC  = 120 * 60;               // 120분 자동 종료
+const STT_CHUNK_RETRY_DELAYS = [1000, 3000]; // 청크 전사 자동 재시도 백오프
 
 (function checkSttRecorderAvailability() {
   // window load 후에 실행되도록 — onload 핸들러 또는 그냥 즉시 실행 (script 가 body 끝에 있음 가정)
@@ -6957,35 +6985,27 @@ async function startSttRecording() {
         break;
       }
     }
-    _sttMediaRecorder = mimeType
-      ? new MediaRecorder(_sttRecordStream, { mimeType })
-      : new MediaRecorder(_sttRecordStream);
-    _sttAudioChunks = [];
-    _sttMediaRecorder.ondataavailable = (e) => {
-      if (e.data && e.data.size > 0) _sttAudioChunks.push(e.data);
-    };
-    _sttMediaRecorder.onstop = async () => {
-      try { _sttRecordStream && _sttRecordStream.getTracks().forEach(t => t.stop()); } catch (_) {}
-      const finalType = _sttMediaRecorder.mimeType || mimeType || 'audio/webm';
-      const blob = new Blob(_sttAudioChunks, { type: finalType });
-      // 너무 짧으면 의미 없음 (코칭 세션 최소 30초)
-      if (blob.size < 5000) {
-        setSttStatus('녹음이 너무 짧습니다. 다시 녹음하거나 텍스트를 붙여넣어 주세요.', 'error');
-        return;
-      }
-      setSttStatus('🎙️ 업로드 중… (Gemini 가 transcript 추출 + 구조화 동시 진행)', null);
-      const b64 = await _sttBlobToBase64(blob);
-      // runSttExtract 의 audio 모드로 직접 진입 — 이후 흐름은 텍스트 모드와 동일
-      runSttExtract({ audio: b64, audioMimeType: finalType });
-    };
-    _sttMediaRecorder.start();
+    // 세션 상태 초기화 (이전 세션의 실패 청크는 새 녹음 시작 시 폐기 — 코치가
+    // 재시도하지 않고 새로 시작한 것이므로)
+    _sttSessionMime = mimeType;
+    _sttRecordingActive = true;
+    _sttChunkSeq = 0;
+    _sttChunksDone = 0;
+    _sttMaxAppendedIndex = -1;
+    _sttUploadQueue = [];
+    _sttUploadInFlight = false;
+    _sttWarned110 = false;
+    _sttAutoExtractPending = false;
+    _sttShowChunkRetryBtn(false);
+    _sttStartChunkRecorder();
     _sttRecordStartMs = Date.now();
     _sttRecordTimerId = setInterval(_sttUpdateRecordTime, 250);
     btnStart.style.display = 'none';
     btnStop.style.display  = 'inline-flex';
     timeEl.style.display   = 'inline-flex';
-    setSttStatus('🎙️ 녹음 중… (정지 누르면 자동 분석)', null);
+    setSttStatus('🎙️ 녹음 중… (5분마다 자동 전사 · 정지 누르면 초안 생성 · 최대 120분)', null);
   } catch (err) {
+    _sttRecordingActive = false;
     const msg = (err && err.name === 'NotAllowedError')
       ? '마이크 권한이 거부됐습니다. 브라우저 주소창 옆 자물쇠 아이콘에서 권한을 허용해 주세요.'
       : '녹음을 시작할 수 없습니다: ' + (err && err.message || err);
@@ -6993,14 +7013,63 @@ async function startSttRecording() {
   }
 }
 
+// 청크 1개를 담당하는 recorder 를 만들어 시작하고, 5분 회전 타이머를 건다.
+// onstop 에서 (a) 세션 계속이면 즉시 다음 recorder 시작 — 공백 ~수십 ms,
+// (b) blob 을 업로드 큐에 push, (c) 세션 종료면 스트림 정리 + 마무리 펌프.
+function _sttStartChunkRecorder() {
+  const opts = { audioBitsPerSecond: 32000 }; // ADR-021: 2h ≈ 29MB → 청크당 ~1.2MB
+  if (_sttSessionMime) opts.mimeType = _sttSessionMime;
+  const rec = new MediaRecorder(_sttRecordStream, opts);
+  _sttMediaRecorder = rec;
+  const myIndex = _sttChunkSeq++;
+  const localChunks = [];
+  rec.ondataavailable = (e) => {
+    if (e.data && e.data.size > 0) localChunks.push(e.data);
+  };
+  rec.onstop = () => {
+    const finalType = rec.mimeType || _sttSessionMime || 'audio/webm';
+    const blob = new Blob(localChunks, { type: finalType });
+    const sessionEnded = !_sttRecordingActive;
+    if (!sessionEnded) {
+      // 회전: 스트림은 유지, recorder 인스턴스만 교체 (자립형 webm 확보)
+      _sttStartChunkRecorder();
+    } else {
+      try { _sttRecordStream && _sttRecordStream.getTracks().forEach(t => t.stop()); } catch (_) {}
+    }
+    if (blob.size >= 2000) {
+      _sttEnqueueChunk({ index: myIndex, blob: blob, mimeType: finalType, failed: false });
+    } else if (sessionEnded && myIndex === 0 &&
+               !(document.getElementById('sttTranscript').value || '').trim()) {
+      // 유일한 청크가 무의미하게 짧음 (기존 단일샷의 5KB 가드와 동일 취지)
+      _sttAutoExtractPending = false;
+      setSttStatus('녹음이 너무 짧습니다. 다시 녹음하거나 텍스트를 붙여넣어 주세요.', 'error');
+    }
+    if (sessionEnded) _sttPumpUploadQueue(); // 큐가 이미 비어 있으면 즉시 마무리 단계로
+  };
+  rec.start();
+  if (_sttChunkTimerId) clearTimeout(_sttChunkTimerId);
+  _sttChunkTimerId = setTimeout(() => {
+    if (_sttRecordingActive && rec.state === 'recording') rec.stop(); // onstop 이 다음 청크 시작
+  }, STT_CHUNK_MS);
+}
+
 function stopSttRecording() {
+  const wasActive = _sttRecordingActive;
+  _sttRecordingActive = false;
+  if (_sttChunkTimerId)  { clearTimeout(_sttChunkTimerId);  _sttChunkTimerId = null; }
+  if (_sttRecordTimerId) { clearInterval(_sttRecordTimerId); _sttRecordTimerId = null; }
+  if (wasActive) {
+    _sttAutoExtractPending = true; // 마지막 청크 전사 완료 후 자동 추출
+    setSttStatus('녹음 종료 — 남은 청크 전사 중… 완료되면 자동으로 초안을 생성합니다.', null);
+  }
   try {
     if (_sttMediaRecorder && _sttMediaRecorder.state !== 'inactive') {
-      _sttMediaRecorder.stop();
+      _sttMediaRecorder.stop(); // onstop: 마지막 부분 청크 enqueue + 스트림 정리
+    } else {
+      try { _sttRecordStream && _sttRecordStream.getTracks().forEach(t => t.stop()); } catch (_) {}
+      _sttPumpUploadQueue(); // recorder 가 이미 죽어 있어도 마무리 단계는 진행
     }
   } catch (_) { /* defensive */ }
-  if (_sttRecordTimerId) clearInterval(_sttRecordTimerId);
-  _sttRecordTimerId = null;
   document.getElementById('sttRecordBtn').style.display  = 'inline-flex';
   document.getElementById('sttRecordStop').style.display = 'none';
   document.getElementById('sttRecordTime').style.display = 'none';
@@ -7013,13 +7082,169 @@ function _sttUpdateRecordTime() {
   const mm = String(Math.floor(elapsed / 60)).padStart(2, '0');
   const ss = String(elapsed % 60).padStart(2, '0');
   el.textContent = `${mm}:${ss}`;
-  // Vercel body limit ≈ 7분 (4.5MB 기준 raw). 그 전에 미리 경고.
-  if (elapsed === 6 * 60) {
-    setSttStatus('⚠ 약 1분 후 자동 정지됩니다 (서버 한도 ~7분). 더 길게 녹음해야 한다면 텍스트 모드를 이용해 주세요.', null);
-  } else if (elapsed >= 7 * 60) {
+  if (elapsed >= STT_MAX_SEC) {
+    // 120분 자동 종료 — 수동 정지와 완전히 동일한 경로 (마지막 청크 전사 → 자동 추출)
+    showToast('최대 녹음 시간(120분) 도달 — 자동 종료합니다.');
     stopSttRecording();
+    return;
+  }
+  if (!_sttWarned110 && elapsed >= STT_WARN_SEC) {
+    _sttWarned110 = true;
+    showToast('녹음 110분 경과 — 120분에 자동 종료됩니다.');
+  }
+  _sttRefreshChunkStatus(elapsed);
+}
+
+// 녹음 중 상태줄: "녹음 중 MM:SS · 전사 k/n 청크 완료" (+ 실패/자동종료 예고)
+function _sttRefreshChunkStatus(elapsedSec) {
+  if (!_sttRecordingActive) return;
+  const mm = String(Math.floor(elapsedSec / 60)).padStart(2, '0');
+  const ss = String(elapsedSec % 60).padStart(2, '0');
+  let msg = '🎙️ 녹음 중 ' + mm + ':' + ss + ' · 전사 ' + _sttChunksDone + '/' + _sttChunkSeq + ' 청크 완료';
+  const failed = _sttUploadQueue.filter(it => it.failed).length;
+  if (failed > 0) msg += ' · ⚠ ' + failed + '개 청크 전사 실패 — [실패 청크 재전사]';
+  if (elapsedSec >= STT_WARN_SEC) msg += ' · ⚠ 120분에 자동 종료';
+  setSttStatus(msg, failed > 0 ? 'error' : null);
+}
+
+// ── 업로드 큐: 동시 1개 in-flight, 순차 처리 (전사 순서 = 청크 순서 보장) ──
+function _sttEnqueueChunk(item) {
+  _sttUploadQueue.push(item);
+  _sttPumpUploadQueue();
+}
+
+async function _sttPumpUploadQueue() {
+  if (_sttUploadInFlight) return;
+  const item = _sttUploadQueue.find(it => !it.failed); // 실패 청크는 수동 재시도 대기
+  if (!item) { _sttAfterQueueDrained(); return; }
+  _sttUploadInFlight = true;
+  try {
+    const text = await _sttTranscribeChunkWithRetry(item);
+    const at = _sttUploadQueue.indexOf(item);
+    if (at >= 0) _sttUploadQueue.splice(at, 1); // 성공 → 큐에서 제거 (blob 해제)
+    _sttChunksDone++;
+    _sttAppendChunkTranscript(text, item.index);
+  } catch (err) {
+    item.failed = true; // blob 보존 — [실패 청크 재전사] 대상
+    _sttShowChunkRetryBtn(true);
+    setSttStatus('청크 ' + (item.index + 1) + ' 전사 실패 (' + String((err && err.message) || err).slice(0, 120) +
+                 ') — [실패 청크 재전사] 버튼으로 다시 시도하세요.', 'error');
+  } finally {
+    _sttUploadInFlight = false;
+    setTimeout(_sttPumpUploadQueue, 0); // 다음 항목 (재귀 스택 방지)
   }
 }
+
+// 자동 재시도 2회 (1s/3s). 400/401/413 은 재시도 무의미 → 즉시 실패 처리.
+async function _sttTranscribeChunkWithRetry(item) {
+  let lastErr = null;
+  for (let attempt = 0; attempt <= STT_CHUNK_RETRY_DELAYS.length; attempt++) {
+    try {
+      return await _sttTranscribeChunkOnce(item);
+    } catch (err) {
+      lastErr = err;
+      if (err && err.noRetry) break;
+      if (attempt < STT_CHUNK_RETRY_DELAYS.length) {
+        await new Promise(r => setTimeout(r, STT_CHUNK_RETRY_DELAYS[attempt]));
+      }
+    }
+  }
+  throw lastErr;
+}
+
+async function _sttTranscribeChunkOnce(item) {
+  if (!item.b64) item.b64 = await _sttBlobToBase64(item.blob); // 재시도 시 재인코딩 방지
+  const { data: sess } = await supabaseClient.auth.getSession();
+  const token = sess?.session?.access_token;
+  const res = await fetch('/api/extract-session', {
+    method: 'POST',
+    headers: Object.assign(
+      { 'Content-Type': 'application/json' },
+      token ? { Authorization: 'Bearer ' + token } : {}
+    ),
+    body: JSON.stringify({
+      task: 'transcribe',
+      audio: item.b64,
+      audioMimeType: item.mimeType,
+      chunkIndex: item.index,
+      totalElapsedSec: Math.max(0, Math.floor((Date.now() - _sttRecordStartMs) / 1000))
+    })
+  });
+  if (!res.ok) {
+    const errTxt = await res.text().catch(() => '');
+    const err = new Error('HTTP ' + res.status + (errTxt ? ' ' + errTxt.slice(0, 120) : ''));
+    if (res.status === 400 || res.status === 401 || res.status === 413) err.noRetry = true;
+    throw err;
+  }
+  const data = await res.json();
+  if (!data || typeof data.raw_transcript !== 'string') throw new Error('전사 응답 형식 오류');
+  return data.raw_transcript;
+}
+
+// 전사 텍스트를 textarea 에 누적 + input 이벤트 (viewForm 위임 → 초안 자동저장).
+// 큐가 1-in-flight 순차라 완료 순서 = 청크 순서. 수동 재시도로 늦게 도착한
+// 청크만 라벨을 붙여 코치가 위치를 알 수 있게 한다.
+function _sttAppendChunkTranscript(text, index) {
+  const t = (text || '').trim();
+  if (!t) return; // 무음/잡음 청크 — 빈 전사는 정상
+  const ta = document.getElementById('sttTranscript');
+  if (!ta) return;
+  let piece = t;
+  if (index < _sttMaxAppendedIndex) {
+    piece = '[청크 ' + (index + 1) + ' 보충 전사]\n' + t;
+  } else {
+    _sttMaxAppendedIndex = index;
+  }
+  ta.value = ta.value.trim() ? (ta.value.replace(/\s+$/, '') + '\n' + piece) : piece;
+  ta.dispatchEvent(new Event('input', { bubbles: true })); // draft 자동저장 트리거
+}
+
+// 큐가 빈 뒤 호출 — 녹음 종료 상태면 자동 추출(또는 실패 안내)로 마무리.
+function _sttAfterQueueDrained() {
+  if (_sttRecordingActive) return; // 녹음 중 큐만 잠시 빈 것 — 대기
+  if (_sttMediaRecorder && _sttMediaRecorder.state !== 'inactive') return; // 마지막 청크 마감 전
+  const failed = _sttUploadQueue.filter(it => it.failed).length;
+  if (failed > 0) {
+    // 자동 추출 보류 — 재전사 성공 시 본 함수가 다시 호출되어 이어서 진행.
+    // (전사 없이 바로 초안을 만들고 싶으면 "붙여넣은 텍스트로 초안 생성" 버튼 사용 가능)
+    setSttStatus('⚠ 청크 ' + failed + '개 전사 실패 — [실패 청크 재전사]를 누르면 완료 후 자동으로 초안을 생성합니다.', 'error');
+    return;
+  }
+  if (!_sttAutoExtractPending) return;
+  _sttAutoExtractPending = false;
+  const text = (document.getElementById('sttTranscript').value || '').trim();
+  if (text.length >= 20) {
+    // 기존 text 추출 경로 (pro) — ≥50자 transcript / 20~49자 memo 자동 판정 (기존 규칙 그대로)
+    setSttStatus('전사 완료 (' + _sttChunksDone + '청크) — 초안 생성 중…', null);
+    runSttExtract();
+  } else {
+    setSttStatus('전사된 내용이 너무 짧습니다 (20자 미만). 텍스트를 보완한 뒤 직접 초안 생성을 눌러주세요.', 'error');
+  }
+}
+
+// [실패 청크 재전사] — 실패 플래그를 풀고 큐를 다시 돌린다 (blob 은 큐에 보존돼 있음)
+function retrySttFailedChunks() {
+  let n = 0;
+  _sttUploadQueue.forEach(it => { if (it.failed) { it.failed = false; n++; } });
+  _sttShowChunkRetryBtn(false);
+  if (n === 0) return;
+  setSttStatus('실패 청크 ' + n + '개 재전사 중…', null);
+  _sttPumpUploadQueue();
+}
+
+function _sttShowChunkRetryBtn(on) {
+  const b = document.getElementById('sttChunkRetryBtn');
+  if (b) b.style.display = on ? 'inline-flex' : 'none';
+}
+
+// 페이지 이탈 가드 — 녹음/전사 진행 중엔 청크 blob 이 메모리에만 있어 새로고침 시 유실됨.
+// (전사 완료분은 textarea + draft 자동저장으로 이미 보호.)
+window.addEventListener('beforeunload', function (e) {
+  if (_sttRecordingActive || _sttUploadInFlight || _sttUploadQueue.length > 0) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
 
 function _sttBlobToBase64(blob) {
   return new Promise((resolve, reject) => {
