@@ -41,10 +41,18 @@
    프론트 맵 deep-equal, 배포 후 실추출 200 확인 (서버리스 번들 포함 검증됨).
    ⚠️ field-defs.js 의 valueRule 수정 = 프롬프트 변경 → EXTRACTION_VERSION 범프 의무.
 
-📌 다음 (우선순위 — AUDIT-2026-06-10 §4):
-  3   프로젝트별 템플릿 (projects.template_config — 코어 고정 + 섹션 토글 + 커스텀 jsonb).
-      설계 ADR 필요 (사용자 승인) — field-defs 기반. 잔여 하드코딩 참고: gatherFormData ·
-      applyExtractedFields setText 분기 · hydrateFormFromRecord (M1 보고 §위험신호)
+✅ R1 2시간 녹음 (ADR-021, 2026-06-10 밤): 5분 청크 분할 전사(flash·thinking 0) →
+   텍스트 누적 → 기존 text 추출(pro). 110분 경고/120분 자동종료, 실패 청크 재전사,
+   vercel.json maxDuration 300 (배포 통과 확인). 검증: 구/신 4경로 바이트 동일 회귀 0 ·
+   상태머신 시뮬 17/17 · 배포 후 오실레이터 webm 으로 인증 전사 E2E 200.
+   ⚠️ 잔여: 실제 마이크 녹음 1회(1청크) + 5분 경계 넘는 녹음 1회 — 사용자 확인 필요.
+   ⚠️ 동시성: Gemini 무료 티어면 동시 ~10명·~10세션/일 (flash 10 RPM·250 RPD 병목).
+      유료 Tier 1 이면 동시 100명+. 확장 전 키 티어 확인/전환 필요 (ADR-021 §동시성).
+
+📌 다음 (우선순위):
+  3   템플릿 — 사용자 결정(2026-06-10): 프로젝트별 커스터마이징이 아니라 **어드민이
+      템플릿 라이브러리를 늘려가는 방향**. 후순위로 보류. 착수 시 설계 ADR 필요.
+      잔여 하드코딩 참고: gatherFormData · applyExtractedFields setText · hydrateFormFromRecord
   4   ADR 필요 결정: RAG/embedding 거취 · 죽은 컬럼 11개 처분 · 문서 드리프트 잔여
       (README 死파일 참조, phase4e OpenAI 주석 — CLAUDE.md 는 06-10 정정됨)
 ```
@@ -83,4 +91,4 @@
 
 ## 다음 세션 진입 한 줄
 
-> **3단계 프로젝트별 템플릿 설계 (ADR 작성 → 사용자 승인 → 브리프). 코어(약속-이행 루프·stage·energy)는 고정, 섹션 토글 + 커스텀 필드 jsonb 만 가변 — AUDIT-2026-06-10 §3 원칙. (0~2단계 전부 배포·라이브 검증 완료)**
+> **R1 실녹음 확인(마이크 1청크 + 5분 경계) → Gemini 키 티어 확인 → 템플릿(어드민 라이브러리 방향)은 보류 중, 사용자 신호 대기. (0~2단계 + R1 전부 배포·검증 완료)**
