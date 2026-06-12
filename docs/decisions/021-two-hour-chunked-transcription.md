@@ -50,6 +50,11 @@
 | 본문 한도 상향 | 4.5MB는 Vercel 하드 리밋 | 불가능 |
 | 클라이언트 Web Speech API 실시간 STT | 서버 비용 0 | 품질·브라우저 편차, 화자 구분 불가, 기존 Gemini 전사 품질 포기 |
 
+## Addendum 2 (2026-06-12 — 동시성 확정, append only)
+사용자 확인 + AI Studio 계정 실측: **Gemini 키는 Tier 2** (프로젝트 udlabs).
+- gemini-2.5-flash: **2,000 RPM · 3M TPM · 100,000 RPD** / gemini-2.5-pro: **1,000 RPM · 5M TPM · 50,000 RPD** / Vercel **Pro 플랜**.
+- 재계산: 실질 바인딩은 flash TPM(3M) — 코치당 청크 ~5–12k 토큰, 고비트레이트(2분 회전) 가정 0.5 RPM/인 → **동시 ~500명**, 일일 **~1,600+ 세션**. 본 ADR §동시성의 "무료 티어 ~10명" 시나리오는 해당 없음. 조직 규모(코치 수십 명) 기준 사실상 무제한 — 동시성은 더 이상 설계 제약이 아니다.
+
 ## Addendum (2026-06-12 — append only, 원문 불변)
 실사용 첫 테스트에서 Vercel 플랫폼 413 `FUNCTION_PAYLOAD_TOO_LARGE` 발생. 원인: `audioBitsPerSecond: 32000` 은 **힌트일 뿐** — 브라우저가 무시하면(기본 96~128kbps, Safari AAC 256kbps) 5분 청크가 4.5MB 본문 한도를 초과한다. 보완: **회전 트리거를 "시간(5분) ∥ 용량(2MB) 중 선도달" 로 이중화** (15초 간격 `requestData()` 계측 — 청크 경계는 여전히 recorder 인스턴스 교체라 자립형 webm 원칙 불변). 업로드 직전 base64 3.9M 안전판 + 413 사용자 메시지 매핑 추가. 다국어(한/영 혼용) 전사 품질은 동일 테스트에서 정상 확인됨.
 
