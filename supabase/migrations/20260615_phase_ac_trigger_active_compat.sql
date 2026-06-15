@@ -19,8 +19,9 @@
 --   - coach-finder 코드 / index.html / RLS                    → 별도
 --
 -- 변경 요약:
---   1) 트리거명 bp_on_won → bp_lifecycle_sync (기존 bp_on_won DROP — 이름 변종 방어).
---   2) AFTER UPDATE → AFTER INSERT OR UPDATE (처음부터 active/won 으로 생성되는 경우 커버).
+--   1) 트리거명 bp_on_won → bp_lifecycle_sync_ins/_upd (기존 bp_on_won DROP).
+--      ※ TG_OP 는 WHEN 절에서 못 쓰므로 INSERT/UPDATE 트리거를 분리(함수는 공유).
+--   2) AFTER UPDATE → AFTER INSERT + AFTER UPDATE (처음부터 active/won 생성도 커버).
 --   3) 발화 조건 NEW.status='won' → NEW.status IN ('won','active').
 --   4) project_id IS NULL 가드 유지 → 이미 projects 보유한 기존 won 10건 재발화 방지.
 --
@@ -73,19 +74,29 @@ END;
 $$;
 
 -- ═══ 2. 트리거 재정의 — won/active × INSERT/UPDATE 호환 ═════════════════════
--- 기존 bp_on_won 제거(이름 변종 방어) 후 bp_lifecycle_sync 로 재생성.
-DROP TRIGGER IF EXISTS bp_on_won          ON public.business_plans;
-DROP TRIGGER IF EXISTS bp_lifecycle_sync  ON public.business_plans;
+-- ⚠️ TG_OP 는 트리거 함수 본문에서만 유효하고 CREATE TRIGGER 의 WHEN 절에서는
+--    사용 불가(ERROR 42703). 따라서 INSERT 용·UPDATE 용 트리거를 분리한다.
+--    (함수 handle_business_plan_won 은 공유 — 본문은 NEW 만 참조해 양쪽 안전.)
+-- 기존 bp_on_won 및 이전 이름 변종 모두 제거 후 재생성(멱등).
+DROP TRIGGER IF EXISTS bp_on_won              ON public.business_plans;
+DROP TRIGGER IF EXISTS bp_lifecycle_sync      ON public.business_plans;
+DROP TRIGGER IF EXISTS bp_lifecycle_sync_ins  ON public.business_plans;
+DROP TRIGGER IF EXISTS bp_lifecycle_sync_upd  ON public.business_plans;
 
-CREATE TRIGGER bp_lifecycle_sync
-  AFTER INSERT OR UPDATE ON public.business_plans
+-- INSERT: 처음부터 won/active 로 생성되는 경우 (OLD 없음 → 전이 검사 생략).
+CREATE TRIGGER bp_lifecycle_sync_ins
+  AFTER INSERT ON public.business_plans
+  FOR EACH ROW
+  WHEN (NEW.status IN ('won','active') AND NEW.project_id IS NULL)
+  EXECUTE FUNCTION public.handle_business_plan_won();
+
+-- UPDATE: status 가 실제로 won/active 로 바뀐 경우만 (이미 projects 보유 시 가드).
+CREATE TRIGGER bp_lifecycle_sync_upd
+  AFTER UPDATE ON public.business_plans
   FOR EACH ROW
   WHEN (
-    -- INSERT: OLD 없음 → status 전이 검사 생략. UPDATE: status 가 실제로 바뀐 경우만.
-    (TG_OP = 'INSERT' OR OLD.status IS DISTINCT FROM NEW.status)
-    -- 과도기 호환: 'won'(coach-finder 현행) 과 'active'(ADR-023 정본) 둘 다 발화.
+    OLD.status IS DISTINCT FROM NEW.status
     AND NEW.status IN ('won','active')
-    -- 가드: project_id 아직 없을 때만 → 이미 projects 보유한 기존 won 행 재발화 방지.
     AND NEW.project_id IS NULL
   )
   EXECUTE FUNCTION public.handle_business_plan_won();
@@ -93,7 +104,7 @@ CREATE TRIGGER bp_lifecycle_sync
 -- ─────────────────────────────────────────────────────────────────────
 -- 적용 후 검증 (라이브는 메인이 실행):
 --
--- (1) 트리거 1개만 존재하고 INSERT/UPDATE 둘 다 거는지 + WHEN 조건 확인:
+-- (1) 트리거 2개(bp_lifecycle_sync_ins/_upd) 존재 + WHEN 조건 확인, bp_on_won 0행:
 --     SELECT tgname,
 --            (tgtype & 4) <> 0  AS fires_insert,   -- TRIGGER_TYPE_INSERT
 --            (tgtype & 16) <> 0 AS fires_update,   -- TRIGGER_TYPE_UPDATE
