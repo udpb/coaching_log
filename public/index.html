@@ -8221,9 +8221,9 @@ async function loadMyContractPreviewList() {
   // 내가 참여한 사업 목록 (계약금액은 coaching-log 에 없으므로 PM 발송본에서 확인 안내)
   const { data, error } = await supabaseClient
     .from('project_members')
-    .select('joined_at, project:project_id(id, name, target_start_date:start_date, target_end_date:end_date, status)') // projects 실제 컬럼은 start_date/end_date — 별칭으로 매핑 (B1)
+    .select('joined_at:added_at, project:project_id(id, name, target_start_date:start_date, target_end_date:end_date, status)') // project_members 실제 컬럼은 added_at — 별칭으로 매핑 (B2). projects 는 start_date/end_date (B1)
     .eq('user_id', user.id)
-    .order('joined_at', { ascending: false });
+    .order('added_at', { ascending: false }); // order 는 실컬럼명 필요 — 별칭 불가 (B2)
 
   if (error) {
     host.innerHTML = `<p style="font-size:12px; color:var(--red); padding:12px;">조회 실패: ${escHtml(error.message)}</p>`;
@@ -8359,9 +8359,9 @@ async function loadMyInfoProjects() {
   // project_members 통해 본인 참여 사업 조회 (RLS 가 자동 필터)
   const { data, error } = await supabaseClient
     .from('project_members')
-    .select('role, joined_at, project:project_id(id, name, description, status, target_start_date:start_date, target_end_date:end_date)') // projects 실제 컬럼은 start_date/end_date — 별칭으로 매핑 (B1)
+    .select('role, joined_at:added_at, project:project_id(id, name, description, status, target_start_date:start_date, target_end_date:end_date)') // project_members 실제 컬럼은 added_at — 별칭으로 매핑 (B2). projects 는 start_date/end_date (B1)
     .eq('user_id', user.id)
-    .order('joined_at', { ascending: false });
+    .order('added_at', { ascending: false }); // order 는 실컬럼명 필요 — 별칭 불가 (B2)
 
   if (error) {
     host.innerHTML = `<p style="color:var(--red);">조회 실패: ${escHtml(error.message)}</p>`;
