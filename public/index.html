@@ -3773,6 +3773,27 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
           </div>
         </div>
       </div>
+      <!-- ADR-022: 필수 KPI — 어드민/PM 이 이 프로젝트의 모든 팀에 공통으로
+           요구하는 KPI(메트릭 기본 카드)를 지정. 신규 일지 폼이 이걸로 prefill. -->
+      <div id="projKpiSection" style="display:none;margin-top:20px;">
+        <label style="display:flex;align-items:center;gap:6px;">
+          필수 KPI
+          <span style="font-size:10px;color:var(--gray500);font-weight:400;">
+            (신규 일지의 핵심 숫자 기본 카드로 깔립니다 · 미설정 시 기본값 사용)
+          </span>
+        </label>
+        <div class="proj-kpi-list" id="projKpiList" style="display:flex;flex-direction:column;gap:6px;margin-top:6px;"></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap;">
+          <button type="button" onclick="addProjectKpiRow()"
+                  style="padding:6px 12px;font-size:12px;background:var(--gray100);color:var(--gray700);border:1px solid var(--gray300);font-family:inherit;cursor:pointer;">
+            + KPI 추가
+          </button>
+          <button type="button" id="projKpiSaveBtn" onclick="saveProjectKpis()"
+                  style="padding:6px 14px;font-size:12px;background:var(--orange);color:#fff;border:none;font-family:inherit;font-weight:600;cursor:pointer;">
+            KPI 저장
+          </button>
+        </div>
+      </div>
       <div class="auth-error" id="projModalError" style="margin-top:10px;"></div>
     </div>
     <div class="modal-footer">
@@ -5533,9 +5554,86 @@ function openProjectManageModal(id) {
   document.getElementById('projStatus').value = p.status || 'active';
   document.getElementById('projMemberSection').style.display = '';
   document.getElementById('projModalError').textContent = '';
+  // ADR-022: 필수 KPI 편집 — required_kpis 를 편집 행으로 로드.
+  document.getElementById('projKpiSection').style.display = '';
+  _projKpiRows = (Array.isArray(p.required_kpis) ? p.required_kpis : [])
+    .map(k => (k && typeof k === 'object') ? k.name : k)
+    .map(n => (n == null ? '' : String(n)))
+    .filter(n => n.trim().length > 0);
+  if (_projKpiRows.length === 0) _projKpiRows = [''];
+  renderProjectKpiRows();
   document.getElementById('projModal').classList.add('active');
   _resetMemberSelection();
   loadAndRenderProjectMembers(p.id);
+}
+
+// ADR-022: 프로젝트 관리 모달 — 필수 KPI 편집 상태 + 렌더/저장.
+let _projKpiRows = [];
+
+function renderProjectKpiRows() {
+  const wrap = document.getElementById('projKpiList');
+  if (!wrap) return;
+  let html = '';
+  for (let i = 0; i < _projKpiRows.length; i++) {
+    html += `
+      <div style="display:flex;align-items:center;gap:6px;">
+        <input type="text" value="${escAttr(_projKpiRows[i])}"
+               oninput="updateProjectKpiRow(${i}, this.value)"
+               placeholder="KPI 이름 (예: DAU, 유료 전환율)"
+               style="flex:1;padding:6px 10px;font-size:12px;border:1px solid var(--gray300);font-family:inherit;box-sizing:border-box;">
+        <button type="button" onclick="removeProjectKpiRow(${i})" title="삭제"
+                style="padding:6px 10px;font-size:12px;background:var(--gray100);color:var(--gray700);border:1px solid var(--gray300);font-family:inherit;cursor:pointer;">&times;</button>
+      </div>`;
+  }
+  wrap.innerHTML = html;
+}
+
+function updateProjectKpiRow(idx, val) { _projKpiRows[idx] = val; }
+function addProjectKpiRow() { _projKpiRows.push(''); renderProjectKpiRows(); }
+function removeProjectKpiRow(idx) {
+  _projKpiRows.splice(idx, 1);
+  if (_projKpiRows.length === 0) _projKpiRows = [''];
+  renderProjectKpiRows();
+}
+
+async function saveProjectKpis() {
+  if (_projModalState.mode !== 'edit' || !_projModalState.id) return;
+  if (currentUserRole !== 'admin' && currentUserRole !== 'pm') {
+    showToast('KPI 편집 권한이 없습니다.');
+    return;
+  }
+  const projectId = _projModalState.id;
+  const errEl = document.getElementById('projModalError');
+  errEl.textContent = '';
+  // 빈 이름 제외 + 중복 제거(앞선 것 우선). 객체배열 [{name}] 로 저장.
+  const seen = new Set();
+  const kpis = [];
+  for (const raw of _projKpiRows) {
+    const name = String(raw == null ? '' : raw).trim();
+    if (!name) continue;
+    const key = name.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    kpis.push({ name });
+  }
+  const btn = document.getElementById('projKpiSaveBtn');
+  if (btn) btn.disabled = true;
+  try {
+    const { error } = await supabaseClient
+      .from('projects')
+      .update({ required_kpis: kpis })
+      .eq('id', projectId);
+    if (error) throw error;
+    // 로컬 캐시 반영 → 즉시 신규 폼 prefill 에 반영되도록.
+    const p = myProjects.find(x => x.id === projectId);
+    if (p) p.required_kpis = kpis;
+    if (currentProject && currentProject.id === projectId) currentProject.required_kpis = kpis;
+    showToast('필수 KPI를 저장했습니다.');
+  } catch (e) {
+    errEl.innerHTML = 'KPI 저장 실패: ' + escHtml(e.message || String(e));
+  } finally {
+    if (btn) btn.disabled = false;
+  }
 }
 
 // UX4: 모달 열 때 이전 프로젝트의 선택/검색 잔재 초기화.
@@ -6392,8 +6490,9 @@ function prepareForm(isNew) {
     document.getElementById('resultRow').style.display = 'none';
     selectedSessionType = 'session_first';
 
-    // Default metrics
-    currentMetrics = DEFAULT_METRICS.map(m => ({ ...m }));
+    // Default metrics — 프로젝트에 required_kpis 가 있으면 그것으로, 없으면
+    // 전역 DEFAULT_METRICS 폴백 (ADR-022 / 하위호환).
+    currentMetrics = initialMetricsForProject();
   } else {
     // Continuing session
     document.getElementById('commitmentSectionTitle').setAttribute('data-i18n', 'last_commitment_check');
@@ -6430,12 +6529,16 @@ function prepareForm(isNew) {
         prev: m.value
       }));
       if (currentMetrics.length === 0) {
-        currentMetrics = DEFAULT_METRICS.map(m => ({ ...m }));
+        currentMetrics = initialMetricsForProject();
+      } else {
+        // 이전 세션 메트릭이 우선이되, 프로젝트 required_kpis 중 빠진 항목은
+        // 빈 카드로 보강한다(필수 KPI 는 채우라는 신호이므로). ADR-022.
+        currentMetrics = augmentWithRequiredKpis(currentMetrics);
       }
     } else {
       document.getElementById('prevBanner').style.display = 'none';
       document.getElementById('fTeam').value = currentTeam || '';
-      currentMetrics = DEFAULT_METRICS.map(m => ({ ...m }));
+      currentMetrics = initialMetricsForProject();
     }
   }
 
@@ -6501,6 +6604,46 @@ function computeEnergySeries(teamLogsSorted) {
     prev = e;
   }
   return out;
+}
+
+// ADR-022: 현재 프로젝트의 required_kpis 를 정규화된 name 배열로 반환.
+// 마이그레이션 미적용(undefined)·빈 배열·미설정 프로젝트는 [] 를 돌려
+// 호출부가 DEFAULT_METRICS 폴백을 타게 한다(배포 안전성).
+function projectRequiredKpiNames() {
+  const raw = currentProject && currentProject.required_kpis;
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map(k => (k && typeof k === 'object') ? k.name : k)
+    .map(n => (n == null ? '' : String(n).trim()))
+    .filter(n => n.length > 0);
+}
+
+// 신규 일지 메트릭 카드 초기값: required_kpis 가 있으면 그것으로,
+// 없으면 전역 DEFAULT_METRICS (하위호환).
+function initialMetricsForProject() {
+  const names = projectRequiredKpiNames();
+  if (names.length === 0) return DEFAULT_METRICS.map(m => ({ ...m }));
+  return names.map(name => ({ name, value: '' }));
+}
+
+// 이전 세션에서 이어받은 메트릭 배열에, required_kpis 중 누락된 항목을
+// 빈 카드로 보강한다(이전 세션 값은 그대로 유지 — 우선순위 불변).
+function augmentWithRequiredKpis(metrics) {
+  const names = projectRequiredKpiNames();
+  if (names.length === 0) return metrics;
+  const norm = s => String(s == null ? '' : s).trim().toLowerCase();
+  // 이미 존재하는 메트릭의 name(원시 키) 과 표시 라벨 t(name) 양쪽으로 비교.
+  const have = new Set();
+  metrics.forEach(m => {
+    have.add(norm(m.name));
+    const label = t(m.name);
+    if (label && label !== m.name) have.add(norm(label));
+  });
+  const result = metrics.slice();
+  names.forEach(name => {
+    if (!have.has(norm(name))) result.push({ name, value: '' });
+  });
+  return result;
 }
 
 function extractMetricsFromRecord(record) {

@@ -1,0 +1,57 @@
+-- ─────────────────────────────────────────────────────────────────────
+-- Phase AB (2026-06-15): projects 필수 KPI — required_kpis (프로젝트별 메트릭 기본 카드)
+--
+-- 경위: ADR-022 (docs/decisions/022-project-required-kpis.md) 1단계.
+--   "핵심 숫자(metrics)" 섹션의 기본 카드가 전역 하드코딩(index.html
+--   DEFAULT_METRICS = 전체 고객/유료 고객/월 매출)이라 프로젝트·팀과
+--   무관하게 동일하게 깔린다. 프로젝트에 안 맞는 0 값 카드가 잔존하고,
+--   AI 추출 라벨(영어 키)과 한글 기본 카드가 중복되는 문제(UCA 프로젝트
+--   실측, 2026-06-15). → 메트릭 기본 카드를 프로젝트 단위로 정의한다.
+--
+-- 컬럼:
+--   · required_kpis jsonb DEFAULT '[]'::jsonb
+--       — 프로젝트가 모든 팀에 공통으로 요구하는 KPI 목록.
+--       — 형식: 객체 배열 [{"name":"DAU"},{"name":"유료 전환율"}]
+--         (MVP 는 name 만; 향후 목표값·단위 확장 여지로 객체 배열 선택).
+--       — 미설정(빈 배열 []) 프로젝트는 index.html 이 기존 전역
+--         DEFAULT_METRICS 로 폴백한다(점진 전환·하위호환).
+--
+-- 입력 주체 / RLS: 신규 정책 없음. projects UPDATE 는 기존 정책
+--   (admin 전체 / pm 본인 프로젝트, phase5a) 으로 충분하다. ADR-022 의
+--   "어드민 + PM 이 설정" 요구를 그 기존 정책이 그대로 충족한다.
+--   봉인(phase_y SEAL) 은 projects INSERT 만 막으므로 UPDATE 영향 없음.
+--   coach 역할은 projects UPDATE 권한이 없어 KPI 편집 불가(요구대로).
+--
+-- 추출 연동(프롬프트가 required_kpis 를 받아 한국어 라벨화)은 K1b 별도.
+-- 인덱스: 불필요 (행 조회 시 함께 읽는 소형 메타 컬럼).
+-- 멱등: ADD COLUMN IF NOT EXISTS. 두 번 실행해도 안전.
+-- ─────────────────────────────────────────────────────────────────────
+
+-- ═══ 1. 컬럼 추가 ═══════════════════════════════════════════════════════
+ALTER TABLE public.projects
+  ADD COLUMN IF NOT EXISTS required_kpis jsonb DEFAULT '[]'::jsonb;
+
+-- ═══ 2. 백필 — 하지 않음 ═════════════════════════════════════════════════
+-- 기존 프로젝트는 DEFAULT '[]' 로 들어가므로 index.html 이 자동으로
+-- DEFAULT_METRICS 폴백을 탄다(회귀 0). 어떤 KPI 를 깔지는 어드민/PM 이
+-- 프로젝트 관리 모달에서 직접 지정한다.
+
+-- ─────────────────────────────────────────────────────────────────────
+-- 검증:
+--   -- 컬럼 존재 + 타입 + 기본값 확인 → 1 row
+--   --   (required_kpis | jsonb | YES | '[]'::jsonb)
+--   SELECT column_name, data_type, is_nullable, column_default
+--     FROM information_schema.columns
+--    WHERE table_schema = 'public'
+--      AND table_name   = 'projects'
+--      AND column_name  = 'required_kpis';
+--
+--   -- (참고) 한 프로젝트에 KPI 설정 후 형식 확인
+--   --   UPDATE public.projects
+--   --      SET required_kpis = '[{"name":"DAU"},{"name":"유료 전환율"}]'::jsonb
+--   --    WHERE id = '<project-uuid>';
+--   SELECT id, name, required_kpis
+--     FROM public.projects
+--    ORDER BY created_at DESC
+--    LIMIT 5;
+-- ─────────────────────────────────────────────────────────────────────
