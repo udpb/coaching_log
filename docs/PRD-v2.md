@@ -5,6 +5,11 @@
 > **자매 PRD**: coach-finder `docs/PRD-v2.md`.
 > **참고**: 본 레포가 **공유 Supabase 스키마의 SoT**(`supabase/migrations/`).
 
+> ⚠️ **2026-06-20 갱신 주석 (AUDIT-2026-06-20):** 본 PRD 는 2026-06-04 작성. 이후 **ADR-023**(2026-06-15)으로
+> `business_plans.status` 가 `planning`/`active`/`completed`/`cancelled` **4값 단일 라이프사이클**(coach-finder=SoT)로
+> 통일됐습니다. 본문의 **수주(`won`)·`bp_on_won` 트리거** 서술은 구 어휘이며, 현행은 "기획→`active` 전환=수주",
+> 트리거 `bp_lifecycle_sync_*` 입니다. 정본: [ADR-023](decisions/023-status-single-lifecycle-coachfinder-sot.md) · [glossary](glossary.md).
+
 ---
 
 ## 0. 한 줄 정의

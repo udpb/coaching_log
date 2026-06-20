@@ -5,6 +5,12 @@
 > **선행 문서**: `coaching-log/docs/HANDOVER.md` (3-앱 기준, 보강됨)·`coaching-log/docs/ARCHITECTURE.md` (Phase 5-A 기준)·`ud-ops-workspace/PRD-v7.1.md` (ud-ops 단독 기준)·`ud-ops-workspace/docs/DIAGNOSIS-2026-05-03.md` (ud-ops 자체 진단)
 > **이 문서의 역할**: **4개 앱 + 2개 DB + 데이터 흐름**을 한 화면에 정합시키고, 다이어그램(아키텍처 의도)과 실제 구현의 **gap 및 bridge 계획**을 명시.
 
+> ⚠️ **2026-06-20 갱신 주석 (AUDIT-2026-06-20):** 본 문서(2026-05-03)의 status gap 서술
+> (`bp_on_won` 트리거가 `status='won'` 에만 발화 → 미작동 등)은 **ADR-023**(2026-06-15)으로 **해소**됐습니다.
+> 현행: `business_plans.status` 4값(`planning`/`active`/`completed`/`cancelled`, coach-finder=SoT),
+> 트리거 `bp_lifecycle_sync_ins/_upd`(active 진입 시 projects 생성)·`bp_status_propagate_upd`(종료/취소 동기화).
+> 정본: [ADR-023](decisions/023-status-single-lifecycle-coachfinder-sot.md) · [glossary](glossary.md).
+
 ---
 
 ## 0. 한 줄 요약

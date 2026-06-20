@@ -21,7 +21,7 @@ No build step. No framework.
 
 ## Features
 
-- 🎙️ **STT → structured log** — paste transcript, Gemini writes a rich narrative summary AND fills 18 structured fields with per-field evidence quotes from the transcript
+- 🎙️ **STT → structured log** — paste transcript, Gemini writes a rich narrative summary AND fills 22 structured fields with per-field evidence quotes from the transcript
 - 📊 **Team timeline dashboard** — session strip, metrics trend chart (SVG), commitment-follow-through bars, repeat-blocker warning, real-issue evolution
 - 📄 **Reports** — individual or bundle, PDF or Word, with optional Evidence / STT appendices
 - ✏️ **Edit saved sessions** — full form hydration + UPDATE (created_at preserved)

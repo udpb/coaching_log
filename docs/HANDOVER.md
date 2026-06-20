@@ -5,6 +5,13 @@
 > **현재 상태**: production ready (3개 앱 중 2개 배포, 1개 배포 대기). 추가로 별도 시스템인 ud-ops 가 4번째 앱으로 운영 중 (Neon Postgres 별도 DB).
 > **백엔드**: Supabase (3-앱 공유) + Neon Postgres (ud-ops 단독). 4-앱 통합 SSoT는 [INTEGRATED_ARCHITECTURE.md](INTEGRATED_ARCHITECTURE.md) 참조.
 
+> ⚠️ **2026-06-20 갱신 주석 (AUDIT-2026-06-20):** 본 문서는 작성 시점(2026-04~05) 기록입니다. 이후
+> **ADR-023**(`business_plans.status` 단일 라이프사이클, coach-finder=SoT)으로 status 가
+> `planning`/`active`/`completed`/`cancelled` **4값**으로 통일됐습니다. 본문 및 **하단 검증 매트릭스**의
+> 구 서술(`won`/`lost`/`draft`/`proposed` 8값 · `bp_on_won` 트리거 · 마이그레이션 "29개" · index.html 줄수)은
+> **과거 기록**입니다. 현행 정본: 마이그레이션 **42개** · 트리거 `bp_lifecycle_sync_*`/`bp_status_propagate_upd` ·
+> [glossary](glossary.md) · [ADR-023](decisions/023-status-single-lifecycle-coachfinder-sot.md) · [AUDIT-2026-06-20](AUDIT-2026-06-20.md).
+
 이 문서는 (1) 제품 구조, (2) 데이터 모델, (3) 사용자 흐름, (4) 운영/배포 정보를 담습니다. 끝에 **검증 매트릭스**가 있어 모든 주장이 실제 코드와 일치하는지 한눈에 확인할 수 있습니다.
 
 > **🔔 ud-ops 포함 4-앱 시스템 전체 그림은 [INTEGRATED_ARCHITECTURE.md](INTEGRATED_ARCHITECTURE.md)** 를 참조하세요. 본 문서는 Supabase 3-앱(coaching-log/coach-finder/hub) 중심 인수인계입니다.
