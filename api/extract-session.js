@@ -57,7 +57,7 @@ const API_BASE     = 'https://generativelanguage.googleapis.com/v1beta';
 // coaching_logs.extraction_version by the client. Bump on every change that
 // alters the MEANING of the output (prompt body, field semantics, schema) —
 // format: 'YYYY-MM-DD.<serial>' (serial increments for same-day changes).
-const EXTRACTION_VERSION = '2026-06-10.2';
+const EXTRACTION_VERSION = '2026-06-20.1';
 
 function isRetryableStatus(status) {
   return status === 429 || status === 500 || status === 502 || status === 503 || status === 504;
@@ -710,7 +710,7 @@ function buildSystemPrompt(isMemo) {
     '    "session_note": { "value": "인터뷰 결과 기반 피벗 결정이 건강함. 2명 파일럿 의향은 실제 계약으로 전환시키는 게 관건.", "evidence": "세션 전반", "confidence": 0.7 },',
     '    "watch_next": { "value": "피벗 방향(데이터 정합성)이 실제 계약 체결로 이어지는지", "evidence": "피벗 결정 직후 validation 단계 진입", "confidence": 0.8 },',
     '    "energy": { "value": 4, "evidence": "인터뷰 결과에 기반한 피벗 결정에 자신감, 주도적 태도", "confidence": 0.6 },',
-    '    "metrics": { "value": [{ "name": "인터뷰_완료", "value": "7" }, { "name": "파일럿_의향_고객", "value": "2" }], "evidence": "창업자: 7명까지 했고, 2명이 파일럿 써보겠다고 하셨어요.", "confidence": 0.95 }',
+    '    "metrics": { "value": [{ "name": "인터뷰 완료", "value": "7" }, { "name": "파일럿 의향 고객", "value": "2" }], "evidence": "창업자: 7명까지 했고, 2명이 파일럿 써보겠다고 하셨어요.", "confidence": 0.95 }',
     '  },',
     '  "low_confidence": ["ai_used", "session_note", "energy"]',
     '}'
@@ -739,6 +739,20 @@ function buildUserPrompt(transcript, ctx, prev, isFirst, isMemo) {
     header.push(`- prev.stage: ${prev.stage || ''}`);
     header.push(`- prev.watch_next: ${prev.watch_next || ''}`);
     header.push('');
+  }
+
+  // K1b (2026-06-20): inject project required KPIs so the model reuses the
+  // EXACT (verbatim) Korean names PM defined — keeps metric cards from
+  // duplicating into English/snake_case variants. Only when client sent them.
+  if (Array.isArray(ctx.required_kpis) && ctx.required_kpis.length) {
+    const kpis = ctx.required_kpis
+      .map(n => (n == null ? '' : String(n).trim()))
+      .filter(n => n.length);
+    if (kpis.length) {
+      header.push('## Required KPIs for this project (use these EXACT names verbatim for matching metrics)');
+      kpis.forEach(n => header.push(`- ${n}`));
+      header.push('');
+    }
   }
 
   const tail = [
