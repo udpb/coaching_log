@@ -5,11 +5,33 @@
 
 ---
 
-## 📍 현재 상태 (2026-06-10)
+## 📍 현재 상태 (2026-06-15)
 
-**Phase:** To-Be 2단계 봉인까지 배포 라이브 → **고도화 착수.** 2026-06-10 종합 감사([AUDIT-2026-06-10](docs/AUDIT-2026-06-10.md)) 완료, 0단계 위생 + 라우팅 수정 완료.
+**Phase:** 고도화 진행 — **status 단일 라이프사이클(ADR-023) 1~5단계 완료** (coach-finder 가 사업 status 진실원천, coaching-log 추종). 컬럼 버그 수정 + 프로젝트별 KPI 1단계도 배포.
 
 ```
+✅ 2026-06-15 — 컬럼 버그 · 프로젝트별 KPI · status 단일 라이프사이클:
+  B1/B2   "내 참여/배정 사업" 탭 컬럼 버그 — projects 조회가 없는 컬럼(target_start_date·
+          joined_at)을 써서 깨지던 것. 실컬럼(start_date·added_at) 별칭 매핑. projects/
+          project_members/project_invites 조회 전수 점검(추가 불일치 0). 배포 완료.
+  K1a     프로젝트별 필수 KPI (ADR-022 1단계) — projects.required_kpis jsonb(phase_ab 라이브) +
+          프로젝트 관리 모달 KPI 편집(admin/pm) + 폼 prefill. ⚠️ 추출 연동(K1b)·영어라벨
+          한국어화는 잔여.
+  ADR-023 사업 status 단일 라이프사이클 (coach-finder=SoT) — 5단계 전부 완료:
+    1 트리거 won·active 호환(phase_ac) ✅라이브  ·  2 coach-finder active 저장(별도 레포
+      udpb/coach-finder main 배포, ADR-020) ✅  ·  3 데이터 변환 won→active + 연성테스트
+      복구(phase_ad) ✅라이브  ·  4 트리거 active 전용 + CHECK 4값 + completed/cancelled→
+      projects 동기화(phase_ae) ✅라이브  ·  5 문서 정본화(CLAUDE/AGENTS/glossary) ✅
+    어휘: planning(기획)→active(진행중)→completed(종료)/cancelled(취소). won·bp_on_won 폐지.
+    트리거: bp_lifecycle_sync_ins/_upd(생성)·bp_status_propagate_upd(동기화). 함수
+      handle_business_plan_won()·handle_business_plan_terminal().
+    검증(라이브): CHECK 4값 ✓ · 트리거 3개 ✓ · status 전부 active ✓ · 연성테스트
+      active_without_project=0(복구됨) ✓.
+    ⚠️ 잔여: ① 고아 projects 12건(business_plan_id NULL — 구버전/직접생성, 진단만·미처리,
+      ADR-023 삭제정책과 함께 결정 필요) ② 연성테스트가 코칭로그 화면에 뜨는지 사용자 확인
+      ③ coach-finder 작업 시 status 4파일(ProjectContext/ProjectsPage/project.ts/
+      PartnerAssignModal)이 main 에 있음 — PM finder 브랜치 머지 시 흡수(충돌 없음 확인).
+
 ✅ 이번 세션 완료 (2026-06-10):
   AUDIT   종합 감사 — 외부 피드백(06-09) 재검증 + UX/필드모델/파이프라인 탐색 3건
   Phase Z coaching_logs.coach_id SoT 복구 마이그레이션 (20260610_phase_z_coach_id_sot.sql)
@@ -53,15 +75,18 @@
       → 시간∥용량(2MB) 이중 회전 + 안전판. 배포·라이브 확인. (웹훅 유실 1회 — 빈 커밋 재트리거)
       ⚠️ 잔여: 실녹음 재테스트 (몇 분 연속 발화 — 콘솔 [stt] rotate 로그 확인)
 
-📌 다음 (우선순위):
-  3   템플릿 — 사용자 결정(2026-06-10): 프로젝트별 커스터마이징이 아니라 **어드민이
-      템플릿 라이브러리를 늘려가는 방향**. 후순위로 보류. 착수 시 설계 ADR 필요.
-      잔여 하드코딩 참고: gatherFormData · applyExtractedFields setText · hydrateFormFromRecord
-  4   ADR 필요 결정: RAG/embedding 거취 · 죽은 컬럼 11개 처분 · 문서 드리프트 잔여
-      (README 死파일 참조, phase4e OpenAI 주석 — CLAUDE.md 는 06-10 정정됨)
+📌 다음 (우선순위 — 06-15 기준):
+  A   고아 projects 12건(business_plan_id NULL) 처리 결정 + ADR-023 삭제정책 확정
+      (수주 후 사업 하드삭제 금지·cancelled 처리, coaching_logs 보존 — 라이브 진단 후).
+  B   연성테스트 코칭로그 화면 표시 확인 (status 작업 최종 동작 확인).
+  C   KPI 2단계 K1b(추출이 한국어 KPI 이름 반환·매칭) + 메모모드 영어라벨 한국어화.
+  D   R1 실녹음 잔여(마이크 1청크 + 5분 경계 연속발화).
+  E   템플릿 — 어드민 템플릿 라이브러리 방향(06-10 결정), 후순위 보류.
+  F   ADR 필요: RAG/embedding 거취 · 죽은 컬럼 11개 · 문서 드리프트(README 死파일·HANDOVER/
+      INTEGRATED_ARCHITECTURE 의 구 status 어휘는 stale — 운영규칙 CLAUDE/AGENTS/glossary 는 06-15 정정됨).
 ```
 
-**최근 ADR:** 011·013·014·018·019 (소급, 06-10). ADR-004(captcha) 는 여전히 미작성·대기.
+**최근 ADR:** 020(field-defs)·021(2h녹음)·022(KPI)·023(status 단일 라이프사이클, coach-finder=SoT). ADR-004(captcha) 미작성·대기.
 **감사:** [docs/AUDIT-2026-06-10.md](docs/AUDIT-2026-06-10.md) (최신) · [docs/AUDIT-2026-06-01.md](docs/AUDIT-2026-06-01.md)
 **공유 계약 (본 레포 원본):** [docs/contracts/coaches-directory.md](docs/contracts/coaches-directory.md)
 
@@ -95,4 +120,4 @@
 
 ## 다음 세션 진입 한 줄
 
-> **R1 실녹음 확인(마이크 1청크 + 5분 경계) → Gemini 키 티어 확인 → 템플릿(어드민 라이브러리 방향)은 보류 중, 사용자 신호 대기. (0~2단계 + R1 전부 배포·검증 완료)**
+> **ADR-023 status 단일 라이프사이클 1~5단계 라이브 완료 → 고아 projects 12건 처리 결정 + 연성테스트 화면 확인 → KPI K1b(추출 한국어 매칭). (status·KPI·컬럼버그 전부 배포·라이브 검증 완료. coach-finder=사업 status SoT.)**

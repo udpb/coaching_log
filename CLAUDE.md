@@ -61,7 +61,7 @@
 
 ## 안정(Stable) vs 가변(Volatile)
 
-- **안정**: `coaches_directory` 공유 계약 · RLS 헬퍼 함수명 · 역할 모델(`admin`/`pm`/`coach`) · DB 테이블명 · `coaching_logs` 24필드 · `bp_on_won` 트리거.
+- **안정**: `coaches_directory` 공유 계약 · RLS 헬퍼 함수명 · 역할 모델(`admin`/`pm`/`coach`) · DB 테이블명 · `coaching_logs` 24필드 · 수주 라이프사이클 트리거(`bp_lifecycle_sync_*`).
 - **가변**: extract-session 프롬프트 본문 · 대시보드 지표 표시 · 메시지 카피.
 
 → 가변은 하드코딩 지양.
@@ -116,7 +116,8 @@ ADR 없이 변경 금지:
 - **RLS 헬퍼 함수명** — `is_admin()` · `is_pm()` · `is_admin_or_pm()` · `is_project_member()` · `is_pm_of_project()` (SECURITY DEFINER)
 - **역할 모델** — `admin` / `pm` / `coach` (⚠️ ud-ops 6역할과 다름)
 - **DB 테이블명** — `coaching_logs` · `coaches_directory` · `profiles` · `projects` · `project_members` · `business_plans` · `business_plan_coaches` · `coach_evaluations` · `coach_applications` · `coach_bookmarks` · `rfp_history` · `api_consumers`
-- **`bp_on_won` 트리거** · **`business_plans.status` 이중 lifecycle** (draft/proposed/won/lost/cancelled + planning/active/completed)
+- **수주 라이프사이클 트리거** — `bp_lifecycle_sync_ins`/`_upd`(active 진입 시 projects 생성) · `bp_status_propagate_upd`(completed→closed/cancelled→archived 동기화). 함수 `handle_business_plan_won()`·`handle_business_plan_terminal()` (SECURITY DEFINER). ⚠️ 구 `bp_on_won`·`won` 어휘 폐지 (ADR-023).
+- **`business_plans.status` 단일 라이프사이클** — `planning`(기획)/`active`(진행중)/`completed`(종료)/`cancelled`(취소). **coach-finder 가 진실원천(SoT)**, coaching-log 는 추종. (ADR-023 — 구 draft/proposed/won/lost 폐지·흡수)
 - **임베딩 차원** — 1536 (Gemini)
 
 상세: [AGENTS.md](AGENTS.md) · [docs/glossary.md](docs/glossary.md)

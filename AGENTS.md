@@ -27,7 +27,7 @@
 - **RLS 헬퍼 함수명** — `is_admin`·`is_pm`·`is_admin_or_pm`·`is_project_member`·`is_pm_of_project`
 - **역할 모델** — `admin`/`pm`/`coach`
 - **DB 테이블명** (CLAUDE.md 표)
-- **`bp_on_won` 트리거** · `business_plans.status` 이중 lifecycle
+- **수주 라이프사이클 트리거** (`bp_lifecycle_sync_*` · `bp_status_propagate_upd`) · **`business_plans.status` 단일 라이프사이클** (planning/active/completed/cancelled — coach-finder SoT, ADR-023. 구 bp_on_won·won 폐지)
 - **임베딩 차원** 1536
 
 ---

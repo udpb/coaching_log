@@ -44,12 +44,13 @@
 
 | 용어 | 의미 | 비고 |
 |------|------|------|
-| **business_plan** | 사업 기획 (coach-finder 가 주 생성) | status 이중 lifecycle |
-| **수주 / won** | `business_plans.status='won'` | `bp_on_won` 트리거 → `projects` + `project_members` 자동 생성 (accepted 코치 복사) |
-| **project (`projects`)** | 수주 후 코칭 진행 단위 | 본 제품 대시보드의 팀 |
+| **business_plan** | 사업 기획 (coach-finder 가 주 생성·관리) | status 단일 라이프사이클 (ADR-023) |
+| **status (business_plans)** | `planning`(기획) → `active`(진행중) → `completed`(종료) / `cancelled`(취소·무산) | **coach-finder 가 진실원천**, coaching-log 추종. 구 draft/proposed/won/lost 폐지 |
+| **수주** | 기획→`active` 전환 = 수주 = 코칭 시작 | `bp_lifecycle_sync_*` 트리거 → `projects`(active) + `project_members` 자동 생성. (구 `won` 어휘·`bp_on_won` 폐지) |
+| **project (`projects`)** | 수주 후 코칭 진행 단위 | 본 제품 대시보드의 팀. status `active`→`closed`(종료)/`archived`(보관), business_plans 종료/취소 시 `bp_status_propagate_upd` 가 동기화 |
 | **project_members** | 프로젝트 배정 (코치/PM) | `is_project_member()` RLS 기준 |
 
-> ⚠️ business_plans.status 두 lifecycle 공존 (draft/proposed/won/lost/cancelled + planning/active/completed). 트리거는 `won` 에서만 발동 → coach-finder 의 planning→active 경로는 미발동 (Gap 2).
+> status 라이프사이클: **coach-finder(business_plans)가 SoT** — PM 이 기획→진행중→종료 전체를 관리하고, coaching-log 는 그 상태를 추종(트리거가 active 진입 시 projects 생성, 종료/취소 시 동기화). 상세 ADR-023.
 
 ---
 
