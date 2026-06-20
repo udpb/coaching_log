@@ -181,7 +181,7 @@
     },
     {
       key: 'metrics', type: 'array',
-      valueRule: '  - metrics: array of { "name": snake_case, "value": "..." } for numeric business metrics mentioned (customers, revenue, conversions). value is the object\'s `value` field (the outer metrics.value is this array).',
+      valueRule: '  - metrics: array of { "name": "<한국어 지표명>", "value": "..." } for numeric business metrics mentioned (customers, revenue, conversions). The "name" MUST be a SHORT KOREAN label (e.g. "유료 고객", "월 매출", "전환율") — NOT English, NOT snake_case with underscores. IF the session context lists "Required KPIs for this project", you MUST reuse the EXACT name string given there (verbatim, character-for-character) for any metric that corresponds to one, and only introduce a new Korean name for a genuinely different metric not in that list. value is the object\'s `value` field (the outer metrics.value is this array).',
       section: 'metrics', formEl: 'metricGrid', formKind: 'metrics',
       lowConfEl: 'metricGrid', evidenceEl: 'metricGrid', streamScalar: false
     }

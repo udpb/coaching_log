@@ -7490,7 +7490,8 @@ async function runSttExtract(opts) {
     team_name: document.getElementById('fTeam').value.trim(),
     founder_name: document.getElementById('fFounder').value.trim(),
     session_num: document.getElementById('fSessionNum').value || '',
-    session_type: selectedSessionType || ''
+    session_type: selectedSessionType || '',
+    required_kpis: (typeof projectRequiredKpiNames === 'function' ? projectRequiredKpiNames() : [])
   };
 
   // If continuing, pass previous session snippet for continuity
@@ -7904,11 +7905,24 @@ function applyExtractedFields(f, lowConf, isPartial) {
           };
         });
       try { console.log('[STT] applying', incoming.length, 'metrics:', incoming.map(i => i.name + '=' + i.value).join(', ')); } catch (_) {}
-      const byName = {};
-      (currentMetrics || []).forEach(m => { byName[(m.name || '').replace(/^metric_/, '')] = m; });
+      // K1b: 정규화(metric_ 접두 제거·trim·lowercase) + 표시라벨(t(name)) 양면 매칭.
+      // 모델이 한국어 이름을 주고 카드가 한국어 KPI 이거나 영어 i18n 키(DEFAULT_METRICS,
+      // 표시만 한국어)여도 동일 지표로 인식 → 영어/중복 카드 push 방지. 기존 카드 이름은
+      // canonical 로 유지하고 값만 채운다. (augmentWithRequiredKpis 의 dedup 과 같은 사상)
+      const _norm = s => String(s == null ? '' : s).replace(/^metric_/, '').trim().toLowerCase();
+      const findCard = (incomingName) => {
+        const key = _norm(incomingName);
+        for (const card of (currentMetrics || [])) {
+          if (_norm(card.name) === key) return card;
+          const label = (typeof t === 'function') ? t(card.name) : card.name;
+          if (label && _norm(label) === key) return card;
+        }
+        return null;
+      };
       for (const m of incoming) {
-        if (byName[m.name]) {
-          if (m.value) byName[m.name].value = m.value;
+        const card = findCard(m.name);
+        if (card) {
+          if (m.value) card.value = m.value;
         } else {
           currentMetrics.push({ name: m.name, value: m.value });
         }

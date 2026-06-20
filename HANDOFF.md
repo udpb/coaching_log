@@ -15,8 +15,9 @@
           joined_at)을 써서 깨지던 것. 실컬럼(start_date·added_at) 별칭 매핑. projects/
           project_members/project_invites 조회 전수 점검(추가 불일치 0). 배포 완료.
   K1a     프로젝트별 필수 KPI (ADR-022 1단계) — projects.required_kpis jsonb(phase_ab 라이브) +
-          프로젝트 관리 모달 KPI 편집(admin/pm) + 폼 prefill. ⚠️ 추출 연동(K1b)·영어라벨
-          한국어화는 잔여.
+          프로젝트 관리 모달 KPI 편집(admin/pm) + 폼 prefill.
+  K1b     KPI 추출 연동 (ADR-022 2단계, 06-20) — 추출 한국어 이름 반환 + required_kpis verbatim
+          매칭. 영어 라벨/중복 완전 해결. 3파일(field-defs·extract-session·index.html) 배포.
   ADR-023 사업 status 단일 라이프사이클 (coach-finder=SoT) — 5단계 전부 완료:
     1 트리거 won·active 호환(phase_ac) ✅라이브  ·  2 coach-finder active 저장(별도 레포
       udpb/coach-finder main 배포, ADR-020) ✅  ·  3 데이터 변환 won→active + 연성테스트
@@ -83,11 +84,14 @@
       → 시간∥용량(2MB) 이중 회전 + 안전판. 배포·라이브 확인. (웹훅 유실 1회 — 빈 커밋 재트리거)
       ⚠️ 잔여: 실녹음 재테스트 (몇 분 연속 발화 — 콘솔 [stt] rotate 로그 확인)
 
-📌 다음 (우선순위 — 06-15 재정렬, compact 후 이어갈 작업):
-  1 ★ KPI K1b — 추출이 지표 이름을 **한국어**로 반환하고 프로젝트 required_kpis 와 매칭
-      (세션 첫머리 지적 "핵심 숫자 영어 라벨/중복"의 완전 해결). K1a(DB+UI+prefill) 위에 추출
-      연동만 남음. api/extract-session.js 프롬프트 + EXTRACTION_VERSION 범프. **바로 착수.**
-  2 ★ 종합 정리 audit (사용자 요청 2026-06-15) — "한 번 싹 정리". 산출물 AUDIT-2026-06-15 후보:
+📌 다음 (우선순위):
+  ✅ KPI K1b (06-20 완료·배포) — 추출이 지표 이름을 **한국어**로 반환 + required_kpis verbatim 매칭.
+      "핵심 숫자 영어 라벨/중복" 완전 해결. 3파일: field-defs.js(metrics valueRule 한국어화) ·
+      api/extract-session.js(buildUserPrompt 에 Required KPIs 컨텍스트 주입 + 예시 정정 +
+      EXTRACTION_VERSION 2026-06-10.2→2026-06-20.1) · index.html(ctx.required_kpis 전달 +
+      병합부 정규화·표시라벨 양면 매칭 → 중복 push 차단). 브리프 _archive/K1b-20260620.
+      ⚠️ 배포 후 실측 미완: required_kpis 설정 프로젝트 실추출에서 한국어 이름·중복0 육안 확인 남음.
+  1 ★ 종합 정리 audit (사용자 요청 2026-06-15) — "한 번 싹 정리". 산출물 AUDIT-2026-06-15 후보:
       ⓐ 보류 항목 필요성 판단: 템플릿(어드민 라이브러리) · RAG/embedding(4컬럼 死) ·
          inferred_skills 3컬럼 · legacy_firestore_id · api_consumers 등 죽은 컬럼 11개 — 살릴지 버릴지.
       ⓑ 이력 변경으로 생긴 데드코드/잔재: status 통합·KPI·field-defs 이후 안 쓰는 코드,
@@ -96,7 +100,7 @@
       ⓓ 문서 전수 갱신: README 死파일 참조 · HANDOVER/INTEGRATED_ARCHITECTURE/PRD 의 구 status
          어휘(won/bp_on_won/이중lifecycle) · phase4e "OpenAI" 주석. (운영규칙 CLAUDE/AGENTS/
          glossary 는 06-15 정정 완료 — 나머지 stale 문서가 대상.)
-  3   R1 실녹음(마이크 1청크+5분경계) · ADR-004(captcha) · 메모모드 영어라벨(K1b 와 함께 해소 가능).
+  2   R1 실녹음(마이크 1청크+5분경계) · ADR-004(captcha). (메모모드 영어라벨 → K1b 로 해소됨.)
 ```
 
 **최근 ADR:** 020(field-defs)·021(2h녹음)·022(KPI)·023(status 단일 라이프사이클, coach-finder=SoT). ADR-004(captcha) 미작성·대기.
@@ -133,4 +137,4 @@
 
 ## 다음 세션 진입 한 줄
 
-> **ADR-023 status 단일 라이프사이클 1~5단계 라이브 완료 → 고아 projects 12건 처리 결정 + 연성테스트 화면 확인 → KPI K1b(추출 한국어 매칭). (status·KPI·컬럼버그 전부 배포·라이브 검증 완료. coach-finder=사업 status SoT.)**
+> **ADR-023 status 단일 라이프사이클 1~5단계 라이브 완료 → 데이터 정리 완료 → KPI K1b(추출 한국어 매칭) 배포 완료 → 다음: 종합 정리 audit(AUDIT-2026-06-15). (status·KPI·컬럼버그 전부 배포. coach-finder=사업 status SoT.)**
