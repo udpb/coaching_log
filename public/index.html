@@ -1278,21 +1278,6 @@ body {
 }
 .bp-card .bp-budget { font-weight: 600; color: var(--dark2); }
 
-.bp-status {
-  display: inline-block;
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  padding: 2px 8px;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-.bp-status-draft     { background: var(--gray200); color: var(--gray500); }
-.bp-status-proposed  { background: #E0EBFF; color: #2A4FD9; }
-.bp-status-won       { background: var(--green-bg); color: var(--green); }
-.bp-status-lost      { background: var(--red-bg); color: var(--red); }
-.bp-status-cancelled { background: var(--gray100); color: var(--gray400); }
-
 .bp-empty {
   grid-column: 1 / -1;
   text-align: center;
@@ -1359,14 +1344,6 @@ body {
   cursor: pointer;
 }
 .bp-detail-trans button:hover { border-color: var(--orange); color: var(--orange); }
-.bp-detail-trans button.bp-trans-won {
-  background: var(--green); color: #fff; border-color: var(--green);
-}
-.bp-detail-trans button.bp-trans-won:hover { opacity: 0.9; color: #fff; }
-.bp-detail-trans button.bp-trans-lost,
-.bp-detail-trans button.bp-trans-cancelled {
-  color: var(--red); border-color: var(--red);
-}
 
 .bp-coach-list {
   border: 1px solid var(--gray200);

@@ -10,7 +10,8 @@
 |------|------|--------|
 | `CLAUDE.md` / `AGENTS.md` / `HANDOFF.md` | 최상위 룰 · 서브 룰 · 핸드오버 | ✅ 최신 |
 | `docs/glossary.md` | 용어 SoT | ✅ 최신 |
-| `docs/AUDIT-2026-06-01.md` | 심층 감사 (백로그 출처) | ✅ 최신 |
+| `docs/AUDIT-2026-06-01.md` | 심층 감사 (백로그 출처) | ✅ 당시 정확 (2026-06-01 기준) |
+| `docs/AUDIT-2026-06-10.md` · `docs/AUDIT-2026-06-20.md` | 고도화 감사 · 종합 정리 감사(데드컬럼·데드코드·스키마·문서 stale) | ✅ 최신 (06-20 이 현행) |
 | `docs/contracts/coaches-directory.md` | **공유 계약 원본 (3앱 권위)** | ✅ 최신 |
 | `docs/playbook/*` / `docs/decisions/*` / `docs/journey/*` / `.claude/agent-briefs/*` | 운영 체계 | ✅ 최신 |
 
@@ -21,9 +22,9 @@
 | `docs/PRD-v2.md` ⭐ | **제품 정의 v2.0 (2026-06-04)** — 현행 코드 기준, 사용자 플로우·프로세스 중심. 본 레포 첫 PRD | ✅ 최신 (현행 PRD) |
 | `docs/INTEGRATED_ARCHITECTURE.md` | 4앱 통합 + Gap 1~5 | ✅ 양호 (핵심 참조) |
 | `docs/ARCHITECTURE.md` | 단일 앱 아키텍처 (AWS 포터블 의도) | ✅ 양호 |
-| `docs/HANDOVER.md` | 인수인계 | 🟡 일부 stale — 파일트리에 `lib/server.js` 잔재 (모델명·README 류는 ARCHITECTURE/README 에서 정정 완료 2026-06-01) |
+| `docs/HANDOVER.md` | 인수인계 | 🟡 과거 기록 — 상단 ADR-023 주석 배너 부착(2026-06-20). 본문 구 status 어휘·검증매트릭스(29마이그·8값)·`lib/server.js` 잔재는 과거 서술, 현행은 AUDIT-2026-06-20/glossary 참조 |
 | `README.md` | 개요 | ✅ 정정됨(2026-06-01) — `match-coaches`→`extract-session`, `lib/server.js` 트리/dev 안내 제거 |
-| `supabase/migrations/*.sql` (28) | **스키마 SoT** | ✅ 권위 |
+| `supabase/migrations/*.sql` (42) | **스키마 SoT** | ✅ 권위 |
 
 ## 데드/제거 대상 (감사)
 
@@ -36,7 +37,7 @@
 
 ## 주요 구조 리스크 (감사)
 
-- `public/index.html` 12,090줄 모놀리식 — 최대 유지보수 리스크. 점진 모듈화 후보.
+- `public/index.html` ~10,880줄 모놀리식 — 최대 유지보수 리스크. 점진 모듈화 후보.
 - `api/extract-session.js` 무인증 + CORS `*` — P0.
 - 자동 테스트 0건.
 

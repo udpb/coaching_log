@@ -91,16 +91,17 @@
       EXTRACTION_VERSION 2026-06-10.2→2026-06-20.1) · index.html(ctx.required_kpis 전달 +
       병합부 정규화·표시라벨 양면 매칭 → 중복 push 차단). 브리프 _archive/K1b-20260620.
       ⚠️ 배포 후 실측 미완: required_kpis 설정 프로젝트 실추출에서 한국어 이름·중복0 육안 확인 남음.
-  1 ★ 종합 정리 audit (사용자 요청 2026-06-15) — "한 번 싹 정리". 산출물 AUDIT-2026-06-15 후보:
-      ⓐ 보류 항목 필요성 판단: 템플릿(어드민 라이브러리) · RAG/embedding(4컬럼 死) ·
-         inferred_skills 3컬럼 · legacy_firestore_id · api_consumers 등 죽은 컬럼 11개 — 살릴지 버릴지.
-      ⓑ 이력 변경으로 생긴 데드코드/잔재: status 통합·KPI·field-defs 이후 안 쓰는 코드,
-         is_pm_of_project() 死 헬퍼, bp_id NULL+세션有 projects 4건 등.
-      ⓒ 스키마 SoT 드리프트 잔여 점검 (라이브 ↔ 마이그레이션 일치).
-      ⓓ 문서 전수 갱신: README 死파일 참조 · HANDOVER/INTEGRATED_ARCHITECTURE/PRD 의 구 status
-         어휘(won/bp_on_won/이중lifecycle) · phase4e "OpenAI" 주석. (운영규칙 CLAUDE/AGENTS/
-         glossary 는 06-15 정정 완료 — 나머지 stale 문서가 대상.)
-  2   R1 실녹음(마이크 1청크+5분경계) · ADR-004(captcha). (메모모드 영어라벨 → K1b 로 해소됨.)
+  ✅ 종합 정리 audit (06-20) — 산출물 **docs/AUDIT-2026-06-20.md** (4차원 병렬조사+메인 교차검증).
+      ⓑ 데드코드: 런타임 구 status 어휘 0(깨끗). **dead CSS 제거 완료**(bp-status-*/bp-trans- 23줄,
+         CLEAN-20260620). `is_pm_of_project()` 는 **생존**(RLS 6곳 — HANDOFF 구 가설 정정). `_esc` 45곳은
+         컨벤션 드리프트(후순위). ⓒ 스키마 **정합·모순0**, 제로베이스 한계는 phase_z 문서화.
+      ⓓ 문서 갱신 완료: CLAUDE(38→42·줄수)·README(18→22)·HISTORY(28→42·줄수)·AGENTS(줄수) 수치 정정 +
+         HANDOVER/PRD-v2(.md/.html)/INTEGRATED 에 ADR-023 주석 배너(과거 기록 보존).
+      🔶 ⓐ **사용자 결정 대기**: embedding/RAG(4)·inferred_skills(3) 미구현 기능 컬럼 — 의도 설명 완료
+         (RAG 코치추천·자동 스킬추론, 둘 다 coach-finder/공유디렉토리 소비). 보존 vs 폐기 결정 → 결정 후 집행.
+         roles_capable/roles_active_2026/ud_programs 는 coach-finder 소유 추정(확인 후 판단).
+      🔷 ⓒ **라이브 검증 SQL 5종**(AUDIT-2026-06-20 §ⓒ) 사용자 Supabase 실행 대기 — 특히 bp없는 projects.
+  1   R1 실녹음(마이크 1청크+5분경계) · ADR-004(captcha). (메모모드 영어라벨 → K1b 로 해소됨.)
 ```
 
 **최근 ADR:** 020(field-defs)·021(2h녹음)·022(KPI)·023(status 단일 라이프사이클, coach-finder=SoT). ADR-004(captcha) 미작성·대기.
