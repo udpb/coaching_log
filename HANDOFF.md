@@ -27,10 +27,18 @@
       handle_business_plan_won()·handle_business_plan_terminal().
     검증(라이브): CHECK 4값 ✓ · 트리거 3개 ✓ · status 전부 active ✓ · 연성테스트
       active_without_project=0(복구됨) ✓.
-    ⚠️ 잔여: ① 고아 projects 12건(business_plan_id NULL — 구버전/직접생성, 진단만·미처리,
-      ADR-023 삭제정책과 함께 결정 필요) ② 연성테스트가 코칭로그 화면에 뜨는지 사용자 확인
-      ③ coach-finder 작업 시 status 4파일(ProjectContext/ProjectsPage/project.ts/
-      PartnerAssignModal)이 main 에 있음 — PM finder 브랜치 머지 시 흡수(충돌 없음 확인).
+    ⚠️ 잔여: ① 연성테스트 화면 표시 사용자 확인됨 ② coach-finder status 4파일
+      (ProjectContext/ProjectsPage/project.ts/PartnerAssignModal)이 main 에 있음 —
+      PM finder 브랜치 머지 시 흡수(충돌 없음 확인).
+
+✅ 데이터 정리 (2026-06-15, 라이브 직접 — 마이그레이션 아님, 일회성 운영):
+  - 세션0 고아 projects 8건 삭제 (1·uca4·underdogs test2·중기부[구버전]·풀무원·하이로컬·
+    K-Cross 등). 수주된 5건(연성테스트 등)·세션 있는 projects 는 보존. 전체 projects 17→9.
+  - 미지정 coaching_logs(project_id NULL) 109건 정리: 완전빈 20건 삭제 + 내용있는 89건
+    (부분작성 83 + nar/trans有 6) → UCA프로젝트(91de8cbd…) 이동. 미지정 0.
+  - ⚠️ 사용자 직접 SQL 실행 완료(Supabase 대시보드 frozen 으로 메인 브라우저 검증 미완 —
+    사용자 "전부 완료" 보고 기준). bp_id NULL 이지만 세션 있는 projects 4건은 잔존(미처리).
+    ※ 라이브 직접 DELETE/UPDATE 는 가이드상 비권장 — 향후 데이터 정리는 마이그레이션/백업 선행 권장.
 
 ✅ 이번 세션 완료 (2026-06-10):
   AUDIT   종합 감사 — 외부 피드백(06-09) 재검증 + UX/필드모델/파이프라인 탐색 3건
