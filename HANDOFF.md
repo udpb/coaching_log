@@ -83,15 +83,20 @@
       → 시간∥용량(2MB) 이중 회전 + 안전판. 배포·라이브 확인. (웹훅 유실 1회 — 빈 커밋 재트리거)
       ⚠️ 잔여: 실녹음 재테스트 (몇 분 연속 발화 — 콘솔 [stt] rotate 로그 확인)
 
-📌 다음 (우선순위 — 06-15 기준):
-  A   고아 projects 12건(business_plan_id NULL) 처리 결정 + ADR-023 삭제정책 확정
-      (수주 후 사업 하드삭제 금지·cancelled 처리, coaching_logs 보존 — 라이브 진단 후).
-  B   연성테스트 코칭로그 화면 표시 확인 (status 작업 최종 동작 확인).
-  C   KPI 2단계 K1b(추출이 한국어 KPI 이름 반환·매칭) + 메모모드 영어라벨 한국어화.
-  D   R1 실녹음 잔여(마이크 1청크 + 5분 경계 연속발화).
-  E   템플릿 — 어드민 템플릿 라이브러리 방향(06-10 결정), 후순위 보류.
-  F   ADR 필요: RAG/embedding 거취 · 죽은 컬럼 11개 · 문서 드리프트(README 死파일·HANDOVER/
-      INTEGRATED_ARCHITECTURE 의 구 status 어휘는 stale — 운영규칙 CLAUDE/AGENTS/glossary 는 06-15 정정됨).
+📌 다음 (우선순위 — 06-15 재정렬, compact 후 이어갈 작업):
+  1 ★ KPI K1b — 추출이 지표 이름을 **한국어**로 반환하고 프로젝트 required_kpis 와 매칭
+      (세션 첫머리 지적 "핵심 숫자 영어 라벨/중복"의 완전 해결). K1a(DB+UI+prefill) 위에 추출
+      연동만 남음. api/extract-session.js 프롬프트 + EXTRACTION_VERSION 범프. **바로 착수.**
+  2 ★ 종합 정리 audit (사용자 요청 2026-06-15) — "한 번 싹 정리". 산출물 AUDIT-2026-06-15 후보:
+      ⓐ 보류 항목 필요성 판단: 템플릿(어드민 라이브러리) · RAG/embedding(4컬럼 死) ·
+         inferred_skills 3컬럼 · legacy_firestore_id · api_consumers 등 죽은 컬럼 11개 — 살릴지 버릴지.
+      ⓑ 이력 변경으로 생긴 데드코드/잔재: status 통합·KPI·field-defs 이후 안 쓰는 코드,
+         is_pm_of_project() 死 헬퍼, bp_id NULL+세션有 projects 4건 등.
+      ⓒ 스키마 SoT 드리프트 잔여 점검 (라이브 ↔ 마이그레이션 일치).
+      ⓓ 문서 전수 갱신: README 死파일 참조 · HANDOVER/INTEGRATED_ARCHITECTURE/PRD 의 구 status
+         어휘(won/bp_on_won/이중lifecycle) · phase4e "OpenAI" 주석. (운영규칙 CLAUDE/AGENTS/
+         glossary 는 06-15 정정 완료 — 나머지 stale 문서가 대상.)
+  3   R1 실녹음(마이크 1청크+5분경계) · ADR-004(captcha) · 메모모드 영어라벨(K1b 와 함께 해소 가능).
 ```
 
 **최근 ADR:** 020(field-defs)·021(2h녹음)·022(KPI)·023(status 단일 라이프사이클, coach-finder=SoT). ADR-004(captcha) 미작성·대기.
