@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>coaching-log — 개발 개요 (인수인계)</title>
+<style>
+  :root{
+    --bg:#FAF8F5; --ink:#241F1A; --muted:#7A6F64; --line:#E9E1D8;
+    --card:#FFFFFF; --accent:#E8721C; --accent-bg:#FFF1E4; --accent-2:#1C7A6E;
+    --green:#2E9B5B; --green-bg:#E8F6EE; --blue:#2A6BD9; --blue-bg:#E9F0FF;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+    line-height:1.65;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:980px;margin:0 auto;padding:0 22px 80px}
+  code,.mono{font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.86em;
+    background:#F1EBE3;padding:1px 6px;border-radius:5px}
+  header.hero{padding:54px 0 34px;border-bottom:1px solid var(--line)}
+  .eyebrow{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--accent);background:var(--accent-bg);padding:5px 12px;border-radius:999px}
+  h1{font-size:42px;margin:16px 0 6px;letter-spacing:-.02em}
+  h1 .dot{color:var(--accent)}
+  .tagline{font-size:19px;color:#3c352e;max-width:760px;margin:0 0 18px}
+  .who{display:flex;gap:10px;flex-wrap:wrap}
+  .who span{font-size:13px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:6px 13px;color:var(--muted)}
+  .who b{color:var(--ink)}
+  section{padding:38px 0;border-bottom:1px solid var(--line)}
+  h2{font-size:13px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+  .lead{font-size:22px;font-weight:700;letter-spacing:-.01em;margin:0 0 20px}
+  p{margin:0 0 14px}
+  .grid{display:grid;gap:14px}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .g2{grid-template-columns:repeat(2,1fr)}
+  @media(max-width:720px){.g3,.g2{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 18px 16px}
+  .card .ic{font-size:24px;margin-bottom:8px}
+  .card h3{margin:0 0 6px;font-size:16px}
+  .card p{margin:0;font-size:13.5px;color:var(--muted)}
+  .flow{display:flex;align-items:stretch;gap:0;flex-wrap:wrap;margin-top:8px}
+  .step{flex:1;min-width:120px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;text-align:center}
+  .step .n{font-size:11px;font-weight:800;color:var(--accent)}
+  .step .t{font-size:13.5px;font-weight:700;margin-top:3px}
+  .step .d{font-size:12px;color:var(--muted);margin-top:3px}
+  .arrow{display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:20px;padding:0 8px}
+  @media(max-width:720px){.arrow{transform:rotate(90deg);padding:6px 0}}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 18px}
+  .chip{font-size:12.5px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 11px}
+  .chip b{color:var(--accent)}
+  .rule{display:flex;gap:11px;padding:11px 0;border-bottom:1px dashed var(--line);align-items:flex-start}
+  .rule:last-child{border-bottom:0}
+  .rule .k{font-size:18px;line-height:1.3}
+  .rule .v{font-size:14px}.rule .v b{color:var(--ink)}
+  .roles{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:6px}
+  @media(max-width:720px){.roles{grid-template-columns:1fr}}
+  .role{background:var(--accent-bg);border:1px solid #F3D9C2;border-radius:12px;padding:14px}
+  .role.sub{background:var(--green-bg);border-color:#C7E8D4}
+  .role h4{margin:0 0 4px;font-size:14.5px}
+  .role p{margin:0;font-size:13px;color:#5b5048}
+  pre.tree{background:#26211C;color:#EDE6DD;border-radius:14px;padding:20px 22px;overflow:auto;
+    font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;line-height:1.7;margin:6px 0 0}
+  pre.tree .c{color:#A89A8B}
+  pre.tree .h{color:#F2A35E}
+  .rel{background:linear-gradient(180deg,#fff,#FBF6F0);border:1px solid var(--line);border-radius:16px;padding:22px}
+  .rel .pair{display:flex;gap:14px;align-items:stretch;flex-wrap:wrap}
+  .rel .box{flex:1;min-width:220px;border:1px solid var(--line);border-radius:12px;padding:14px;background:#fff}
+  .rel .box.me{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-bg)}
+  .rel .box h4{margin:0 0 4px;font-size:15px}
+  .rel .box p{margin:0;font-size:12.5px;color:var(--muted)}
+  .rel .shared{margin-top:14px;text-align:center;font-size:13px;background:var(--blue-bg);border:1px solid #CFE0FF;
+    border-radius:10px;padding:10px}
+  .steps-doc{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13.5px}
+  .steps-doc .d{background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 11px}
+  .steps-doc .sep{color:var(--muted)}
+  .note{font-size:12.5px;color:var(--muted);margin-top:14px}
+  footer{padding:30px 0 0;color:var(--muted);font-size:12.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <span class="eyebrow">언더독스 · UD IMPACT — 개발 인수인계 개요</span>
+    <h1>coaching<span class="dot">·</span>log</h1>
+    <p class="tagline">언더독스 <b>코치</b>가 창업팀 코칭 세션을 <b>말(또는 녹음)로 기록</b>하면, AI가 <b>구조화된 일지</b>로 정리하고 — 회차가 쌓이며 <b>“이 팀이 나아지고 있나”</b>를 팀별 타임라인으로 추적하는 도구.</p>
+    <div class="who">
+      <span>주 사용자 · <b>코치</b></span>
+      <span>관리 · <b>PM / admin</b></span>
+      <span>자매 제품 · <b>coach-finder</b></span>
+      <span>빌드 없는 단일 <code>index.html</code></span>
+    </div>
+  </header>
+
+  <section>
+    <h2>왜 만들었나</h2>
+    <p class="lead">코치가 “기록”이 아니라 “코칭”에 시간을 쓰게.</p>
+    <p>코칭이 끝나면 보통 무슨 얘기를 했는지 다시 타이핑하는 데 시간이 듭니다. coaching-log는 코치가 <b>말한 내용을 붙여넣거나 녹음</b>하면 AI가 알아서 핵심을 뽑아 구조화 일지로 정리합니다. 그래서 기록 노동은 줄고, <b>회차가 쌓일수록</b> 한 팀의 이행률·에너지·반복되는 막힘이 한눈에 보여 <b>“성장하고 있는가”</b>를 데이터로 판단할 수 있습니다.</p>
+  </section>
+
+  <section>
+    <h2>핵심 기능</h2>
+    <p class="lead">5가지가 전부입니다.</p>
+    <div class="grid g3">
+      <div class="card"><div class="ic">🎙️</div><h3>STT/음성 → AI 일지</h3><p>붙여넣기 또는 최대 2시간 녹음(5분 청크 자동 전사). Gemini가 3-pass로 내러티브 + 22개 구조화 필드를 <b>근거·신뢰도와 함께</b> 추출.</p></div>
+      <div class="card"><div class="ic">📈</div><h3>성과 추적 대시보드</h3><p>팀별 타임라인 · 평균 이행률 · 에너지 추이 · <b>반복 막힘 경고</b> · 지표 시계열 차트 · 근본이슈 변화.</p></div>
+      <div class="card"><div class="ic">🎯</div><h3>프로젝트별 KPI</h3><p>PM이 프로젝트마다 필수 KPI 지정 → 일지 폼에 자동 prefill. 추출도 <b>한국어 지표명</b>으로 매칭(중복 제거).</p></div>
+      <div class="card"><div class="ic">🙋</div><h3>코치 본인 정보 관리</h3><p>프로필·계약정보(주소·계좌·사업자) 자가편집 + 신규 코치 강제 온보딩.</p></div>
+      <div class="card"><div class="ic">🗂️</div><h3>사업·배정·평가</h3><p>admin/pm이 사업기획(business_plans)·코치 배정·5축 평가. 코치 본인은 자기 평가 조회 불가(솔직성).</p></div>
+      <div class="card"><div class="ic">📄</div><h3>리포트 생성</h3><p>세션별/번들 리포트(HTML)로 내보내기 — 근거·원문 부록 옵션.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>어떻게 동작하나</h2>
+    <p class="lead">입력 한 번 → 자동 완성 → 검토 → 저장.</p>
+    <div class="flow">
+      <div class="step"><div class="n">1</div><div class="t">코칭 후 입력</div><div class="d">STT 붙여넣기 또는 🎙 녹음</div></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="n">2</div><div class="t">AI 추출</div><div class="d"><code>/api/extract-session</code> · Gemini 3-pass</div></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="n">3</div><div class="t">폼 자동완성</div><div class="d">실시간 채움 · 낮은 신뢰도 강조</div></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="n">4</div><div class="t">검토·저장</div><div class="d"><code>coaching_logs</code></div></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="n">5</div><div class="t">성과 추적</div><div class="d">팀 대시보드 · 리포트</div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>기술 스택</h2>
+    <p class="lead">단순함이 곧 설계입니다 — 빌드 도구가 없습니다.</p>
+    <div class="chips">
+      <span class="chip"><b>프론트</b> 바닐라 JS · 단일 <code>index.html</code> (~10,880줄)</span>
+      <span class="chip"><b>필드 SoT</b> <code>field-defs.js</code></span>
+      <span class="chip"><b>서버</b> Vercel serverless 1개 <code>api/extract-session.js</code></span>
+      <span class="chip"><b>DB</b> Supabase (Postgres · RLS · pgvector)</span>
+      <span class="chip"><b>AI</b> Gemini 2.5-pro → flash 폴백</span>
+      <span class="chip"><b>인증</b> 브라우저 anon 키 + RLS</span>
+    </div>
+    <div class="grid g2">
+      <div class="card"><h3>왜 빌드가 없나</h3><p>번들러·프레임워크 없이 <code>index.html</code> 하나 + CDN 스크립트로 동작합니다. 받자마자 브라우저로 열어 동작을 볼 수 있고, 배포는 정적 파일 + 함수 1개뿐이라 운영이 단순합니다. (React 도입은 ADR 필요)</p></div>
+      <div class="card"><h3>지켜야 할 4가지</h3><p>① 사용자 입력은 항상 <code>escHtml</code>/<code>escAttr</code>로 이스케이프(XSS). ② <b>RLS가 진짜 보안 경계</b> — UI 권한 체크는 보조. ③ DB 변경은 <b>새 마이그레이션 파일만</b>(기존 수정 금지). ④ 22필드 규칙은 <code>field-defs.js</code>에서 생성.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>개발 방식</h2>
+    <p class="lead">“기능을 만드는 자”와 “구조를 지키는 자”를 나눕니다.</p>
+    <div class="roles">
+      <div class="role"><h4>🧭 메인 세션 (구조를 지킴)</h4><p>설계(Architect) · 문서 정합·보호(Guardian) · 자료 정리(Curator) · 위임·검증(Orchestrator) · 기록(Historian). <b>직접 구현은 하지 않음.</b></p></div>
+      <div class="role sub"><h4>🛠️ 서브 에이전트 (기능을 만듦)</h4><p>자급자족 <b>브리프</b>(<code>.claude/agent-briefs</code>)를 받아 구현 → 5섹션으로 보고. 메인이 <code>git diff</code>로 직접 검증.</p></div>
+    </div>
+    <div class="grid g3" style="margin-top:14px">
+      <div class="card"><h3>📌 결정은 ADR</h3><p><code>docs/decisions</code> — “왜 이렇게 했나”. Accepted 후 수정 금지(Supersede).</p></div>
+      <div class="card"><h3>📖 용어는 glossary</h3><p><code>docs/glossary.md</code> — 코드·문서·라벨이 같은 용어를 쓰도록 하는 단일 진실.</p></div>
+      <div class="card"><h3>🧪 검증은 직접</h3><p>빌드/테스트가 적어 — 엔드포인트 실호출 · RLS 매트릭스 · 브라우저 육안으로 증거를 만듦.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>폴더 구조</h2>
+    <p class="lead">어디에 무엇이 있나.</p>
+<pre class="tree">coaching-log/
+├─ <span class="h">public/</span>
+│  ├─ index.html        <span class="c"># 프론트엔드 전체 (바닐라 JS · 화면·라우팅·로직)</span>
+│  └─ field-defs.js     <span class="c"># 22개 추출 필드 정의의 단일 진실원본 (ADR-020)</span>
+├─ <span class="h">api/</span>
+│  └─ extract-session.js <span class="c"># 유일한 serverless — STT/음성 → Gemini 구조화 추출</span>
+├─ <span class="h">supabase/migrations/</span> <span class="c"># 스키마 진실원본(SoT) — 새 파일만 추가 (42개)</span>
+├─ <span class="h">docs/</span>
+│  ├─ PRD-v2.md / .html  <span class="c"># 제품 정의 (현행)</span>
+│  ├─ glossary.md        <span class="c"># 용어 SoT</span>
+│  ├─ HISTORY.md         <span class="c"># 문서 인벤토리 (현행 vs 과거)</span>
+│  ├─ AUDIT-2026-06-20.md<span class="c"># 최신 종합 감사</span>
+│  ├─ contracts/         <span class="c"># coaches_directory 공유 계약 (본 레포가 원본)</span>
+│  ├─ decisions/         <span class="c"># ADR — 결정 기록</span>
+│  ├─ journey/           <span class="c"># 시행착오 기록 (append-only)</span>
+│  └─ history/           <span class="c"># 과거 기록 (옛 인수인계서·지난 감사)</span>
+├─ CLAUDE.md · AGENTS.md <span class="c"># 운영 규칙 (최상위) · 서브 에이전트 룰</span>
+└─ HANDOFF.md            <span class="c"># 라이브 핸드오버 (매 세션 갱신)</span></pre>
+  </section>
+
+  <section>
+    <h2>두 제품의 관계</h2>
+    <p class="lead">coach-finder와 한 몸 — 하나의 Supabase를 공유합니다.</p>
+    <div class="rel">
+      <div class="pair">
+        <div class="box"><h4>coach-finder</h4><p>PM이 <b>코치를 찾고 사업을 기획·수주·계약</b>. 사업의 라이프사이클을 관리(진실원천).</p></div>
+        <div class="box me"><h4>coaching-log <span style="font-size:11px;color:var(--accent)">(이 제품)</span></h4><p>코치가 <b>세션을 기록·추적</b>. 사업 상태를 <b>추종</b> — 사업이 “진행중(active)”이 되면 트리거가 여기 프로젝트를 자동 생성.</p></div>
+      </div>
+      <div class="shared">🔗 공유: 하나의 <b>Supabase</b> + <code>coaches_directory</code> 마스터 테이블 · 같은 이메일 = 같은 사람 = 같은 역할(admin/pm/coach)</div>
+      <p class="note">• <b>스키마(마이그레이션) 진실원본 = coaching-log</b> (공유 테이블 변경은 여기서). • <b>사업 status 진실원본 = coach-finder</b> (ADR-023 — planning→active→completed/cancelled, coaching-log는 추종). • <code>coaches_directory</code>의 embedding·추론스킬·역할태그 컬럼은 <b>coach-finder 소유 기능</b>(여기선 미사용, ADR-024).</p>
+    </div>
+  </section>
+
+  <section style="border-bottom:0">
+    <h2>어디서부터 읽나</h2>
+    <p class="lead">위에서 아래로, 5분이면 감이 옵니다.</p>
+    <div class="steps-doc">
+      <span class="d">CLAUDE.md <span class="c">운영 규칙</span></span><span class="sep">→</span>
+      <span class="d">AGENTS.md <span class="c">서브 룰</span></span><span class="sep">→</span>
+      <span class="d">docs/glossary.md <span class="c">용어</span></span><span class="sep">→</span>
+      <span class="d">docs/PRD-v2.md <span class="c">제품</span></span><span class="sep">→</span>
+      <span class="d">docs/AUDIT-2026-06-20.md <span class="c">현황</span></span>
+    </div>
+    <p class="note">과거 기록이 필요하면 <code>docs/history/</code>. “지금 무슨 작업 중인가”는 <code>HANDOFF.md</code>. 결정의 이유는 <code>docs/decisions/</code>.</p>
+  </section>
+
+  <footer>
+    생성: 2026-06-20 · 인수인계용 개요. <b>정본은 코드와 <code>docs/PRD-v2.md</code></b> 입니다 — 본 문서는 “큰 그림”을 빠르게 잡기 위한 안내입니다.
+  </footer>
+
+</div>
+</body>
+</html>

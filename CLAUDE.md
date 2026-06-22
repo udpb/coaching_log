@@ -70,6 +70,9 @@
 
 ## 문서 계층 (읽는 순서)
 
+### 0차 (처음 받는 사람 — 5분 큰 그림)
+0. **[docs/OVERVIEW.html](docs/OVERVIEW.html)** 🖼️ — 개발 의도·핵심 기능·개발 방식·폴더 구조를 한눈에 (브라우저로 열기)
+
 ### 1차 (필독)
 1. **[CLAUDE.md](CLAUDE.md)** ← 본 파일
 2. **[AGENTS.md](AGENTS.md)** — 서브 에이전트 룰 · 변경 금지 · STOP · 검증
