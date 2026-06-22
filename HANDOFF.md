@@ -1,7 +1,7 @@
 # HANDOFF — 세션 핸드오버 (라이브 문서 · coaching-log)
 
 > **갱신 룰:** 매 세션 끝, 메인 세션이 전체 덮어쓰기. Git 으로 히스토리 추적.
-> **읽는 순서:** 본 파일 → [CLAUDE.md](CLAUDE.md) → [AGENTS.md](AGENTS.md) → [docs/glossary.md](docs/glossary.md) → [docs/AUDIT-2026-06-10.md](docs/AUDIT-2026-06-10.md)
+> **읽는 순서:** 본 파일 → [CLAUDE.md](CLAUDE.md) → [AGENTS.md](AGENTS.md) → [docs/glossary.md](docs/glossary.md) → [docs/AUDIT-2026-06-20.md](docs/AUDIT-2026-06-20.md)
 
 ---
 
@@ -97,15 +97,15 @@
          컨벤션 드리프트(후순위). ⓒ 스키마 **정합·모순0**, 제로베이스 한계는 phase_z 문서화.
       ⓓ 문서 갱신 완료: CLAUDE(38→42·줄수)·README(18→22)·HISTORY(28→42·줄수)·AGENTS(줄수) 수치 정정 +
          HANDOVER/PRD-v2(.md/.html)/INTEGRATED 에 ADR-023 주석 배너(과거 기록 보존).
-      🔶 ⓐ **사용자 결정 대기**: embedding/RAG(4)·inferred_skills(3) 미구현 기능 컬럼 — 의도 설명 완료
-         (RAG 코치추천·자동 스킬추론, 둘 다 coach-finder/공유디렉토리 소비). 보존 vs 폐기 결정 → 결정 후 집행.
-         roles_capable/roles_active_2026/ud_programs 는 coach-finder 소유 추정(확인 후 판단).
+      ✅ ⓐ **해결(ADR-024)**: embedding(4)·inferred_skills(3)·roles_capable·roles_active_2026·ud_programs
+         는 죽은 게 아니라 **coach-finder 실사용**(추천 엔진 RPC·코치 카드 — coach-finder 코드 확인). → **보존**,
+         계약문서 v2 에 소유=coach-finder(🔵) 명문화. 드롭/물리분리 안 함(진짜 분리는 핸드오프 후 별건).
       🔷 ⓒ **라이브 검증 SQL 5종**(AUDIT-2026-06-20 §ⓒ) 사용자 Supabase 실행 대기 — 특히 bp없는 projects.
   1   R1 실녹음(마이크 1청크+5분경계) · ADR-004(captcha). (메모모드 영어라벨 → K1b 로 해소됨.)
 ```
 
 **최근 ADR:** 020(field-defs)·021(2h녹음)·022(KPI)·023(status 단일 라이프사이클, coach-finder=SoT). ADR-004(captcha) 미작성·대기.
-**감사:** [docs/AUDIT-2026-06-10.md](docs/AUDIT-2026-06-10.md) (최신) · [docs/AUDIT-2026-06-01.md](docs/AUDIT-2026-06-01.md)
+**감사:** [docs/AUDIT-2026-06-20.md](docs/AUDIT-2026-06-20.md) (최신·핸드오프) · 과거: [docs/history/AUDIT-2026-06-10.md](docs/history/AUDIT-2026-06-10.md) · [docs/history/AUDIT-2026-06-01.md](docs/history/AUDIT-2026-06-01.md)
 **공유 계약 (본 레포 원본):** [docs/contracts/coaches-directory.md](docs/contracts/coaches-directory.md)
 
 ---

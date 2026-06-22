@@ -273,11 +273,10 @@
       <span class="badge">빌드 없는 단일 <span class="code">index.html</span></span>
     </div>
     <p style="margin-top:14px;padding:10px 14px;background:#FFF6E5;border-left:3px solid #E8920C;font-size:13px;line-height:1.6;color:#5A4A2A;">
-      ⚠️ <b>2026-06-20 갱신 주석 (AUDIT-2026-06-20):</b> 본 PRD 시각화는 2026-06-04 기준입니다. 이후
-      <b>ADR-023</b>(2026-06-15)으로 <span class="code">business_plans.status</span> 가
-      <span class="code">planning/active/completed/cancelled</span> 4값 단일 라이프사이클(coach-finder=SoT)로 통일됐습니다.
-      본문의 <b>수주(won)·<span class="code">bp_on_won</span> 트리거</b> 서술은 구 어휘이며, 현행은 "기획&rarr;active 전환=수주",
-      트리거 <span class="code">bp_lifecycle_sync_*</span> 입니다. 정본: <span class="code">docs/decisions/023-…</span> · <span class="code">docs/glossary.md</span>.
+      ✅ <b>v2.1 (2026-06-20 현행화):</b> <span class="code">business_plans.status</span> =
+      <span class="code">planning/active/completed/cancelled</span> 4값 단일 라이프사이클(<b>coach-finder=SoT</b>, ADR-023).
+      "기획&rarr;active 전환 = 수주", 트리거 <span class="code">bp_lifecycle_sync_*</span>. 프로젝트별 required_kpis +
+      추출 한국어 지표명(ADR-022·K1b), 2시간 청크 녹음(ADR-021) 반영. 정본 = <span class="code">docs/PRD-v2.md</span>.
     </p>
   </div>
 </header>
@@ -311,7 +310,7 @@
       <tr class="hi">
         <td><b>coaching-log</b><br><span class="code">본 제품</span></td>
         <td>코치</td>
-        <td>코칭 일지(STT&rarr;AI)·성과 추적·코치 본인 정보 자가관리·BP/평가/코치배정(admin·pm)·<b>수주(won) 트리거 발동 지점</b></td>
+        <td>코칭 일지(STT&rarr;AI)·성과 추적·코치 본인 정보 자가관리·BP/평가/코치배정(admin·pm)·<b>사업 active 전환(=수주) 트리거 지점</b></td>
       </tr>
       <tr><td>coach-finder</td><td>PM · admin</td><td>코치 검색·AI 매칭·사업 기획·계약·예산</td></tr>
       <tr><td>underdogs-hub</td><td>전체</td><td>4앱 진입</td></tr>
@@ -320,7 +319,7 @@
   </table>
 
   <div class="callout">
-    <b>수주 트리거가 여기서 발동된다.</b> PM 이 사업기획(business_plan)을 <b>수주(won)</b> 처리하면 DB 트리거가
+    <b>수주 트리거가 여기서 발동된다.</b> PM 이 사업기획(business_plan)을 <b>진행중(active)</b> 으로 전환하면(=수주, coach-finder) DB 트리거가
     <span class="code">projects</span> 를 만들고 accepted 코치를 <span class="code">project_members</span> 로 흘려보낸다 →
     그 순간부터 코치는 <b>teams 홈에서 팀을 보고 세션 기록을 시작</b>한다. (아래 ⑤·⑥ 참조)
   </div>
@@ -488,15 +487,15 @@
   <div class="flow">
     <div class="node start">
       <div class="nlabel">🗒️ plans — 사업기획</div>
-      <div class="ndesc"><span class="code">business_plans</span> 생성 (admin / pm) · 상태 draft → proposed → won / lost / cancelled</div>
+      <div class="ndesc"><span class="code">business_plans</span> 생성 (admin / pm) · 상태 planning → active → completed / cancelled (coach-finder=SoT)</div>
     </div>
     <div class="arrow"><div class="line"></div><div class="head">▼</div><div class="note">코치 핀 — <span class="code">business_plan_coaches</span> 후보 등록 (candidate → accepted)</div></div>
 
     <div class="node key">
-      <div class="nlabel">🏆 수주 처리 <span class="tag">status = 'won'</span></div>
-      <div class="ndesc">BP "수주 처리" 클릭</div>
+      <div class="nlabel">🏆 진행중 전환 (=수주) <span class="tag">status = 'active'</span></div>
+      <div class="ndesc">coach-finder 에서 사업을 "진행중"으로 전환</div>
     </div>
-    <div class="arrow"><div class="line"></div><div class="head">▼</div><div class="note">DB 트리거 <span class="code">bp_on_won</span> 발동 (자동)</div></div>
+    <div class="arrow"><div class="line"></div><div class="head">▼</div><div class="note">DB 트리거 <span class="code">bp_lifecycle_sync_ins/_upd</span> 발동 (자동)</div></div>
 
     <div class="node">
       <div class="nlabel">⚙️ 자동 생성 (트리거)</div>
@@ -597,9 +596,9 @@
 
     <div class="card">
       <div class="chead"><span class="cicon">🗂️</span><span class="ctitle">사업 / 프로젝트 관리</span></div>
-      <div class="cdesc">admin · pm. BP 수주(won) → 트리거 <span class="code">bp_on_won</span> 으로 projects + members 자동 생성.</div>
+      <div class="cdesc">admin · pm. 사업 active 전환(=수주) → 트리거 <span class="code">bp_lifecycle_sync_*</span> 로 projects + members 자동 생성.</div>
       <div class="csteps">
-        <span class="cs">draft</span><span class="csa">→</span><span class="cs">proposed</span><span class="csa">→</span><span class="cs">won</span><span class="csa">⚙</span><span class="cs">projects</span>
+        <span class="cs">planning</span><span class="csa">→</span><span class="cs">active</span><span class="csa">⚙</span><span class="cs">projects</span><span class="csa">→</span><span class="cs">completed</span>
       </div>
       <div class="ctbl">미귀속 과거 로그 = 가상 "orphan" 프로젝트</div>
     </div>

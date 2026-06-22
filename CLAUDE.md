@@ -18,7 +18,7 @@
 
 핵심 플로우: 코치가 STT transcript(또는 녹음) 입력 → `/api/extract-session` 이 Gemini 로 구조화 추출(내러티브 + 22 필드 + evidence/confidence) → `coaching_logs` 저장 → 대시보드에서 팀별 타임라인·지표·커밋먼트 추적.
 
-상세: [docs/INTEGRATED_ARCHITECTURE.md](docs/INTEGRATED_ARCHITECTURE.md) · [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · [docs/HANDOVER.md](docs/HANDOVER.md).
+상세: [docs/INTEGRATED_ARCHITECTURE.md](docs/INTEGRATED_ARCHITECTURE.md) · [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · [docs/PRD-v2.md](docs/PRD-v2.md) (구 인수인계서는 [docs/history/HANDOVER.md](docs/history/HANDOVER.md)).
 
 ---
 
@@ -77,14 +77,17 @@
 4. **[docs/glossary.md](docs/glossary.md)** — 용어 SoT
 
 ### 2차 (도메인 + 현황)
-5. **[docs/HISTORY.md](docs/HISTORY.md)** — 문서 인벤토리 + 신선도
-6. **[docs/AUDIT-2026-06-01.md](docs/AUDIT-2026-06-01.md)** ⭐ — 심층 감사 (백로그 출처)
-7. **[docs/contracts/coaches-directory.md](docs/contracts/coaches-directory.md)** ⭐ — 공유 계약 (**본 레포가 원본**)
+5. **[docs/HISTORY.md](docs/HISTORY.md)** — 문서 인벤토리 + 신선도 (현행 vs 과거 인덱스)
+6. **[docs/AUDIT-2026-06-20.md](docs/AUDIT-2026-06-20.md)** ⭐ — 최신 종합 감사 (핸드오프 정리·백로그 출처)
+7. **[docs/contracts/coaches-directory.md](docs/contracts/coaches-directory.md)** ⭐ — 공유 계약 v2 (**본 레포가 원본**)
 8. **[docs/INTEGRATED_ARCHITECTURE.md](docs/INTEGRATED_ARCHITECTURE.md)** — 4앱 통합 + Gap 1~5
-9. **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** · **[docs/HANDOVER.md](docs/HANDOVER.md)**
+9. **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — 단일 앱 아키텍처
 
 ### 3차 (운영 + 결정)
 10. **[docs/playbook/](docs/playbook/)** · 11. **[docs/decisions/](docs/decisions/)** · 12. **[docs/journey/](docs/journey/)** · 13. **[.claude/agent-briefs/](.claude/agent-briefs/)**
+
+### 과거 기록 (history — 참고용, 현행 아님)
+- **[docs/history/](docs/history/)** — 구 HANDOVER(2026-04 3앱 인수인계) · 과거 감사(AUDIT-2026-06-01·06-10). 현행 정본은 위 1~2차 + PRD-v2.
 
 ---
 
