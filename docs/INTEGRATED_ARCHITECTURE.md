@@ -2,7 +2,7 @@
 
 > **작성일**: 2026-05-03
 > **상태**: Active — 4-앱 통합 SSoT (Single Source of Truth)
-> **선행 문서**: `coaching-log/docs/HANDOVER.md` (3-앱 기준, 보강됨)·`coaching-log/docs/ARCHITECTURE.md` (Phase 5-A 기준)·`ud-ops-workspace/PRD-v7.1.md` (ud-ops 단독 기준)·`ud-ops-workspace/docs/DIAGNOSIS-2026-05-03.md` (ud-ops 자체 진단)
+> **선행 문서**: `coaching-log/docs/history/HANDOVER.md` (3-앱 기준, 보강됨)·`coaching-log/docs/ARCHITECTURE.md` (Phase 5-A 기준)·`ud-ops-workspace/PRD-v7.1.md` (ud-ops 단독 기준)·`ud-ops-workspace/docs/DIAGNOSIS-2026-05-03.md` (ud-ops 자체 진단)
 > **이 문서의 역할**: **4개 앱 + 2개 DB + 데이터 흐름**을 한 화면에 정합시키고, 다이어그램(아키텍처 의도)과 실제 구현의 **gap 및 bridge 계획**을 명시.
 
 > ⚠️ **2026-06-20 갱신 주석 (AUDIT-2026-06-20):** 본 문서(2026-05-03)의 status gap 서술
@@ -352,7 +352,7 @@ coach-finder ProjectsPage에서 PM이 "수주 완료" 버튼을 눌러 status='w
 | 문서 | 위치 | 역할 |
 |---|---|---|
 | **이 문서 (INTEGRATED_ARCHITECTURE.md)** | `coaching-log/docs/` | **4-앱 SSoT** (현재) |
-| HANDOVER.md | `coaching-log/docs/` | 3-앱 (coaching-log/coach-finder/hub) 인수인계 |
+| HANDOVER.md | `coaching-log/docs/history/` | 3-앱 인수인계 (2026-04, 과거 기록 — history 로 이동) |
 | ARCHITECTURE.md | `coaching-log/docs/` | Phase 5-A 기준 기술 디테일 + 결정 로그 |
 | PRD-v7.1.md | `ud-ops-workspace/` | ud-ops 단독 PRD (Express + Deep Track) |
 | DIAGNOSIS-2026-05-03.md | `ud-ops-workspace/docs/` | ud-ops 자체 종합 진단 |

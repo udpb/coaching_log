@@ -8,38 +8,43 @@
 
 | 파일 | 역할 | 신선도 |
 |------|------|--------|
-| `CLAUDE.md` / `AGENTS.md` / `HANDOFF.md` | 최상위 룰 · 서브 룰 · 핸드오버 | ✅ 최신 |
-| `docs/glossary.md` | 용어 SoT | ✅ 최신 |
-| `docs/AUDIT-2026-06-01.md` | 심층 감사 (백로그 출처) | ✅ 당시 정확 (2026-06-01 기준) |
-| `docs/AUDIT-2026-06-10.md` · `docs/AUDIT-2026-06-20.md` | 고도화 감사 · 종합 정리 감사(데드컬럼·데드코드·스키마·문서 stale) | ✅ 최신 (06-20 이 현행) |
-| `docs/contracts/coaches-directory.md` | **공유 계약 원본 (3앱 권위)** | ✅ 최신 |
-| `docs/playbook/*` / `docs/decisions/*` / `docs/journey/*` / `.claude/agent-briefs/*` | 운영 체계 | ✅ 최신 |
+| `CLAUDE.md` / `AGENTS.md` / `HANDOFF.md` | 최상위 룰 · 서브 룰 · 핸드오버 | ✅ 최신 (2026-06-20) |
+| `docs/glossary.md` | 용어 SoT | ✅ 최신 (ADR-023 반영) |
+| `docs/AUDIT-2026-06-20.md` ⭐ | **종합 정리 감사** (데드컬럼·데드코드·스키마·문서 stale·핸드오프) | ✅ 최신·현행 |
+| `docs/contracts/coaches-directory.md` | **공유 계약 원본 v2 (3앱 권위)** — 🔵 coach-finder 소유 컬럼 표식(ADR-024) | ✅ 최신 |
+| `docs/playbook/*` / `docs/decisions/*` (ADR-001~024) / `docs/journey/*` / `.claude/agent-briefs/*` | 운영 체계 | ✅ 최신 |
 
-## 기존 제품 문서 (원본 유지 · 일부 stale)
+## 기존 제품 문서 (현행)
 
 | 파일 | 역할 | 신선도 |
 |------|------|--------|
-| `docs/PRD-v2.md` ⭐ | **제품 정의 v2.0 (2026-06-04)** — 현행 코드 기준, 사용자 플로우·프로세스 중심. 본 레포 첫 PRD | ✅ 최신 (현행 PRD) |
-| `docs/INTEGRATED_ARCHITECTURE.md` | 4앱 통합 + Gap 1~5 | ✅ 양호 (핵심 참조) |
+| `docs/PRD-v2.md` ⭐ / `.html` | **제품 정의 v2.0** — 현행 코드 기준, 사용자 플로우·프로세스 중심 | ✅ 최신 (2026-06-20 ADR-023·022·021·K1b 반영) |
+| `docs/INTEGRATED_ARCHITECTURE.md` | 4앱 통합 + Gap 1~5 | ✅ 양호 (ADR-023 배너) |
 | `docs/ARCHITECTURE.md` | 단일 앱 아키텍처 (AWS 포터블 의도) | ✅ 양호 |
-| `docs/HANDOVER.md` | 인수인계 | 🟡 과거 기록 — 상단 ADR-023 주석 배너 부착(2026-06-20). 본문 구 status 어휘·검증매트릭스(29마이그·8값)·`lib/server.js` 잔재는 과거 서술, 현행은 AUDIT-2026-06-20/glossary 참조 |
-| `README.md` | 개요 | ✅ 정정됨(2026-06-01) — `match-coaches`→`extract-session`, `lib/server.js` 트리/dev 안내 제거 |
+| `README.md` | 개요 | ✅ 최신 (22필드·42마이그) |
 | `supabase/migrations/*.sql` (42) | **스키마 SoT** | ✅ 권위 |
 
-## 데드/제거 대상 (감사)
+## 과거 기록 (`docs/history/` — 참고용, 현행 아님)
 
-| 경로 | 상태 |
+| 파일 | 역할 | 비고 |
+|------|------|------|
+| `docs/history/HANDOVER.md` | 3-앱 인수인계 (2026-04) | 구 status 어휘·검증매트릭스 등 과거 서술. 현행은 CLAUDE/PRD-v2/INTEGRATED |
+| `docs/history/AUDIT-2026-06-01.md` · `-verification.md` | 최초 심층 감사 | 당시 정확. 후속 06-10/06-20 으로 갱신됨 |
+| `docs/history/AUDIT-2026-06-10.md` | 고도화 0~2단계 감사 | 당시 정확 |
+
+## 정리 이력 (감사 → 해소)
+
+| 과거 항목 | 현황 |
 |------|------|
-| `server.js` · `lib/csv-manager.js` · `lib/backup.js` | ❌ Vercel 死 (로컬 파일기반 프로토타입). node-cron 백업 안 돎 |
-| `package.json` express/cors/node-cron/dotenv | 위 死코드 전용 의존성 |
-| ~~`api/extract-session.js:29` `GEMINI_KEY=''`~~ | ⚠️ 오탐 — 실재하지 않음 (재검증 v2). 제거 대상 아님 |
-| ~~`public/index.html` `getCreateTableSQL()` 死 DDL~~ | ✅ **제거됨 2026-06-01** (`fa5e06d`) |
+| `server.js` · `lib/*` 死 레이어 + express/cors/node-cron 의존성 | ✅ 삭제 완료 (2026-06-01 CLEAN — 현존하지 않음) |
+| `api/extract-session.js` 무인증 + CORS `*` (구 P0) | ✅ 해소 — JWT 인증 + origin allowlist (ADR-002/SEC1) |
+| dead CSS `.bp-status-*`/`.bp-trans-*` | ✅ 제거 (2026-06-20, CLEAN-20260620) |
+| `getCreateTableSQL()` 死 DDL | ✅ 제거 (2026-06-01, `fa5e06d`) |
 
-## 주요 구조 리스크 (감사)
+## 주요 구조 리스크 (잔존)
 
 - `public/index.html` ~10,880줄 모놀리식 — 최대 유지보수 리스크. 점진 모듈화 후보.
-- `api/extract-session.js` 무인증 + CORS `*` — P0.
-- 자동 테스트 0건.
+- 자동 테스트 0건 (extract→save + RLS 매트릭스 테스트 ADD 후보).
 
 ## 누락 (ADD 후보)
 - extract→save + RLS 매트릭스 자동 테스트 · 평가→tier 자동 트리거 · 코치 사진 Firebase→Supabase 이전.

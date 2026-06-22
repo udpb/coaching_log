@@ -23,10 +23,14 @@
 
 ---
 
-## 1. 컬럼 계약 (v1 · 2026-06-01)
+## 1. 컬럼 계약 (v2 · 2026-06-20)
 
 권위 출처: coach-finder `COACH_SELECT_COLUMNS` (현재 가장 완전한 사본) + coaching-log 마이그레이션.
 컬럼 추가/삭제/rename 은 **§4 변경 룰** 필수.
+
+> **소유(Owner) 표식 (v2, ADR-024):** 🔵 = **coach-finder 전용 기능 컬럼** — coaching-log 는 0참조
+> (읽지도 쓰지도 않음). 공유 테이블이라 정의위치(스키마 SoT)는 coaching-log 마이그레이션이지만, 기능 소유·
+> 사용·갱신 주체는 coach-finder. 표식 없는 컬럼은 공용(여러 앱이 읽음). ADR-024 참조 — 드롭/물리분리 안 함.
 
 | 컬럼 | 타입 | 민감 | 비고 |
 |------|------|------|------|
@@ -61,11 +65,11 @@
 | `category` | text | | "파트너코치" 라벨은 2026-05-15 폐기 (→ "코치") |
 | `business_type` | text | | |
 | `status` | text | | `active` / `inactive`(휴식) / `archived` |
-| `inferred_skills` | jsonb/array | | Phase E4 — ⚠️ ud-ops 사본 누락 |
-| `roles_capable` | jsonb/array | | Phase P — ⚠️ ud-ops 사본 누락 |
-| `roles_active_2026` | jsonb/array | | Phase P — ⚠️ ud-ops 사본 누락 |
-| `ud_programs` | jsonb/array | | Phase Q — ⚠️ ud-ops 사본 누락 |
-| `embedding` | vector(1536) | | pgvector (Gemini `gemini-embedding-001`, Matryoshka 1536). SELECT 목록엔 미포함 (RPC 전용) |
+| `inferred_skills` | jsonb/array | | 🔵 coach-finder. Phase E4 — 일지 기반 자동 추출 스킬. coach-finder `tools/infer-coach-skills` 가 갱신. coaching-log 0참조 |
+| `roles_capable` | jsonb/array | | 🔵 coach-finder. Phase P — 보유 역량 역할. coach-finder 필터(`supabaseAdmin.ts`). coaching-log 0참조 |
+| `roles_active_2026` | jsonb/array | | 🔵 coach-finder. Phase P — 2026 활동 의향 역할. coaching-log 0참조 |
+| `ud_programs` | jsonb/array | | 🔵 coach-finder. Phase Q — 참여 UD 프로그램. `CoachCard.tsx` 렌더. coaching-log 0참조 |
+| `embedding` (+`_source_hash`/`_updated_at`/`_model`) | vector(1536) | | 🔵 coach-finder. pgvector (Gemini `gemini-embedding-001` → 1536, ⚠️ 마이그 주석 "OpenAI" 는 오기). 추천 RPC `search_coaches_by_embedding` 전용 (coach-finder `recommend.ts`). coaching-log 0참조. SELECT 목록 미포함 |
 | `linked_user_id` | uuid | | `profiles.id` 연결 (코치 본인 self-update RLS 키) |
 
 > ⚠️ **임베딩 차원(1536) 은 세 앱이 동일해야 함.** 마이그레이션 `20260424_phase4e` 주석은 "OpenAI text-embedding-3-small"이라 적혀 있으나 **실제는 Gemini `gemini-embedding-001` 을 1536 으로 truncate**. 모델/차원 변경 = 전 임베딩 재생성 + 세 앱 동시 반영 (ADR 필수).
@@ -128,4 +132,8 @@
 
 ## 6. 변경 이력
 
+- **v2 (2026-06-20, ADR-024)** — 소유(Owner) 표식 도입(🔵 = coach-finder 전용 기능). embedding(4)·
+  inferred_skills(3)·roles_capable·roles_active_2026·ud_programs 를 coach-finder 소유로 명문화(coaching-log 0참조이나
+  공유 테이블이라 정의는 coaching-log SoT). 핸드오프 정리 중 "폐기 후보" 오판을 정정 — coach-finder 추천 엔진·
+  코치 카드 실사용이라 보존. embedding 모델/차원 = Gemini 1536(마이그 "OpenAI" 주석은 오기) 재확인. **스키마 변경 없음.**
 - **v1 (2026-06-01)** — 최초 작성. 감사(2026-06-01)에서 발견된 3중 복사 드리프트 대응. 컬럼 36 + embedding/linked_user_id.
