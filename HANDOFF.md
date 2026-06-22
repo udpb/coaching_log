@@ -5,9 +5,20 @@
 
 ---
 
-## 📍 현재 상태 (2026-06-15)
+## 📍 현재 상태 (2026-06-20)
 
-**Phase:** 고도화 진행 — **status 단일 라이프사이클(ADR-023) 1~5단계 완료** (coach-finder 가 사업 status 진실원천, coaching-log 추종). 컬럼 버그 수정 + 프로젝트별 KPI 1단계도 배포.
+**Phase:** **운영자 핸드오프 정리 완료** (두 제품 coaching-log + coach-finder).
+- ADR-023 status 단일 라이프사이클(1~5단계) · K1b(KPI 한국어 추출) · 컬럼버그 전부 배포.
+- **ADR-024**: coaches_directory 의 embedding/inferred_skills/roles/ud_programs 는 죽은 게 아니라
+  **coach-finder 실사용** → 보존, 소유=coach-finder 문서화(계약 v2). 드롭 안 함.
+- **문서 정리**: 양 레포 현행 정본만 표면, 과거 기록은 `docs/history/` 로. PRD-v2(.md/.html) 현행화.
+  coach-finder README·PARTNERS(협력사 도메인) 신규.
+- **코드 정리**: coaching-log dead CSS 제거. coach-finder const.ts 제거 + 자격증명 .gitignore 보호.
+- ⚠️ **보류(의도적)**: `_esc`/`escapeHtml`→`escAttr` 통일은 **회귀 위험으로 보류** — 둘은 `String(s)`
+  변환 후 escAttr 호출이라 falsy 값(`0`/`false`)에서 `escAttr` 직접호출과 결과가 다름(`_esc(0)`="0" vs
+  `escAttr(0)`=""). 단순 치환 시 대시보드/리포트의 `0` 지표가 빈칸 되는 회귀. 이미 XSS-안전이라 순수 컨벤션
+  문제 — 향후 컨텍스트별(텍스트/속성) 정밀 작업 필요.
+- 🔷 **사용자 실행 대기**: AUDIT-2026-06-20 §ⓒ 라이브 검증 SQL 5종.
 
 ```
 ✅ 2026-06-15 — 컬럼 버그 · 프로젝트별 KPI · status 단일 라이프사이클:
