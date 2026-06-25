@@ -8182,10 +8182,72 @@ async function resolveMyCoachDirId() {
   return null;
 }
 
+// ─── ENC3 (ADR-024, 2026-06-25) — coach_contract_info 서버 경유 ───────────────
+// 브라우저가 평문 컬럼을 직접 .from('coach_contract_info') 로 읽지 않는다.
+// 서버 엔드포인트(/api/contract-info)가 사용자 Supabase JWT 로 RLS 를 유지한 채
+// 암복호만 담당한다. 읽기=GET(reveal 로 마스킹/평문 선택), 쓰기=POST(평문 body).
+//
+// reveal 정책(ENC3 결정): 이 탭은 코치 "본인" 정보의 편집 폼이고, ENC2 POST 가
+//   부분 업데이트를 지원하지 않아(6필드 전부 암호화·빈값→null) 마스킹 값을
+//   폼 초기값으로 쓰면 저장 시 원본을 덮어쓴다. 따라서 편집 폼/계약서 생성은
+//   reveal=1(본인 RLS 행)로 평문을 받아 채운다. 마스킹(reveal=0)은 읽기 전용
+//   표시 맥락용 — 현재 화면엔 별도 읽기전용 표시면이 없어 사용처 없음.
+//
+// 반환: { ok, status, body } — 호출부가 401/403/네트워크를 분기.
+async function _contractInfoGet(coachId, reveal) {
+  let token = null;
+  try {
+    const { data: sess } = await supabaseClient.auth.getSession();
+    token = sess?.session?.access_token || null;
+  } catch (_) { /* 세션 조회 실패 → 토큰 없이 401 유도 */ }
+  if (!token) return { ok: false, status: 401, body: null };
+  const url = '/api/contract-info?coachId=' + encodeURIComponent(coachId) +
+    '&reveal=' + (reveal ? '1' : '0');
+  let res;
+  try {
+    res = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
+  } catch (_) {
+    return { ok: false, status: 0, body: null }; // 네트워크 오류
+  }
+  let body = null;
+  try { body = await res.json(); } catch (_) { /* 비JSON 응답 */ }
+  return { ok: res.ok, status: res.status, body };
+}
+
+async function _contractInfoPost(payload) {
+  let token = null;
+  try {
+    const { data: sess } = await supabaseClient.auth.getSession();
+    token = sess?.session?.access_token || null;
+  } catch (_) { /* noop */ }
+  if (!token) return { ok: false, status: 401, body: null };
+  let res;
+  try {
+    res = await fetch('/api/contract-info', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+      body: JSON.stringify(payload),
+    });
+  } catch (_) {
+    return { ok: false, status: 0, body: null };
+  }
+  let body = null;
+  try { body = await res.json(); } catch (_) { /* noop */ }
+  return { ok: res.ok, status: res.status, body };
+}
+
+// 상태→사용자 메시지 (에러도 sink — escHtml 로 감싸 출력).
+function _contractErrMsg(status) {
+  if (status === 401) return '로그인이 만료되었습니다. 다시 로그인해주세요.';
+  if (status === 403) return '이 계약 정보에 접근 권한이 없습니다.';
+  if (status === 0) return '네트워크 오류 — 연결을 확인하고 다시 시도해주세요.';
+  return '계약 정보를 불러오지 못했습니다. (HTTP ' + status + ')';
+}
+
 async function loadMyInfoContract() {
   const loading = document.getElementById('myInfoContractLoading');
   const content = document.getElementById('myInfoContractContent');
-  if (loading) loading.style.display = 'block';
+  if (loading) { loading.style.display = 'block'; loading.textContent = '불러오는 중…'; }
   if (content) content.style.display = 'none';
 
   const cdId = await resolveMyCoachDirId();
@@ -8194,14 +8256,32 @@ async function loadMyInfoContract() {
     return;
   }
 
-  const { data, error } = await supabaseClient
-    .from('coach_contract_info')
-    .select('coach_directory_id, address, bank_name, account_number, account_holder, tax_type, is_business, business_number, business_name, updated_at')
-    .eq('coach_directory_id', cdId)
-    .maybeSingle();
+  // 편집 폼 — 본인 RLS 행이므로 reveal=1 평문으로 채운다(위 정책 참조).
+  const r = await _contractInfoGet(cdId, /*reveal*/ true);
+  if (!r.ok) {
+    if (loading) loading.innerHTML = '<p style="color:var(--red);">' + escHtml(_contractErrMsg(r.status)) + '</p>';
+    return;
+  }
+  const found = !!(r.body && r.body.found);
+  const f = (r.body && r.body.fields) || {};
+  const data = found
+    ? {
+        address: f.address || '',
+        bank_name: f.bank_name || '',
+        account_number: f.account_number || '',
+        account_holder: f.account_holder || '',
+        business_number: f.business_number || '',
+        business_name: f.business_name || '',
+        is_business: !!(r.body && r.body.is_business),
+        tax_type: (r.body && r.body.tax_type) || null,
+        updated_at: (r.body && r.body.updated_at) || null,
+      }
+    : null;
 
+  // 캐시 — 계약서 생성 등 후속에서 "값 있음" 판정에만 사용(평문 보관은 최소화하되
+  // 편집 폼이 이미 평문을 들고 있으므로 동일 수명. ENC4 백필 후엔 항상 _enc 기반).
   myInfoContractRow = data || null;
-  // 폼 채움
+  // 폼 채움 (input.value 는 텍스트 노드로 들어가 XSS sink 아님 — escape 불필요)
   document.getElementById('myInfoAddress').value = data?.address || '';
   document.getElementById('myInfoBank').value = data?.bank_name || '';
   document.getElementById('myInfoAccount').value = data?.account_number || '';
@@ -8226,12 +8306,14 @@ async function loadMyInfoContract() {
     updatedAtEl.textContent = '아직 등록되지 않음 — 위 폼을 작성하고 저장해주세요.';
   }
 
+  // 일부 필드 복호 실패(변조/키불명) 경고 — 콘솔만(폼은 계속 동작)
+  for (const k of ['address', 'bank_name', 'account_number', 'account_holder', 'business_number', 'business_name']) {
+    if (f[k + '_error']) console.warn('[myInfo] contract field decrypt failed:', k);
+  }
+
   if (loading) loading.style.display = 'none';
   if (content) content.style.display = 'block';
 
-  if (error && error.code !== 'PGRST116') {
-    console.warn('[myInfo] contract fetch error:', error.message);
-  }
   // Phase L — 계약 정보 로드 직후 미리보기 목록도 갱신
   void loadMyContractPreviewList();
 }
@@ -8304,8 +8386,10 @@ async function saveMyInfoContract() {
     }
   }
 
+  // ENC3 — 평문 body 를 서버로 보내면 서버가 6필드 암호화 + UPSERT(RLS WITH CHECK).
+  // 브라우저는 평문 컬럼을 직접 쓰지 않는다. coachId 는 body 로 전달.
   const payload = {
-    coach_directory_id: cdId,
+    coachId: cdId,
     address: address || null,
     bank_name: document.getElementById('myInfoBank').value.trim() || null,
     account_number: document.getElementById('myInfoAccount').value.trim() || null,
@@ -8315,13 +8399,12 @@ async function saveMyInfoContract() {
     business_number: isBiz ? bizNumber : null,
     business_name: isBiz ? bizName : null,
   };
-  const { error } = await supabaseClient
-    .from('coach_contract_info')
-    .upsert(payload, { onConflict: 'coach_directory_id' });
+  const r = await _contractInfoPost(payload);
 
   if (btn) { btn.disabled = false; btn.textContent = '저장'; }
-  if (error) {
-    showToast('저장 실패: ' + error.message);
+  if (!r.ok) {
+    const detail = (r.body && (r.body.error || r.body.detail)) || _contractErrMsg(r.status);
+    showToast('저장 실패: ' + detail); // showToast 는 textContent 사용(아래 검증) — sink 아님
     return;
   }
   showToast('✓ 저장되었습니다');
@@ -8413,6 +8496,26 @@ async function downloadMyContract(projectId, projectName, startDate, endDate) {
     showToast('계약 정보를 먼저 저장해주세요.');
     return;
   }
+  // ENC3 — 계약서 생성 직전에만 reveal=1 평문을 just-in-time 으로 받는다(메모리에 오래 두지 않음).
+  const cdId = myInfoCoachDirId || await resolveMyCoachDirId();
+  if (!cdId) { showToast('코치 계정 연결을 찾을 수 없습니다.'); return; }
+  const rev = await _contractInfoGet(cdId, /*reveal*/ true);
+  if (!rev.ok || !rev.body || !rev.body.found) {
+    showToast(rev.ok ? '계약 정보를 먼저 저장해주세요.' : _contractErrMsg(rev.status));
+    return;
+  }
+  const cf = rev.body.fields || {};
+  // 이 스코프 안에서만 쓰고 함수 종료 시 GC — 전역/장기 보관 안 함.
+  const plain = {
+    address: cf.address || '',
+    bank_name: cf.bank_name || '',
+    account_number: cf.account_number || '',
+    account_holder: cf.account_holder || '',
+    business_number: cf.business_number || '',
+    business_name: cf.business_name || '',
+    is_business: !!rev.body.is_business,
+  };
+
   // 본인 이름 — myInfoCoachDirId 통해 coaches_directory 에서
   let coachName = '';
   const { data: cdRow } = await supabaseClient
@@ -8428,7 +8531,7 @@ async function downloadMyContract(projectId, projectName, startDate, endDate) {
   const amount = 0;
 
   // 템플릿 선택
-  const isBiz = !!myInfoContractRow.is_business;
+  const isBiz = plain.is_business;
   const templateUrl = isBiz
     ? '/templates/coach-contract-business.docx'
     : '/templates/coach-contract.docx';
@@ -8451,20 +8554,20 @@ async function downloadMyContract(projectId, projectName, startDate, endDate) {
     end_date: _fmtKDate(proj.target_end_date),
     contract_date: _fmtKDate(today),
     payment_weeks: '4',
-    bank_name: myInfoContractRow.bank_name || '',
-    account_number: myInfoContractRow.account_number || '',
+    bank_name: plain.bank_name || '',
+    account_number: plain.account_number || '',
     account_holder:
-      myInfoContractRow.account_holder ||
-      (isBiz ? myInfoContractRow.business_name : coachName) || '',
-    coach_address: myInfoContractRow.address || '',
+      plain.account_holder ||
+      (isBiz ? plain.business_name : coachName) || '',
+    coach_address: plain.address || '',
     coach_phone: '',  // 코치 본인 미리보기 — 전화 직접 채우지 않음 (PM 모달에서 입력)
     coach_email: '',
     resident_number: '',  // 주민번호는 미리보기에선 비워둠
     is_business: isBiz ? '사업자' : '개인',
-    business_name: myInfoContractRow.business_name || '',
-    business_number: myInfoContractRow.business_number || '',
-    business_label: isBiz && myInfoContractRow.business_name
-      ? `${myInfoContractRow.business_name}${myInfoContractRow.business_number ? ` (${myInfoContractRow.business_number})` : ''}`
+    business_name: plain.business_name || '',
+    business_number: plain.business_number || '',
+    business_label: isBiz && plain.business_name
+      ? `${plain.business_name}${plain.business_number ? ` (${plain.business_number})` : ''}`
       : '',
   });
 
