@@ -11,6 +11,8 @@
 <script src="https://cdn.jsdelivr.net/npm/pizzip@3.2.0/dist/pizzip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3.68.7/build/docxtemplater.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+<!-- Brief XLSX (2026-06-25): 헤더 다운로드 .xlsx 내보내기용 (열너비·헤더 스타일). 전역 XLSX 노출 -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 <!-- ADR-020: coaching_logs 22필드 정의 공유 모듈 (window.UD_FIELD_DEFS) — API 와 동일 파일 -->
 <script src="/field-defs.js"></script>
 <style>
@@ -480,6 +482,80 @@ body {
   color: var(--white);
 }
 
+/* ---- Project session board (UI-A · team-grouped session rows) ---- */
+.team-board { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 14px; }
+.team-group {
+  border: 1px solid var(--gray200);
+  background: var(--white);
+  box-shadow: var(--shadow);
+}
+.team-group-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  cursor: pointer;
+  background: var(--gray100);
+  border-bottom: 1px solid var(--gray200);
+  user-select: none;
+}
+.team-group-header:hover { background: var(--gray200); }
+.team-group-toggle {
+  font-size: 11px;
+  color: var(--gray500);
+  width: 14px;
+  flex: none;
+  transition: var(--transition);
+}
+.team-group-toggle::before { content: '▼'; }
+.team-group.collapsed .team-group-toggle::before { content: '▶'; }
+.team-group-name { font-size: 15px; font-weight: 700; color: var(--dark); }
+.team-group-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--gray500);
+  flex-wrap: wrap;
+}
+.team-group-coach { color: var(--action-orange); font-weight: 600; }
+.team-group-spacer { flex: 1 1 auto; }
+.team-new-session-btn {
+  flex: none;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid var(--gray300);
+  background: var(--white);
+  color: var(--gray500);
+  cursor: pointer;
+  transition: var(--transition);
+}
+.team-new-session-btn:hover {
+  border-color: var(--orange);
+  color: var(--orange);
+  background: var(--orange-bg);
+}
+.team-group-body { display: flex; flex-direction: column; }
+.team-group.collapsed .team-group-body { display: none; }
+.session-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--gray100);
+  cursor: pointer;
+  font-size: 13px;
+  transition: background var(--transition);
+}
+.session-row:last-child { border-bottom: none; }
+.session-row:hover { background: var(--orange-bg); }
+.session-row-date { color: var(--gray500); flex: none; width: 96px; }
+.session-row-num { color: var(--dark); font-weight: 700; flex: none; width: 40px; }
+.session-row-topic { color: var(--dark); flex: 2 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.session-row-next { color: var(--gray500); flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.session-row-empty { padding: 14px 16px; color: var(--gray400); font-size: 13px; }
+
 /* Stage badge */
 .stage-badge {
   display: inline-flex;
@@ -942,6 +1018,21 @@ body {
   border-color: var(--orange);
   transform: translateY(-1px);
 }
+/* CD brief #2: coach → 담당 팀 모달 행 */
+.coach-team-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 4px;
+  border-bottom: 1px solid var(--gray100);
+}
+.coach-team-row:last-child { border-bottom: none; }
+.coach-team-row-clickable { border-radius: 6px; transition: background 0.12s ease; }
+.coach-team-row-clickable:hover { background: var(--gray100); }
+.coach-team-name { font-size: 14px; color: var(--dark); font-weight: 600; }
+.coach-team-count { font-size: 12px; color: var(--gray500); flex-shrink: 0; }
+.coach-team-go { margin-left: 6px; font-size: 11px; color: var(--primary, #4f46e5); font-weight: 600; }
 .cd-avatar {
   width: 48px;
   height: 48px;
@@ -2383,6 +2474,21 @@ body {
   white-space: nowrap;
 }
 .trend-table tr:last-child td { border-bottom: none; }
+/* ---- UI-B: clickable session-history rows inside showDetail ---- */
+.trend-table tr.history-row { cursor: pointer; transition: background 0.12s ease; }
+.trend-table tr.history-row:hover { background: var(--orange-bg); }
+.trend-table tr.history-current { background: var(--orange-bg); cursor: default; }
+.history-now-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--orange);
+  color: var(--white);
+  vertical-align: middle;
+}
 
 /* ---- AI checkbox ---- */
 .checkbox-row {
@@ -3118,7 +3224,7 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
     </div>
     <nav class="nav-tabs" id="navTabs">
       <button class="nav-tab active" data-view="teams" data-i18n="nav_teams">Teams</button>
-      <button class="nav-tab" data-view="form" data-i18n="nav_record">Record</button>
+      <!-- "기록"(form) nav 탭 제거 (2026-06-25): 새 세션은 프로젝트→팀의 [+ 새 세션] 버튼으로. form 뷰·switchView('form')는 유지. -->
       <button class="nav-tab" data-view="list" data-i18n="nav_list">List</button>
       <button class="nav-tab" data-view="dashboard" data-i18n="nav_dashboard">대시보드</button>
       <button class="nav-tab" data-view="coaches" id="navCoaches" style="display:none;" data-i18n="nav_coaches">코치 디렉토리</button>
@@ -3131,9 +3237,9 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
         <button class="lang-btn" data-lang="en">EN</button>
         <button class="lang-btn" data-lang="ja">JA</button>
       </div>
-      <button id="csvDownloadBtn" class="btn btn-sm btn-secondary" onclick="downloadCsv()" title="CSV Download">
+      <button id="csvDownloadBtn" class="btn btn-sm btn-secondary" onclick="downloadXlsx()" title="Excel Download">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        CSV
+        Excel
       </button>
       <a href="https://ud-hub.vercel.app/" class="hub-link" id="hubLink" title="허브로 돌아가기">↩ Hub</a>
       <div class="auth-user" id="authUserInfo" style="display:none">
@@ -3487,10 +3593,13 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
 <!-- View 5: Detail View -->
 <div class="view" id="viewDetail">
   <div class="container">
-    <button class="btn btn-ghost" onclick="switchView('list')" style="margin-bottom:16px;">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-      <span data-i18n="back">Back</span>
-    </button>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+      <button class="btn btn-ghost" onclick="goBackFromDetail()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+        <span data-i18n="back">Back</span>
+      </button>
+      <button class="btn btn-primary" onclick="addSessionFromDetail()" title="이 팀(학습자)의 새 세션 기록">+ 새 세션</button>
+    </div>
     <div id="detailContent">
       <!-- Rendered by JS -->
     </div>
@@ -3803,6 +3912,20 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
       <div style="display:flex;gap:8px;margin-left:auto;">
         <button class="btn btn-ghost" onclick="closeMoveProjectModal()">취소</button>
         <button class="btn btn-primary" id="moveProjectSaveBtn" onclick="saveMoveProjectModal()">이동</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CD brief #2: coach → 담당 팀 목록 모달 (read-only) -->
+<div class="rpt-modal-overlay" id="coachTeamsModal" onclick="if(event.target===this)closeCoachTeamsModal()">
+  <div class="rpt-modal" style="max-width:440px;">
+    <h2 id="coachTeamsTitle">담당 팀</h2>
+    <div class="sub">이 코치가 기록한 세션의 팀(학습자) 목록입니다.</div>
+    <div id="coachTeamsBody"></div>
+    <div class="modal-footer">
+      <div style="display:flex;gap:8px;margin-left:auto;">
+        <button class="btn btn-ghost" onclick="closeCoachTeamsModal()">닫기</button>
       </div>
     </div>
   </div>
@@ -4259,6 +4382,10 @@ let currentView = 'teams';
 // 라우팅(2026-06-10): 현재 detail 뷰가 보여주는 record id. switchView 가
 // detail 의 해시를 #detail/<id> 로 만들 때 사용 (새로고침/뒤로가기 복원).
 let currentDetailId = null;
+// FIX-detail-back-origin (2026-06-25): detail 진입 직전 출처 뷰(teams/list/
+// dashboard) 를 저장 → 화면 안 "← 뒤로" 버튼이 목록 하드코딩이 아니라 출처로
+// 복귀. 새로고침으로 #detail/<id> 직접 진입 시 출처 모름 → 기본값 'teams'.
+let detailReturnView = 'teams';
 let listFilter = null; // null = all
 let currentUser = null;
 
@@ -5296,40 +5423,82 @@ async function deleteRecord(id) {
   switchView('list');
 }
 
-function downloadCsv() {
+// Brief XLSX (2026-06-25): 헤더 다운로드를 "예쁜 엑셀(.xlsx)" 로 — 열너비 자동 + 헤더 굵게.
+// 컬럼 트리밍은 기존 CSV(CSV1+CSV2 제외 규칙)와 동일하게 유지한다. 엑셀 셀은 HTML sink 가
+// 아니므로 값은 가공 없이(이스케이프 불필요) 그대로 넣는다.
+function downloadXlsx() {
   if (logs.length === 0) {
     showToast(lang === 'ko' ? '내보낼 데이터가 없습니다' : 'No data to export');
     return;
   }
-  // Gather all unique keys across all records
-  const excludeKeys = new Set(['metrics']);
-  const allKeys = [];
-  for (const r of logs) {
-    for (const k of Object.keys(r)) {
-      if (!allKeys.includes(k) && !excludeKeys.has(k)) allKeys.push(k);
-    }
+  // 값 → 셀 문자열 (HTML 아님 — 이스케이프 불필요)
+  const cellStr = (val) => (val === null || val === undefined) ? '' : String(val);
+  // 명시적 컬럼 정의 (XLSX3, 2026-06-25): 동적 키 수집/HEADER_FORMKEY 대신
+  // 순서·헤더·값변환을 한 곳에 고정. k=데이터키, fk=헤더 폼 i18n 키, prefix=그룹 말머리,
+  // val=값 변환 타입.
+  const COLDEF = [
+    { k:'date',                 fk:'date' },
+    { k:'coach',                fk:'coach' },
+    { k:'founder_name',         fk:'founder_name' },
+    { k:'team_name',            fk:'team_name' },
+    { k:'session_type',         fk:'session_type',      val:'sessionType' },
+    { k:'session_num',          fk:'session_num' },
+    { k:'stage',                fk:'impact_stage' },
+    { k:'stage_detail',         fk:'stage_detail' },
+    { k:'main_topic',           fk:'main_topic' },
+    { k:'last_commitment',      fk:'last_commitment' },
+    { k:'last_done',            fk:'done_status',     prefix:'지난 약속',     val:'doneStatus' },
+    { k:'last_number',          fk:'result_numbers',  prefix:'지난 약속' },
+    { k:'last_result',          fk:'what_learned',    prefix:'지난 약속' },
+    { k:'real_issue',           fk:'real_issue',      prefix:'오늘 파악한 것' },
+    { k:'blocker_type',         fk:'blocker_type',    prefix:'오늘 파악한 것' },
+    { k:'ai_used',              fk:'ai_used',         prefix:'오늘 파악한 것', val:'aiUsed' },
+    { k:'next_action',          fk:'what_to_do',      prefix:'다음 실행 약속' },
+    { k:'next_deadline',        fk:'when_deadline',   prefix:'다음 실행 약속' },
+    { k:'next_evidence',        fk:'evidence',        prefix:'다음 실행 약속' },
+    { k:'next_checkin_date',    fk:'checkin_date',    prefix:'다음 실행 약속' },
+    { k:'next_checkin_channel', fk:'checkin_channel', prefix:'다음 실행 약속', val:'checkinChannel' },
+    { k:'next_checkin',         fk:'checkin_memo',    prefix:'다음 실행 약속' },
+    { k:'session_note',         fk:'one_line_summary', prefix:'코치 메모' },
+    { k:'watch_next',           fk:'must_check_next',  prefix:'코치 메모' },
+  ];
+  // 헤더 = prefix 있으면 "말머리 - 라벨", 없으면 라벨 (현재 언어 t(fk))
+  const headerLabel = (c) => c.prefix ? (c.prefix + ' - ' + t(c.fk)) : t(c.fk);
+  // 값 변환 헬퍼
+  const SESSION_TYPE_I18N = { first:'session_first', regular:'session_regular', emergency:'session_emergency', milestone:'session_milestone', graduation:'session_graduation' };
+  const CHANNEL_LABEL = { message:'메시지', call:'전화', video:'화상', email:'이메일', inperson:'대면', other:'기타' };
+  const DONE_I18N = { done:'done_yes', partial:'done_partial', not_done:'done_no' };
+  function cellFor(c, r){
+    if (c.val === 'sessionType'){ const v = r.session_type; return (v && SESSION_TYPE_I18N[v]) ? t(SESSION_TYPE_I18N[v]) : ''; }
+    if (c.val === 'doneStatus'){ const v = r.last_done; return (v && DONE_I18N[v]) ? t(DONE_I18N[v]) : ''; }
+    if (c.val === 'aiUsed'){ return r.ai_used === true ? 'O' : (r.ai_used === false ? 'X' : ''); }
+    if (c.val === 'checkinChannel'){ const v = r.next_checkin_channel; return (v && CHANNEL_LABEL[v]) ? CHANNEL_LABEL[v] : ''; }
+    return cellStr(r[c.k]);
   }
-  // Build CSV
-  const csvEscape = (val) => {
-    if (val === null || val === undefined) return '';
-    const s = String(val);
-    if (s.includes(',') || s.includes('"') || s.includes('\n')) {
-      return '"' + s.replace(/"/g, '""') + '"';
+  // AOA (array-of-arrays): 0행 헤더 + 데이터 행
+  // 데이터 행은 date 오름차순 정렬 — 전역 logs 는 건드리지 않고 복사본 정렬
+  const rows = [...logs].sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));  // 날짜 내림차순(최신 먼저)
+  const aoa = [COLDEF.map(headerLabel)];
+  for (const r of rows) aoa.push(COLDEF.map(c => cellFor(c, r)));
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  // 열너비 자동맞춤: 헤더 라벨 + 변환된 셀 값 최대 글자수 기준, 최소 8·최대 50
+  const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
+  ws['!cols'] = COLDEF.map((c) => {
+    let maxLen = headerLabel(c).length;
+    for (const r of rows) {
+      const len = cellFor(c, r).length;
+      if (len > maxLen) maxLen = len;
     }
-    return s;
-  };
-  const header = allKeys.map(csvEscape).join(',');
-  const rows = logs.map(r => allKeys.map(k => csvEscape(r[k])).join(','));
-  const csvContent = '\uFEFF' + header + '\n' + rows.join('\n');
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'coaching_logs.csv';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+    return { wch: clamp(maxLen, 8, 50) };
+  });
+  // 헤더 행 굵게 + 연한 배경
+  for (let c = 0; c < COLDEF.length; c++) {
+    const addr = XLSX.utils.encode_cell({ r: 0, c });
+    if (ws[addr]) ws[addr].s = { font: { bold: true }, fill: { fgColor: { rgb: 'FFF3E0' } } };
+  }
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '코칭일지');
+  XLSX.writeFile(wb, 'coaching_logs.xlsx');
 }
 
 // ============================================================
@@ -6075,6 +6244,64 @@ function filterLogsByCurrentProject(sourceLogs) {
   return src.filter(r => r.project_id === currentProject.id);
 }
 
+// UI-A: build one team(learner)-grouped block — collapsible header + session rows.
+// `tm` is a getTeamSummaries() entry; `scoped` is the project-scoped log array.
+// All dynamic values escaped: text → escHtml(), attribute → escAttr().
+function buildTeamGroupHtml(tm, scoped) {
+  const stageLabel = tm.stage ? tm.stage : '-';
+  const isVirtual = currentProject && currentProject.__virtual;
+  const coachTag = (currentUserRole === 'admin' && tm.coaches)
+    ? `<span class="team-group-coach">🧑‍💼 ${escHtml(tm.coaches)}</span>`
+    : '';
+
+  // [+ 새 세션] — orphan/virtual project must not create new sessions.
+  const newSessionBtn = isVirtual ? '' :
+    `<button type="button" class="team-new-session-btn" onclick="event.stopPropagation(); selectTeam('${escAttr(tm.team_name)}')">${escHtml(t('new_team') === '+ 새 팀' ? '+ 새 세션' : '+ New Session')}</button>`;
+
+  // Sessions of this team, newest session_num first.
+  const teamLogs = scoped
+    .filter(r => r.team_name === tm.team_name)
+    .sort((a, b) => (parseInt(b.session_num) || 0) - (parseInt(a.session_num) || 0));
+
+  let rowsHtml = '';
+  if (teamLogs.length === 0) {
+    rowsHtml = `<div class="session-row-empty">아직 세션 없음</div>`;
+  } else {
+    for (const r of teamLogs) {
+      const dateStr  = escHtml(r.date || '-');
+      const numStr   = escHtml('#' + (r.session_num || '-'));
+      const stageStr = escHtml(r.stage || '-');
+      const topicStr = escHtml(truncate(r.main_topic, 60));
+      const nextStr  = escHtml(truncate(r.next_action, 60));
+      rowsHtml += `
+        <div class="session-row" onclick="showDetail('${escAttr(String(r.id))}')">
+          <span class="session-row-date">${dateStr}</span>
+          <span class="session-row-num">${numStr}</span>
+          <span class="stage-badge">${stageStr}</span>
+          <span class="session-row-topic">${topicStr}</span>
+          <span class="session-row-next">${nextStr}</span>
+        </div>`;
+    }
+  }
+
+  return `
+    <div class="team-group">
+      <div class="team-group-header" onclick="this.parentNode.classList.toggle('collapsed')">
+        <span class="team-group-toggle"></span>
+        <span class="team-group-name">${escHtml(tm.team_name)}</span>
+        <span class="team-group-meta">
+          <span class="stage-badge">${escHtml(stageLabel)}</span>
+          <span>(${tm.session_count} ${t('sessions')})</span>
+          <span>${t('last_date')}: ${escHtml(tm.last_session_date || '-')}</span>
+          ${coachTag}
+        </span>
+        <span class="team-group-spacer"></span>
+        ${newSessionBtn}
+      </div>
+      <div class="team-group-body">${rowsHtml}</div>
+    </div>`;
+}
+
 function renderTeams() {
   const grid = document.getElementById('teamGrid');
   if (!grid) return;
@@ -6096,47 +6323,41 @@ function renderTeams() {
       <button onclick="exitProject()" title="다른 프로젝트로 전환">↔ 프로젝트 변경</button>
     </div>`;
 
-  let teamsHtml = '';
-  for (const tm of teams) {
-    const stageLabel = tm.stage ? tm.stage : '-';
-    const coachTag = (currentUserRole === 'admin' && tm.coaches)
-      ? `<span style="color:var(--action-orange);font-weight:600;">🧑‍💼 ${escHtml(tm.coaches)}</span>`
-      : '';
-    teamsHtml += `
-      <div class="card team-card" onclick="selectTeam('${escHtml(tm.team_name)}')">
-        <div class="team-card-name">${escHtml(tm.team_name)}</div>
-        <div class="team-card-info">
-          <span><span class="stage-badge">${escHtml(stageLabel)}</span></span>
-          <span>${tm.session_count} ${t('sessions')}</span>
-          <span>${t('last_date')}: ${escHtml(tm.last_session_date || '-')}</span>
-          ${coachTag}
-        </div>
-      </div>`;
-  }
-  // Virtual orphan project is historical-only — don't let users create new
-  // sessions in it (they'd still have no project_id which defeats the purpose).
-  if (!currentProject.__virtual) {
-    teamsHtml += `
-      <div class="card new-team-card" onclick="selectNewTeam()">
-        <div class="plus-icon">+</div>
-        <span>${t('new_team')}</span>
-      </div>`;
-  }
-
+  // Empty states (no teams in this project).
   if (teams.length === 0 && currentProject.__virtual) {
-    teamsHtml = `<div class="proj-empty" style="grid-column:1 / -1;">
+    grid.innerHTML = headerHtml + `<div class="proj-empty" style="grid-column:1 / -1;">
       <div class="proj-empty-icon">📭</div>
       <p>이 프로젝트에 속한 기록이 없습니다.</p>
     </div>`;
-  } else if (teams.length === 0) {
-    teamsHtml = (teamsHtml || '') + (teamsHtml.includes('new-team-card') ? '' : '');
-    // Add a friendly hint when project exists but has no teams yet
-    teamsHtml = `<div style="grid-column:1 / -1;color:var(--gray500);font-size:13px;padding:8px 4px;">
-      아직 이 프로젝트에 세션이 없습니다. <strong>${t('new_team')}</strong> 를 눌러 첫 팀/세션을 기록하세요.
-    </div>` + teamsHtml;
+    return;
+  }
+  if (teams.length === 0) {
+    grid.innerHTML = headerHtml + `<div class="team-board">
+      <div style="color:var(--gray500);font-size:13px;padding:8px 4px;">
+        아직 이 프로젝트에 세션이 없습니다. <strong>${t('new_team')}</strong> 를 눌러 첫 팀/세션을 기록하세요.
+      </div>
+      <div class="card new-team-card" onclick="selectNewTeam()">
+        <div class="plus-icon">+</div>
+        <span>${t('new_team')}</span>
+      </div>
+    </div>`;
+    return;
   }
 
-  grid.innerHTML = headerHtml + teamsHtml;
+  // Team(learner)-grouped session board. Group order = getTeamSummaries order.
+  let groupsHtml = '';
+  for (const tm of teams) {
+    groupsHtml += buildTeamGroupHtml(tm, scoped);
+  }
+
+  // "+ 새 팀" — orphan/virtual project is historical-only (no project_id).
+  const newTeamHtml = currentProject.__virtual ? '' : `
+    <div class="card new-team-card" onclick="selectNewTeam()">
+      <div class="plus-icon">+</div>
+      <span>${t('new_team')}</span>
+    </div>`;
+
+  grid.innerHTML = headerHtml + `<div class="team-board">${groupsHtml}${newTeamHtml}</div>`;
 }
 
 // Render the project picker (formerly the top-level team picker).
@@ -10140,6 +10361,41 @@ let coachDirFilter = {
   q: '', tier: '', status: 'active', availability: '',
   expertise: '', region: ''
 };
+// CD brief: Set of coach_directory_id assigned (accepted) to the current project,
+// or null = no project filter (show full pool). Refreshed by loadProjectCoachIds().
+let projectCoachIds = null;
+
+// Returns a Set of coaches_directory.id assigned (status='accepted') to the
+// currently-selected project, or null when no real project is selected
+// (currentProject null or the virtual orphan) → caller shows the full pool.
+// RLS: business_plans / business_plan_coaches SELECT is admin/pm-only, which
+// matches this directory view's admin/pm gate.
+async function loadProjectCoachIds() {
+  if (!currentProject || currentProject.__virtual) { projectCoachIds = null; return null; }
+  if (!supabaseAvailable) { projectCoachIds = null; return null; }
+  try {
+    const { data: bps, error: bpErr } = await supabaseClient
+      .from('business_plans')
+      .select('id')
+      .eq('project_id', currentProject.id);
+    if (bpErr) throw bpErr;
+    const bpIds = (bps || []).map(b => b.id);
+    if (bpIds.length === 0) { projectCoachIds = new Set(); return projectCoachIds; }
+    const { data: bpc, error: bpcErr } = await supabaseClient
+      .from('business_plan_coaches')
+      .select('coach_directory_id')
+      .in('business_plan_id', bpIds)
+      .eq('status', 'accepted');
+    if (bpcErr) throw bpcErr;
+    projectCoachIds = new Set((bpc || []).map(r => r.coach_directory_id));
+    return projectCoachIds;
+  } catch (e) {
+    // On error, fail open to the full pool rather than hiding everything.
+    console.warn('loadProjectCoachIds failed', e.message || e);
+    projectCoachIds = null;
+    return null;
+  }
+}
 
 async function loadCoachDirectory() {
   coachDirectory = [];
@@ -10190,6 +10446,8 @@ async function renderCoachDirectory() {
     host.innerHTML = `<div class="cd-empty"><div class="cd-empty-icon">⏳</div><p>로딩 중…</p></div>`;
     await loadCoachDirectory();
   }
+  // CD brief #1: refresh the assigned-coach Set for the current project before rendering.
+  await loadProjectCoachIds();
   renderCoachDirBody(host);
 }
 
@@ -10198,6 +10456,8 @@ function _coachDirFiltered() {
   const f = coachDirFilter;
   const q = f.q.trim().toLowerCase();
   return coachDirectory.filter(c => {
+    // CD brief #1: when a real project is selected, show only its assigned coaches.
+    if (projectCoachIds && !projectCoachIds.has(c.id)) return false;
     if (f.status && c.status !== f.status) return false;
     if (f.availability && c.availability_status !== f.availability) return false;
     if (f.tier && String(c.tier) !== String(f.tier)) return false;  // DB tier=integer, 필터값=string → 정규화 비교
@@ -10214,6 +10474,10 @@ function _coachDirFiltered() {
 // Build the inner HTML of `.cd-grid` for a given filtered list.
 function _coachDirGridHtml(filtered) {
   if (filtered.length === 0) {
+    // CD brief #1: distinguish "project has no assigned coaches" from a plain filter miss.
+    if (projectCoachIds && projectCoachIds.size === 0) {
+      return `<div class="cd-empty"><div class="cd-empty-icon">👥</div><p>이 프로젝트에 배정된 코치가 없습니다.</p></div>`;
+    }
     return `<div class="cd-empty"><div class="cd-empty-icon">🔍</div><p>일치하는 코치가 없습니다.</p></div>`;
   }
   // Cap render to 300 cards for perf — user can filter further if needed
@@ -10232,7 +10496,7 @@ function _coachDirGridHtml(filtered) {
     const primaryExp = (c.expertise || [])[0];
     if (primaryExp) tagsHtml += `<span class="cd-tag">${escHtml(primaryExp)}</span>`;
     html += `
-        <div class="cd-card cd-card-readonly" style="cursor:default;">
+        <div class="cd-card cd-card-clickable" onclick="showCoachTeams('${escAttr(c.name || '')}')" title="담당 팀 보기">
           <div class="cd-avatar">${photoBlock}</div>
           <div class="cd-card-main">
             <div class="cd-name">${escHtml(c.name || '-')}</div>
@@ -10263,6 +10527,13 @@ function renderCoachDirBody(host) {
   const f = coachDirFilter;
   const filtered = _coachDirFiltered();
 
+  // CD brief #1: header copy reflects whether we're scoped to a project or the full pool.
+  const _scoped = !!projectCoachIds;
+  const _scopeBase = _scoped ? projectCoachIds.size : coachDirectory.length;
+  const _subCopy = _scoped
+    ? `이 프로젝트 코치 ${escHtml(String(_scopeBase))}명. 읽기 전용 — 코치 등록·수정은 <a href="https://coach-finder-iota.vercel.app/" target="_blank" rel="noreferrer" style="color:var(--orange);text-decoration:underline;">coach-finder</a> 에서.`
+    : `언더독스 코치풀 ${escHtml(String(_scopeBase))}명. 읽기 전용 — 코치 등록·수정은 <a href="https://coach-finder-iota.vercel.app/" target="_blank" rel="noreferrer" style="color:var(--orange);text-decoration:underline;">coach-finder</a> 에서.`;
+
   // 값(value)은 필터용으로 유지하되 표시 라벨은 유형(베테랑/UD/외부풀)만.
   const tierOptions  = tierValues.map(v => `<option value="${escAttr(v)}"${String(f.tier) === String(v) ? ' selected' : ''}>${escHtml(coachTypeLabel(v) || v)}</option>`).join('');
   const exOptions    = topExpertise.map(v => `<option value="${escAttr(v)}"${f.expertise === v ? ' selected' : ''}>${escHtml(v)}</option>`).join('');
@@ -10273,7 +10544,7 @@ function renderCoachDirBody(host) {
       <div class="cd-head">
         <div>
           <h2>코치 디렉토리</h2>
-          <div class="sub">언더독스 코치풀 ${coachDirectory.length}명. 읽기 전용 — 코치 등록·수정은 <a href="https://coach-finder-iota.vercel.app/" target="_blank" rel="noreferrer" style="color:var(--orange);text-decoration:underline;">coach-finder</a> 에서.</div>
+          <div class="sub">${_subCopy}</div>
         </div>
         <div style="display:flex;gap:8px;">
           <!-- SEAL1: CSV 가져오기 / 새 코치 버튼 제거 — 코치 쓰기는 coach-finder 영역. CSV 내보내기(읽기)는 유지. -->
@@ -10309,7 +10580,7 @@ function renderCoachDirBody(host) {
           <option value="">region: 전체</option>
           ${regionOpts}
         </select>
-        <span class="cd-count">${filtered.length} / ${coachDirectory.length}명</span>
+        <span class="cd-count">${filtered.length} / ${escHtml(String(_scopeBase))}명</span>
       </div>
 
       <div class="cd-grid">`;
@@ -10331,7 +10602,8 @@ function renderCoachDirGridOnly() {
   const filtered = _coachDirFiltered();
   grid.innerHTML = _coachDirGridHtml(filtered);
   const countEl = document.querySelector('.cd-count');
-  if (countEl) countEl.textContent = `${filtered.length} / ${coachDirectory.length}명`;
+  const _base = projectCoachIds ? projectCoachIds.size : coachDirectory.length;
+  if (countEl) countEl.textContent = `${filtered.length} / ${_base}명`;
 }
 
 function updateCoachFilter(key, value) {
@@ -10342,6 +10614,58 @@ function updateCoachFilter(key, value) {
   } else {
     renderCoachDirBody(document.getElementById('coachesContent'));
   }
+}
+
+// CD brief #2: coach card click → modal listing the teams (learners) that coach
+// has logged sessions for. Coaches have no coach_directory_id on logs, so matching
+// is by the free-text name string `r.coach` (exact match only — different spellings
+// will miss; that's expected). Scoped to the current real project when one is selected.
+function showCoachTeams(coachName) {
+  const overlay = document.getElementById('coachTeamsModal');
+  const titleEl = document.getElementById('coachTeamsTitle');
+  const bodyEl  = document.getElementById('coachTeamsBody');
+  if (!overlay || !titleEl || !bodyEl) return;
+
+  titleEl.textContent = `${coachName || '코치'} — 담당 팀`;
+
+  // Filter the already-loaded global `logs` (no new coaching_logs query — brief constraint).
+  let rows = logs.filter(r => r.coach === coachName);
+  if (currentProject && !currentProject.__virtual) {
+    rows = rows.filter(r => r.project_id === currentProject.id);
+  }
+
+  // distinct team_name → { count, latest session id }
+  // CD2: 팀별 세션 수 + "최근 세션"(session_num 최대 → 동률 시 date 최신) 추적.
+  const agg = {};
+  for (const r of rows) {
+    const t = r.team_name || '(팀명 없음)';
+    let a = agg[t];
+    if (!a) { a = agg[t] = { count: 0, best: null }; }
+    a.count += 1;
+    const best = a.best;
+    if (!best
+      || (parseInt(r.session_num) || 0) > (parseInt(best.session_num) || 0)
+      || ((parseInt(r.session_num) || 0) === (parseInt(best.session_num) || 0)
+          && String(r.date || '') > String(best.date || ''))) {
+      a.best = r;
+    }
+  }
+  const entries = Object.entries(agg).sort((a, b) => b[1].count - a[1].count);
+
+  if (entries.length === 0) {
+    bodyEl.innerHTML = `<div class="cd-empty"><div class="cd-empty-icon">🗒️</div><p>담당 팀 기록이 없습니다.</p></div>`;
+  } else {
+    bodyEl.innerHTML = entries.map(([team, a]) => {
+      const latestId = a.best ? a.best.id : '';
+      return `<div class="coach-team-row coach-team-row-clickable" onclick="closeCoachTeamsModal(); showDetail('${escAttr(String(latestId))}')" style="cursor:pointer" title="최근 세션 보기"><span class="coach-team-name">${escHtml(team)}</span><span class="coach-team-count">${escHtml(String(a.count))} 세션 <span class="coach-team-go">최근 세션 →</span></span></div>`;
+    }).join('');
+  }
+  overlay.classList.add('active');
+}
+
+function closeCoachTeamsModal() {
+  const overlay = document.getElementById('coachTeamsModal');
+  if (overlay) overlay.classList.remove('active');
 }
 
 // (AI semantic search UI removed — proper home is the coach-finder app.
@@ -10691,9 +11015,31 @@ async function quickAddPM(email) {
 // ============================================================
 // View 5: Detail View
 // ============================================================
+// FIX-detail-back-origin (2026-06-25): 화면 안 "← 뒤로" 버튼 핸들러.
+// 캡처해 둔 출처 뷰로 복귀(없으면 'teams' 폴백).
+function goBackFromDetail() { switchView(detailReturnView || 'teams'); }
+
+// DETAIL-add-session-button (2026-06-25): 상세에서 같은 팀(학습자)·프로젝트로
+// 새 세션 폼 진입. 레코드의 프로젝트 컨텍스트를 맞춰 폼 게이트 통과를 보장.
+function addSessionFromDetail() {
+  const record = logs.find(r => String(r.id) === String(currentDetailId));
+  if (!record) return;
+  if (record.project_id && (!currentProject || currentProject.id !== record.project_id)) {
+    const p = (typeof myProjects !== 'undefined' ? myProjects : []).find(x => x.id === record.project_id);
+    if (p) setCurrentProject(p);
+  }
+  selectTeam(record.team_name);
+}
+
 function showDetail(id) {
   const record = logs.find(r => String(r.id) === String(id));
   if (!record) return;
+  // FIX-detail-back-origin (2026-06-25): switchView('detail') 가 currentView 를
+  // 덮어쓰기 전(아직 출처 뷰인 시점)에 출처를 캡처. teams/list/dashboard 만 수용,
+  // detail→detail 재진입(currentView==='detail')은 스킵되어 최초 출처 자동 보존.
+  if (currentView === 'teams' || currentView === 'list' || currentView === 'dashboard' || currentView === 'coaches') {
+    detailReturnView = currentView;
+  }
   // 라우팅(2026-06-10): switchView('detail') 이 해시를 #detail/<id> 로 만들 수
   // 있도록 현재 record id 를 먼저 기록 (뒤로가기/새로고침 복원용).
   currentDetailId = String(record.id);
@@ -10792,8 +11138,10 @@ function showDetail(id) {
       </div>
     </div>`;
 
-  // Team trend table
-  const teamLogs = logs.filter(r => r.team_name === record.team_name).sort((a, b) => (parseInt(a.session_num) || 0) - (parseInt(b.session_num) || 0));
+  // 이전 세션 히스토리 (UI-B): 같은 학습자(team_name)의 세션 목록을 최신순으로
+  // 보여주고, 현재 보는 세션을 제외한 행은 클릭하면 그 세션 상세로 이동한다.
+  // 데이터는 기존 teamLogs 그대로 — 표시 순서만 최신(session_num desc) 우선.
+  const teamLogs = logs.filter(r => r.team_name === record.team_name).sort((a, b) => (parseInt(b.session_num) || 0) - (parseInt(a.session_num) || 0));
 
   if (teamLogs.length > 0) {
     // Gather metric columns for this team
@@ -10807,7 +11155,7 @@ function showDetail(id) {
     }
 
     html += `
-      <h3 style="margin: 24px 0 12px; font-size: 16px; font-weight: 700;">${t('team_trend')}</h3>
+      <h3 style="margin: 24px 0 12px; font-size: 16px; font-weight: 700;">📜 ${escHtml(record.team_name || '-')} 세션 히스토리 (${teamLogs.length}개)</h3>
       <div class="trend-table-wrap">
         <table class="trend-table">
           <thead>
@@ -10815,6 +11163,7 @@ function showDetail(id) {
               <th>#</th>
               <th>${t('th_date')}</th>
               <th>${t('th_stage')}</th>
+              <th>${t('main_topic')}</th>
               <th>${t('th_done')}</th>
               <th>${t('th_next_commit')}</th>
               ${teamMetricCols.map(c => `<th>${escHtml(c.replace('metric_','').replace(/_/g,' '))}</th>`).join('')}
@@ -10828,12 +11177,19 @@ function showDetail(id) {
       const dc = r.last_done === 'done' ? 'yes' : r.last_done === 'partial' ? 'partial' : r.last_done === 'not_done' ? 'no' : '';
       const ev = parseInt(r.energy) || 0;
       const ee = ev > 0 && ev <= 5 ? ENERGY_EMOJIS[ev - 1] : '-';
+      const isCurrent = String(r.id) === String(record.id);
+      // 현재 세션 행은 강조 + "현재" 표시(비활성). 그 외 행은 클릭 → showDetail.
+      const rowAttrs = isCurrent
+        ? `class="history-current"`
+        : `class="history-row" onclick="showDetail('${escAttr(String(r.id))}')"`;
+      const nowTag = isCurrent ? '<span class="history-now-tag">현재</span>' : '';
 
       html += `
-            <tr style="${String(r.id) === String(record.id) ? 'background:var(--orange-bg);' : ''}">
-              <td>${escHtml(r.session_num || '-')}</td>
+            <tr ${rowAttrs}>
+              <td>${escHtml(r.session_num || '-')}${nowTag}</td>
               <td>${escHtml(r.date || '-')}</td>
               <td><span class="stage-badge">${escHtml(r.stage || '-')}</span></td>
+              <td title="${escAttr(r.main_topic || '')}">${escHtml(truncate(r.main_topic, 20))}</td>
               <td>${dc ? `<span class="done-pill ${dc}">${dl}</span>` : '-'}</td>
               <td title="${escAttr(r.next_action || '')}">${escHtml(truncate(r.next_action, 25))}</td>
               ${teamMetricCols.map(c => `<td>${escHtml(r[c] || '-')}</td>`).join('')}
