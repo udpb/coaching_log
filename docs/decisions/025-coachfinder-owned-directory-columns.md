@@ -1,4 +1,4 @@
-# ADR-024: coaches_directory 의 coach-finder 전용 기능 컬럼 — 보존 + 소유권 명문화
+# ADR-025: coaches_directory 의 coach-finder 전용 기능 컬럼 — 보존 + 소유권 명문화
 
 | 메타 | 값 |
 |------|----|

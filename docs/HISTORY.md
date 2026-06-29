@@ -11,8 +11,8 @@
 | `CLAUDE.md` / `AGENTS.md` / `HANDOFF.md` | 최상위 룰 · 서브 룰 · 핸드오버 | ✅ 최신 (2026-06-20) |
 | `docs/glossary.md` | 용어 SoT | ✅ 최신 (ADR-023 반영) |
 | `docs/AUDIT-2026-06-20.md` ⭐ | **종합 정리 감사** (데드컬럼·데드코드·스키마·문서 stale·핸드오프) | ✅ 최신·현행 |
-| `docs/contracts/coaches-directory.md` | **공유 계약 원본 v2 (3앱 권위)** — 🔵 coach-finder 소유 컬럼 표식(ADR-024) | ✅ 최신 |
-| `docs/playbook/*` / `docs/decisions/*` (ADR-001~024) / `docs/journey/*` / `.claude/agent-briefs/*` | 운영 체계 | ✅ 최신 |
+| `docs/contracts/coaches-directory.md` | **공유 계약 원본 v2 (3앱 권위)** — 🔵 coach-finder 소유 컬럼 표식(ADR-025) | ✅ 최신 |
+| `docs/playbook/*` / `docs/decisions/*` (ADR-001~025) / `docs/journey/*` / `.claude/agent-briefs/*` | 운영 체계 | ✅ 최신 |
 
 ## 기존 제품 문서 (현행)
 
@@ -22,7 +22,7 @@
 | `docs/INTEGRATED_ARCHITECTURE.md` | 4앱 통합 + Gap 1~5 | ✅ 양호 (ADR-023 배너) |
 | `docs/ARCHITECTURE.md` | 단일 앱 아키텍처 (AWS 포터블 의도) | ✅ 양호 |
 | `README.md` | 개요 | ✅ 최신 (22필드·42마이그) |
-| `supabase/migrations/*.sql` (42) | **스키마 SoT** | ✅ 권위 |
+| `supabase/migrations/*.sql` (44) | **스키마 SoT** | ✅ 권위 |
 
 ## 과거 기록 (`docs/history/` — 참고용, 현행 아님)
 

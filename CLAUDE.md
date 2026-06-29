@@ -100,7 +100,7 @@
 |-------|------|------|
 | Frontend | **바닐라 JS · `public/index.html` (~10,880줄) + `public/field-defs.js` (필드 정의 SoT, ADR-020)** | 빌드 없음 · CDN 스크립트 (supabase-js · pizzip · docxtemplater) · 해시 라우팅 (2026-06-10 pushState 기본) · ~87 `innerHTML` |
 | AI serverless | `api/extract-session.js` (Vercel) | Gemini `gemini-2.5-pro` PRIMARY → `gemini-2.5-flash` FALLBACK · 22필드 규칙은 field-defs.js 에서 생성 · EXTRACTION_VERSION 기록 |
-| DB | Supabase (Postgres + pgvector + Auth + RLS) | **`supabase/migrations/` = 스키마 SoT (42 파일)** · ⚠️ 제로베이스 재생 한계는 phase_z 헤더 참조 |
+| DB | Supabase (Postgres + pgvector + Auth + RLS) | **`supabase/migrations/` = 스키마 SoT (44 파일)** · ⚠️ 제로베이스 재생 한계는 phase_z 헤더 참조 |
 | 배포 | Vercel (`public/` 정적 + 1 serverless) | |
 | Auth | 브라우저 anon 키 + RLS | service-role 키 클라이언트 노출 없음 |
 

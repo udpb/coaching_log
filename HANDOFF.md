@@ -9,7 +9,7 @@
 
 **Phase:** **운영자 핸드오프 정리 완료** (두 제품 coaching-log + coach-finder).
 - ADR-023 status 단일 라이프사이클(1~5단계) · K1b(KPI 한국어 추출) · 컬럼버그 전부 배포.
-- **ADR-024**: coaches_directory 의 embedding/inferred_skills/roles/ud_programs 는 죽은 게 아니라
+- **ADR-025**: coaches_directory 의 embedding/inferred_skills/roles/ud_programs 는 죽은 게 아니라
   **coach-finder 실사용** → 보존, 소유=coach-finder 문서화(계약 v2). 드롭 안 함.
 - **문서 정리**: 양 레포 현행 정본만 표면, 과거 기록은 `docs/history/` 로. PRD-v2(.md/.html) 현행화.
   coach-finder README·PARTNERS(협력사 도메인) 신규.
@@ -108,7 +108,7 @@
          컨벤션 드리프트(후순위). ⓒ 스키마 **정합·모순0**, 제로베이스 한계는 phase_z 문서화.
       ⓓ 문서 갱신 완료: CLAUDE(38→42·줄수)·README(18→22)·HISTORY(28→42·줄수)·AGENTS(줄수) 수치 정정 +
          HANDOVER/PRD-v2(.md/.html)/INTEGRATED 에 ADR-023 주석 배너(과거 기록 보존).
-      ✅ ⓐ **해결(ADR-024)**: embedding(4)·inferred_skills(3)·roles_capable·roles_active_2026·ud_programs
+      ✅ ⓐ **해결(ADR-025)**: embedding(4)·inferred_skills(3)·roles_capable·roles_active_2026·ud_programs
          는 죽은 게 아니라 **coach-finder 실사용**(추천 엔진 RPC·코치 카드 — coach-finder 코드 확인). → **보존**,
          계약문서 v2 에 소유=coach-finder(🔵) 명문화. 드롭/물리분리 안 함(진짜 분리는 핸드오프 후 별건).
       🔷 ⓒ **라이브 검증 SQL 5종**(AUDIT-2026-06-20 §ⓒ) 사용자 Supabase 실행 대기 — 특히 bp없는 projects.

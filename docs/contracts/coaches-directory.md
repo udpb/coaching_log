@@ -28,9 +28,9 @@
 권위 출처: coach-finder `COACH_SELECT_COLUMNS` (현재 가장 완전한 사본) + coaching-log 마이그레이션.
 컬럼 추가/삭제/rename 은 **§4 변경 룰** 필수.
 
-> **소유(Owner) 표식 (v2, ADR-024):** 🔵 = **coach-finder 전용 기능 컬럼** — coaching-log 는 0참조
+> **소유(Owner) 표식 (v2, ADR-025):** 🔵 = **coach-finder 전용 기능 컬럼** — coaching-log 는 0참조
 > (읽지도 쓰지도 않음). 공유 테이블이라 정의위치(스키마 SoT)는 coaching-log 마이그레이션이지만, 기능 소유·
-> 사용·갱신 주체는 coach-finder. 표식 없는 컬럼은 공용(여러 앱이 읽음). ADR-024 참조 — 드롭/물리분리 안 함.
+> 사용·갱신 주체는 coach-finder. 표식 없는 컬럼은 공용(여러 앱이 읽음). ADR-025 참조 — 드롭/물리분리 안 함.
 
 | 컬럼 | 타입 | 민감 | 비고 |
 |------|------|------|------|
@@ -132,7 +132,7 @@
 
 ## 6. 변경 이력
 
-- **v2 (2026-06-20, ADR-024)** — 소유(Owner) 표식 도입(🔵 = coach-finder 전용 기능). embedding(4)·
+- **v2 (2026-06-20, ADR-025)** — 소유(Owner) 표식 도입(🔵 = coach-finder 전용 기능). embedding(4)·
   inferred_skills(3)·roles_capable·roles_active_2026·ud_programs 를 coach-finder 소유로 명문화(coaching-log 0참조이나
   공유 테이블이라 정의는 coaching-log SoT). 핸드오프 정리 중 "폐기 후보" 오판을 정정 — coach-finder 추천 엔진·
   코치 카드 실사용이라 보존. embedding 모델/차원 = Gemini 1536(마이그 "OpenAI" 주석은 오기) 재확인. **스키마 변경 없음.**
