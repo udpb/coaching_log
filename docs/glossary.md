@@ -65,3 +65,25 @@
 
 ## 5. 공유 계약
 - `coaches_directory` 계약 = [docs/contracts/coaches-directory.md](contracts/coaches-directory.md) (**본 레포가 원본**). 변경은 세 앱 동시 + ADR. 임베딩 1536 (Gemini · 주석은 OpenAI 오기 — 정정 대상).
+
+---
+
+## 6. 리포트 템플릿 (AI 자동채움 · 2026-07-06 신규)
+
+> 발주처(팀/프로젝트)마다 다른 보고서 양식을 코치가 손으로 재입력하는 "두 번 일함"을 없애는 기능.
+> **AI 는 양식의 슬롯을 식별·값 배정(의미 매핑)만** 하고, **최종 파일은 결정론적 렌더러(코드)가 서식 보존 주입**한다 (AI 는 파일을 생성하지 않음 — 발주처 표·병합셀 손상 방지).
+> 출처: [[코칭로그 템플릿 기반 리포트]] (LLM-Wiki) · 브리프 B1~B7. 사용처: `report_templates` 테이블 · `api/template-ai.js`(예정) · `index.html` 렌더러. 한국어 라벨은 아래 표.
+
+| 표준 | 한국어 | 의미 · 비고 |
+|------|--------|------|
+| **report template** | 리포트 템플릿 | admin/PM 이 업로드한 발주처 보고서 양식 행 (`report_templates`). `docx`/`xlsx` (향후 `hwp`). ⚠️ **contract template 과 구분**(아래) |
+| **contract template** | 계약서 템플릿 | 기존 `public/templates/coach-contract*.docx` — **정적 파일**, `downloadMyContract()` 가 fetch·치환. report template 과 **별개**(혼동 금지) |
+| **slot** | 슬롯 | 템플릿에서 값이 들어갈 한 칸 (라벨 + 위치 앵커: docx=문단/셀, xlsx=셀좌표). 구 "placeholder" 를 대체하는 상위 개념 |
+| **slot schema** | 슬롯 스키마 | ① ingest 가 추출한 슬롯 목록 + 반복그룹 (`report_templates.slot_schema` jsonb) |
+| **template ingest** | 템플릿 인제스트 | 업로드 시 AI 가 슬롯을 식별하는 **1회** 분석 단계 (①, 결과 캐시) |
+| **slot fill** (mapping) | 슬롯 값 배정 | ② AI 가 세션 데이터를 슬롯에 `{value, evidence, confidence}` 로 배정 (extract-session 철학 동일) |
+| **repeat group** | 반복 그룹 | 회차별로 반복되는 슬롯 묶음 (docx `{#sessions}` 루프 / xlsx 열그룹) |
+| **templatized template** | 태그 삽입본 | docx ingest 후처리로 `{{slot}}`·`{#sessions}` 토큰이 baked 된 렌더용 바이트 (`report_templates.templatized_base64`) |
+| **renderer** | 렌더러 | 포맷별 **결정론적** 주입 엔진 (docx=docxtemplater / xlsx=좌표주입 / hwp=추후). AI 아님 |
+
+> ⚠️ **report template ↔ contract template 구분**: 기존 코드/문서의 "template" 은 **계약서 정적 파일**(`coach-contract*.docx`, `downloadMyContract`) 맥락뿐이었다. 신규 "리포트 템플릿" 은 DB 저장·AI 자동채움 대상으로 **완전히 별개**다. 코드·문서에서 혼용 금지.
