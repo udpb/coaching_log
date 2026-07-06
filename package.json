@@ -4,7 +4,8 @@
   "description": "Underdogs Coaching Log - Session tracking for startup coaches",
   "scripts": {
     "dev": "npx --yes serve public",
-    "start": "npx --yes serve public"
+    "start": "npx --yes serve public",
+    "reset-admin-pw": "node --env-file=.env.local tools/reset-admin-password.mjs"
   },
   "devDependencies": {
     "@supabase/supabase-js": "^2.104.0"
