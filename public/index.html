@@ -10339,7 +10339,12 @@ async function rtStartFill() {
       template_name: t.name, filled: resp.filled
     });
   } catch (err) {
-    showToast('자동채움 실패: ' + (err && err.message ? err.message : err));
+    // 스피너·버튼을 먼저 복구한 뒤(=blocking alert 전) 알럿을 띄워야 UI 가 자연스러움.
+    _rtSetFillBusy(false);
+    const msg = (err && err.message) ? err.message : String(err);
+    // 네이티브 alert — 토스트와 달리 닫기 전까지 유지되어 에러 사유를 읽을 수 있음.
+    // 앱 기존 alert/confirm 톤과 일치. 순수 텍스트라 escHtml 불요.
+    window.alert('자동채움에 실패했습니다.\n\n' + msg);
   } finally {
     _rtSetFillBusy(false);  // 무한 스피너 방지 — 성공/실패 무관 항상 복구
   }
