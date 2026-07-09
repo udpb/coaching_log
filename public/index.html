@@ -4041,7 +4041,8 @@ body.preview-report > *:not(#printView):not(#toast) { display: none; }
       </div>
       <div id="rtTemplatePicker" style="display:none; margin-top:10px; padding-top:10px; border-top:1px dashed var(--gray300);">
         <select id="rtReportTemplateSelect" style="width:100%; padding:8px 10px; border:1px solid var(--gray300); font-size:13px; margin-bottom:8px;"></select>
-        <button class="format-btn" style="width:100%;" onclick="rtStartFill()">🤖 AI 자동채움 →</button>
+        <button class="format-btn" id="rtFillBtn" style="width:100%;" onclick="rtStartFill()">🤖 AI 자동채움 →</button>
+        <div id="rtFillStatus" style="display:none; align-items:center; gap:8px; margin-top:8px; font-size:12px; color:var(--gray600,#555);"></div>
         <div style="font-size:11px; color:var(--gray500); margin-top:6px;">업로드된 발주처 양식에 코칭 데이터를 AI가 채웁니다. 다운로드 전 검토·수정할 수 있습니다.</div>
       </div>
     </div>
@@ -10297,6 +10298,24 @@ function _rtDeriveReport(sorted) {
     generated_date: new Date().toISOString().slice(0, 10)
   };
 }
+// fill 진행 표시(indeterminate). fill 은 단일 fetch(SSE 아님)라 실제 진행률
+// 대신 스피너 + 정적 안내문구 + 버튼잠금. ingest(rtAnalyze) 로딩 패턴 복제.
+function _rtSetFillBusy(busy) {
+  const btn = document.getElementById('rtFillBtn');
+  const status = document.getElementById('rtFillStatus');
+  if (btn) btn.disabled = !!busy;
+  if (status) {
+    if (busy) {
+      // 정적 문구만 — 사용자/동적 데이터 미포함(escape 불요).
+      status.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-width:2px;"></span>'
+        + '<span>AI가 값을 배정하는 중… 수 초 걸릴 수 있어요</span>';
+      status.style.display = 'flex';
+    } else {
+      status.innerHTML = '';
+      status.style.display = 'none';
+    }
+  }
+}
 async function rtStartFill() {
   const sel = document.getElementById('rtReportTemplateSelect');
   const tid = sel && sel.value;
@@ -10306,7 +10325,7 @@ async function rtStartFill() {
   const sorted = records.slice().sort(function (a, b) {
     return String(a.date || '').localeCompare(String(b.date || '')) || ((parseInt(a.session_num) || 0) - (parseInt(b.session_num) || 0));
   });
-  showToast('🤖 AI 자동채움 중… (잠시 기다려주세요)');
+  _rtSetFillBusy(true);   // 즉시 피드백 + 중복클릭 방지(버튼 disable)
   try {
     const { data: t, error } = await supabaseClient.from('report_templates')
       .select('id,name,format,file_base64,slot_schema').eq('id', tid).single();
@@ -10321,6 +10340,8 @@ async function rtStartFill() {
     });
   } catch (err) {
     showToast('자동채움 실패: ' + (err && err.message ? err.message : err));
+  } finally {
+    _rtSetFillBusy(false);  // 무한 스피너 방지 — 성공/실패 무관 항상 복구
   }
 }
 
