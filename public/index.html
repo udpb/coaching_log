@@ -10032,6 +10032,7 @@ function _resolveRptRecords() {
 // ============================================================
 let _rtIngestResult = null;   // A: {format,file_base64,file_name,slot_schema,ingest_model,ingest_version}
 let _rtFillState = null;      // C: {format,file_base64,slot_schema,template_name,filled}
+let _rtTplLoadAlerted = false; // 템플릿 목록 조회 실패 alert 중복 방지(세션당 1회)
 
 async function _rtAuthToken() {
   const { data } = await supabaseClient.auth.getSession();
@@ -10260,7 +10261,16 @@ async function _rtLoadReportTemplateOptions() {
     .select('id,name,format,scope_type,project_id,team_name')
     .eq('is_active', true)
     .order('created_at', { ascending: false });
-  if (error) { sel.innerHTML = '<option value="">(조회 실패)</option>'; return; }
+  if (error) {
+    sel.innerHTML = '<option value="">(조회 실패)</option>';  // 드롭다운 인라인 상태 유지
+    // 실패는 alert 로도 알림(사유 포함). 단 모달을 열 때마다 재토글 시 반복 스팸 방지 — 세션당 1회만.
+    if (!_rtTplLoadAlerted) {
+      _rtTplLoadAlerted = true;
+      window.alert('템플릿 목록을 불러오지 못했습니다.\n\n' + (error.message || String(error)));
+    }
+    return;
+  }
+  _rtTplLoadAlerted = false;  // 성공 시 알림 플래그 초기화(다음 실패 때 다시 1회 알림)
   const pid = currentProject && currentProject.id;
   const relevant = (data || []).filter(function (t) {
     if (t.scope_type === 'global') return true;
@@ -10329,7 +10339,13 @@ async function rtStartFill() {
   try {
     const { data: t, error } = await supabaseClient.from('report_templates')
       .select('id,name,format,file_base64,slot_schema').eq('id', tid).single();
-    if (error || !t) { showToast('템플릿 로드 실패'); return; }
+    if (error || !t) {
+      // busy(스피너·버튼)를 blocking alert 전에 먼저 복구.
+      _rtSetFillBusy(false);
+      const msg = (error && error.message) ? error.message : '템플릿을 찾을 수 없습니다.';
+      window.alert('템플릿을 불러오지 못했습니다.\n\n' + msg);
+      return;
+    }
     const sessions = sorted.map(_rtSessionForFill);
     const report = _rtDeriveReport(sorted);
     const resp = await callTemplateAI('fill', { slot_schema: t.slot_schema, sessions: sessions, report: report });
